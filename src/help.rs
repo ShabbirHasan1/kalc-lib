@@ -5,7 +5,7 @@ pub fn help()
     let p = lines.clone().position(|l| l == "# usage").unwrap() + 3;
     let e = lines.clone().skip(p).position(|l| l == "```").unwrap() - 1;
     println!(
-        "{}",
+        "{}\x1b[G",
         lines
             .skip(p)
             .take(e)

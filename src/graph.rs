@@ -41,6 +41,7 @@ pub fn graph(
 ) -> JoinHandle<()>
 {
     thread::spawn(move || {
+        options.graphing = true;
         let mut func = Vec::new();
         let mut last_prec = options.graph_prec;
         if options.prec != options.graph_prec
@@ -70,7 +71,7 @@ pub fn graph(
                         silent_commands(
                             &mut options,
                             &s.chars()
-                                .filter(|c| !c.is_whitespace())
+                                .filter(|c| !c.is_ascii_whitespace())
                                 .collect::<Vec<char>>(),
                         );
                         if s.contains('=')

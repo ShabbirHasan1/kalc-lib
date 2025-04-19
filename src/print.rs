@@ -148,7 +148,7 @@ pub fn print_concurrent(
                         &mut options,
                         &s.iter()
                             .copied()
-                            .filter(|&c| !c.is_whitespace())
+                            .filter(|&c| !c.is_ascii_whitespace())
                             .collect::<Vec<char>>(),
                     );
                     if s.contains(&'=')
@@ -239,7 +239,7 @@ pub fn print_concurrent(
                                     silent_commands(
                                         &mut options,
                                         &s.chars()
-                                            .filter(|c| !c.is_whitespace())
+                                            .filter(|c| !c.is_ascii_whitespace())
                                             .collect::<Vec<char>>(),
                                     );
                                     if s.contains('=')
@@ -703,7 +703,7 @@ pub fn print_concurrent(
                                     silent_commands(
                                         &mut options,
                                         &s.chars()
-                                            .filter(|c| !c.is_whitespace())
+                                            .filter(|c| !c.is_ascii_whitespace())
                                             .collect::<Vec<char>>(),
                                     );
                                     if s.contains('=')

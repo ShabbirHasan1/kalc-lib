@@ -9,15 +9,15 @@ use crate::{
             NotEqual, Num, Or, Plus, PlusMinus, Range, RightBracket, RightCurlyBracket, Root,
             ShiftLeft, ShiftRight, Tetration, Vector, Xor,
         },
-        about_eq, add, and, area, atan, binomial, change_basis, char_poly, cofactor, coordinate,
-        cube, cubic, determinant, digamma, div, eigenvalues, eigenvectors, eq, erf, erfc, eta,
-        euleriannumbers, euleriannumbersint, extrema, gamma, gcd, ge, generalized_eigenvectors, gt,
-        hsv2rgb, identity, implies, incomplete_beta, incomplete_gamma, inverse, iter, jcf, kernel,
-        lambertw, length, limit, lower_incomplete_gamma, minors, mul_units, mvec, nand, ne, nor,
-        not, nth_prime, or, pow_nth, prime_factors, quadratic, quartic, rand_gamma, rand_norm,
-        range, rcf, recursion, regularized_incomplete_beta, rem, root, rref, shl, shr, slog, slope,
-        solve, sort, sort_mat, sqr, sub, subfactorial, sum, surface_area, taylor, tetration, to,
-        to_cyl, to_polar, trace, transpose, unity, variance, xor, zeta,
+        about_eq, add, and, area, atan, binomial, change_basis, cofactor, coordinate, cube, cubic,
+        determinant, digamma, div, eigenvalues, eigenvectors, eq, erf, erfc, eta, euleriannumbers,
+        euleriannumbersint, extrema, gamma, gcd, ge, generalized_eigenvectors, gt, hsv2rgb,
+        identity, implies, incomplete_beta, incomplete_gamma, inverse, iter, jcf, kernel, lambertw,
+        length, limit, lower_incomplete_gamma, minors, mul_units, mvec, nand, ne, nor, not,
+        nth_prime, or, pow_nth, prime_factors, quadratic, quartic, rand_gamma, rand_norm, range,
+        rcf, recursion, regularized_incomplete_beta, rem, root, rref, shl, shr, slog, slope, solve,
+        sort, sort_mat, sqr, sub, subfactorial, sum, surface_area, taylor, tetration, to, to_cyl,
+        to_polar, trace, transpose, unity, variance, xor, zeta,
     },
     fraction::{c_to_rational, rationalize},
     misc::do_math_with_var,
@@ -234,7 +234,6 @@ pub fn do_math(
                                 | "rand_int"
                                 | "rand_gamma"
                                 | "rand_beta"
-                                | "char_poly"
                                 | "gamma_pdf"
                                 | "gamma_cdf"
                                 | "beta_cdf"
@@ -1553,31 +1552,6 @@ pub fn do_math(
                             }
                             "rcf" => rcf(a)?,
                             "jcf" => jcf(a)?,
-                            "char_poly" =>
-                            {
-                                let a = char_poly(&a)?;
-                                if function.len() > i + 1 && !matches!(&function[i + 1], Func(_))
-                                {
-                                    let x = function.remove(i + 1).num()?;
-                                    let mut sum = Number::from(Complex::new(options.prec), None);
-                                    for (i, a) in a.iter().rev().enumerate()
-                                    {
-                                        let n = Number::from(
-                                            a.number.clone() * x.number.clone().pow(i),
-                                            mul_units(
-                                                a.units,
-                                                Some(x.units.unwrap_or_default().pow(i as f64)),
-                                            ),
-                                        );
-                                        if i == 0 { sum = n } else { sum = add(&sum, &n) }
-                                    }
-                                    Num(sum)
-                                }
-                                else
-                                {
-                                    Vector(a)
-                                }
-                            }
                             "change_basis" =>
                             {
                                 if function.len() > i + 1 && !matches!(&function[i + 1], Func(_))
@@ -1814,14 +1788,7 @@ pub fn do_math(
                                         current = Vec::new();
                                         for p in 0..=faces[0..=i].iter().sum::<usize>() - i - 1
                                         {
-                                            let value = last[if (p + 1) > faces[i]
-                                            {
-                                                p + 1 - faces[i]
-                                            }
-                                            else
-                                            {
-                                                0
-                                            }
+                                            let value = last[(p + 1).saturating_sub(faces[i])
                                                 ..=p.min(faces[0..i].iter().sum::<usize>() - i)]
                                                 .iter()
                                                 .sum::<Integer>();
@@ -2026,14 +1993,7 @@ pub fn do_math(
                                         current = Vec::new();
                                         for p in 0..=faces[0..=i].iter().sum::<usize>() - i - 1
                                         {
-                                            let value = last[if (p + 1) > faces[i]
-                                            {
-                                                p + 1 - faces[i]
-                                            }
-                                            else
-                                            {
-                                                0
-                                            }
+                                            let value = last[(p + 1).saturating_sub(faces[i])
                                                 ..=p.min(faces[0..i].iter().sum::<usize>() - i)]
                                                 .iter()
                                                 .sum::<Integer>();

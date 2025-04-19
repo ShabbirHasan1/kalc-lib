@@ -192,6 +192,7 @@ pub struct Options
     pub keep_zeros: bool,
     pub progress: bool,
     pub keep_data_file: bool,
+    pub graphing: bool,
 }
 impl Default for Options
 {
@@ -243,6 +244,7 @@ impl Default for Options
             keep_zeros: false,
             progress: false,
             keep_data_file: false,
+            graphing: false,
         }
     }
 }

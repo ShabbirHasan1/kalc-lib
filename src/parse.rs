@@ -65,7 +65,7 @@ pub fn input_var(
     let mut funcfailed = false;
     let mut absfailed = false;
     let mut scientific = false;
-    let mut abs = Vec::new();
+    let mut abs: Vec<(usize, isize)> = Vec::new();
     let mut neg = false;
     let n1 = Complex::with_val(options.prec, -1);
     let mut pow = String::new();
@@ -102,13 +102,13 @@ pub fn input_var(
     let mut i = 0;
     let mut piecewise = 0;
     let mut pwr: (bool, isize, isize) = (false, 0, 0);
-    while !chars.is_empty() && chars[0].is_whitespace()
+    while !chars.is_empty() && chars[0].is_ascii_whitespace()
     {
         chars.remove(0);
     }
     while i < chars.len()
     {
-        if chars[i].is_whitespace()
+        if chars[i].is_ascii_whitespace()
         {
             if chars.len().saturating_sub(1) == i
             {
@@ -996,7 +996,10 @@ pub fn input_var(
                 }
                 '|' =>
                 {
-                    if !abs.is_empty() && abs[0] == *bracket && can_abs(&output, vars)
+                    if !abs.is_empty()
+                        && abs[0].1 == *bracket
+                        && abs[0].0 != i - 1
+                        && can_abs(&output, vars)
                     {
                         *bracket -= 1;
                         if (i + 2 >= chars.len() || chars[i + 1] != '^') && pwr.1 == *bracket
@@ -1011,7 +1014,10 @@ pub fn input_var(
                         output.push(RightBracket);
                         abs.remove(0);
                     }
-                    else if i + 1 != chars.len() && chars[i + 1] == '|'
+                    else if i + 1 != chars.len()
+                        && chars[i + 1] == '|'
+                        && i != 0
+                        && !matches!(chars[i - 1], '(' | '{' | '[' | '|')
                     {
                         if i + 2 != chars.len()
                         {
@@ -1031,7 +1037,7 @@ pub fn input_var(
                         output.push(LeftBracket);
                         output.push(Func("norm".to_string()));
                         output.push(LeftBracket);
-                        abs.insert(0, *bracket);
+                        abs.insert(0, (i, *bracket));
                     }
                 }
                 '!' =>

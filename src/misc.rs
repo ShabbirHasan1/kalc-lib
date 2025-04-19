@@ -420,7 +420,7 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                 .count() as isize)
             .max(0);
         let mut output = String::new();
-        let mut abs = Vec::new();
+        let mut abs: Vec<(usize, isize)> = Vec::new();
         let mut i = 0;
         let mut ignore = false;
         while i < input.len()
@@ -442,7 +442,12 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                 '|' =>
                 {
                     if !abs.is_empty()
-                        && abs[0] == count
+                        && abs[0].1 == count
+                        && input[abs[0].0 + 1..i]
+                            .iter()
+                            .filter(|c| !c.is_ascii_whitespace())
+                            .count()
+                            != 0
                         && match input[..i].iter().rev().position(|c| !c.is_alphabetic())
                         {
                             Some(n) =>
@@ -465,7 +470,15 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                             colors.text
                         ))
                     }
-                    else if i + 1 == input.len() || input[i + 1] != '|'
+                    else if i + 1 == input.len()
+                        || input[i + 1] != '|'
+                        || i == 0
+                        || input[0..=i - 1]
+                            .iter()
+                            .rev()
+                            .filter(|c| !c.is_ascii_whitespace())
+                            .take(1)
+                            .all(|c| matches!(c, '(' | '{' | '[' | '|'))
                     {
                         output.push_str(&format!(
                             "{}|{}",
@@ -473,7 +486,7 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                             colors.text
                         ));
                         count += 1;
-                        abs.insert(0, count);
+                        abs.insert(0, (i, count));
                     }
                     else
                     {
