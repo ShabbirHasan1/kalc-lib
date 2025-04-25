@@ -74,14 +74,14 @@ pub fn get_file_vars(
                         {
                             if let Err(s) = add_var(le, r, i, vars, options, false, false, false)
                             {
-                                println!("{}", s)
+                                println!("{s}")
                             }
                             continue 'lower;
                         }
                     }
                     if let Err(s) = add_var(le, r, 0, vars, options, false, false, false)
                     {
-                        println!("{}", s)
+                        println!("{s}")
                     }
                 }
             }

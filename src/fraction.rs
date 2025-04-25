@@ -324,7 +324,7 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
                             }
                             else
                             {
-                                format!("/({}e)", recip)
+                                format!("/({recip}e)")
                             }
                         }
                         else if recip == 1

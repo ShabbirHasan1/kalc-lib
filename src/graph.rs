@@ -341,7 +341,7 @@ pub fn graph(
                     let rt = y as f64 / x as f64;
                     let w = rt * (options.xr.1 - options.xr.0) / (options.yr.1 - options.yr.0);
                     options.yr = (w * options.yr.0, w * options.yr.1);
-                    writeln!(stdin, "set size ratio {}", rt).unwrap();
+                    writeln!(stdin, "set size ratio {rt}").unwrap();
                 }
                 else
                 {
@@ -974,7 +974,7 @@ pub fn get_list_2d(
             }
             Err(s) =>
             {
-                println!("{}", s);
+                println!("{s}");
                 let _ = fs::remove_file(format!("{data_dir}/re{i}"));
                 let _ = fs::remove_file(format!("{data_dir}/im{i}"));
                 return Default::default();
@@ -1002,7 +1002,7 @@ pub fn get_list_2d(
     if func.2.progress
     {
         let t = func.2.samples_2d + 1;
-        print!("\x1b[G\x1b[K{}/{}=100.0%", t, t);
+        print!("\x1b[G\x1b[K{t}/{t}=100.0%");
         if func.2.interactive
         {
             print!("\x1b[G\n\x1b[K{}", prompt(func.2, &Colors::default()))
@@ -1488,7 +1488,7 @@ pub fn get_list_3d(
                 }
                 Err(s) =>
                 {
-                    println!("{}", s);
+                    println!("{s}");
                     let _ = fs::remove_file(format!("{data_dir}/re{i}"));
                     if !(func.2.graphtype == Domain || func.2.graphtype == DomainAlt)
                     {
@@ -1520,7 +1520,7 @@ pub fn get_list_3d(
     if func.2.progress
     {
         let t = (func.2.samples_3d.0 + 1) * (func.2.samples_3d.1 + 1);
-        print!("\x1b[G\x1b[K{}/{}=100.0%", t, t);
+        print!("\x1b[G\x1b[K{t}/{t}=100.0%");
         if func.2.interactive
         {
             print!("\x1b[G\n\x1b[K{}", prompt(func.2, &Colors::default()))

@@ -115,7 +115,7 @@ pub fn arg_opts(
                             }
                             else
                             {
-                                println!("{} failed", arg);
+                                println!("{arg} failed");
                                 process::exit(1);
                             }
                         }
@@ -194,7 +194,7 @@ pub fn file_opts(
                         }
                         else
                         {
-                            println!("{} failed", line);
+                            println!("{line} failed");
                             process::exit(1);
                         }
                     }
@@ -210,7 +210,7 @@ pub fn file_opts(
                 }
                 else
                 {
-                    println!("{} failed", line);
+                    println!("{line} failed");
                     process::exit(1);
                 }
             }
@@ -511,6 +511,7 @@ pub fn set_commands(
                 "graphcli" => options.graph_cli = args[0] != 0.0,
                 "interactive" => options.stay_interactive = args[0] != 0.0,
                 "prompt" => options.prompt = args[0] != 0.0,
+                "gnuplot" => options.gnuplot = args[0] != 0.0,
                 "surface" => options.surface = args[0] != 0.0,
                 "rt" => options.real_time_output = args[0] != 0.0,
                 "progress" => options.progress = args[0] != 0.0,
@@ -1062,6 +1063,7 @@ pub fn silent_commands(options: &mut Options, input: &[char]) -> bool
             };
         }
         "prompt" => options.prompt = !options.prompt,
+        "gnuplot" => options.gnuplot = !options.gnuplot,
         "onaxis" => options.onaxis = !options.onaxis,
         "surface" => options.surface = !options.surface,
         "rt" => options.real_time_output = !options.real_time_output,
@@ -1129,6 +1131,12 @@ pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout:
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.prompt = !options.prompt;
+        }
+        "gnuplot" =>
+        {
+            print!("\x1b[G\x1b[A\x1b[K");
+            stdout.flush().unwrap();
+            options.gnuplot = !options.gnuplot;
         }
         "onaxis" =>
         {
@@ -1248,7 +1256,7 @@ pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout:
             print!("\x1b[G\x1b[A\x1b[K");
             for l in lines
             {
-                println!("{}\x1b[G", l);
+                println!("{l}\x1b[G");
             }
             stdout.flush().unwrap();
         }
@@ -1274,7 +1282,7 @@ pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout:
                     {
                         if i.contains(r)
                         {
-                            println!("{}\x1b[G", i);
+                            println!("{i}\x1b[G");
                         }
                     }
                     stdout.flush().unwrap();
@@ -1435,6 +1443,7 @@ pub fn equal_to(options: Options, colors: &Colors, vars: &[Variable], l: &str, l
         .to_string(),
         "surface" => format!("{}", options.surface),
         "prompt" => format!("{}", options.prompt),
+        "gnuplot" => format!("{}", options.gnuplot),
         "rt" => format!("{}", options.real_time_output),
         "progress" => format!("{}", options.progress),
         "siunits" => format!("{}", options.si_units),

@@ -1,8 +1,4 @@
-# kalc
-
-[![crates.io](https://img.shields.io/crates/v/kalc.svg)](https://crates.io/crates/kalc) [![AUR](https://img.shields.io/aur/version/kalc.svg)](https://aur.archlinux.org/packages/kalc/)
-
-![img.png](img.png)
+# kalc-lib
 
 history file is stored in [config_dir](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)/kalc/kalc.history
 
@@ -136,6 +132,7 @@ FLAGS: --help (this message)
 --ticks=[num](,[num](,[num])) sets amount of ticks, optionally set different x/y/z ticks, -2 will be auto, -1 will be at every whole number, 0 will be none
 --onaxis toggles showing the ticks on the x/y/z axis on by default for 2d, off by default for 3d
 --prompt toggles the prompt
+--gnuplot toggles using gnuplot instead of kalc plot
 --color=true/false/auto toggles color output, toggled by default when running from arguments
 --comma toggles comma seperation
 --graph toggles graphing

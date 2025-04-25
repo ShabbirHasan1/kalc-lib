@@ -347,7 +347,7 @@ pub fn write(mut input: String, file: &mut File, lines: &mut Vec<String>, slow: 
             input.push('\t');
         }
         lines.push(input.clone());
-        writeln!(file, "{}", input).unwrap();
+        writeln!(file, "{input}").unwrap();
     }
 }
 pub fn clearln(
@@ -554,7 +554,7 @@ pub fn handle_err(
         }
         else
         {
-            format!("\x1b[{}A", num)
+            format!("\x1b[{num}A")
         },
         prompt(options, colors),
         to_output(
@@ -1010,7 +1010,7 @@ pub fn parsed_to_string(
                     ));
                 }
                 str.pop();
-                format!("{{{}}}", str)
+                format!("{{{str}}}")
             }
             Matrix(n) =>
             {
@@ -1041,7 +1041,7 @@ pub fn parsed_to_string(
                     str.insert(str.len().saturating_sub(1), '}');
                 }
                 str.pop();
-                format!("{{{}}}", str)
+                format!("{{{str}}}")
             }
             Func(n) if n.starts_with('@') && n.contains('(') =>
             {

@@ -355,7 +355,7 @@ pub fn print_concurrent(
                         }
                         else
                         {
-                            format!("\x1b[{}A", wrap)
+                            format!("\x1b[{wrap}A")
                         },
                         prompt(options, &colors),
                         to_output(
@@ -620,7 +620,7 @@ pub fn print_concurrent(
                             }
                             else
                             {
-                                format!("\x1b[{}A", wrap)
+                                format!("\x1b[{wrap}A")
                             },
                             prompt(options, &colors),
                             to_output(
@@ -809,7 +809,7 @@ pub fn print_concurrent(
                     }
                     else
                     {
-                        format!("\x1b[{}A", wrap)
+                        format!("\x1b[{wrap}A")
                     },
                     prompt(options, &colors),
                     to_output(
@@ -875,7 +875,7 @@ pub fn print_concurrent(
                     }
                     else
                     {
-                        format!("\x1b[{}A", wrap)
+                        format!("\x1b[{wrap}A")
                     },
                     prompt(options, &colors),
                     to_output(
@@ -1067,7 +1067,7 @@ pub fn print_concurrent(
                         "\x1b[G\n\x1b[J{}\x1b[G{}{}{}{}",
                         if frac == 1
                         {
-                            format!("{}{}\x1b[G\n", frac_a, frac_b)
+                            format!("{frac_a}{frac_b}\x1b[G\n")
                         }
                         else
                         {
@@ -1100,7 +1100,7 @@ pub fn print_concurrent(
                         "\x1b[G\x1b[J{}\x1b[G\ntoo long, will print on enter{}\x1b[G\x1b[A{}{}{}",
                         if frac == 1
                         {
-                            format!("\x1b[G\n{}{}", frac_a, frac_b)
+                            format!("\x1b[G\n{frac_a}{frac_b}")
                         }
                         else
                         {
@@ -1135,7 +1135,7 @@ pub fn print_concurrent(
                     "\x1b[G\x1b[J{}\x1b[G\n{}{}{}{}\x1b[A\x1b[G\x1b[A{}{}{}",
                     if frac == 1
                     {
-                        format!("\x1b[G\n{}{}", frac_a, frac_b)
+                        format!("\x1b[G\n{frac_a}{frac_b}")
                     }
                     else
                     {
@@ -1157,7 +1157,7 @@ pub fn print_concurrent(
                     }
                     else
                     {
-                        format!("\x1b[{}A", temp)
+                        format!("\x1b[{temp}A")
                     },
                     prompt(options, &colors),
                     to_output(
@@ -1190,7 +1190,7 @@ pub fn print_concurrent(
                     ),
                     if frac == 1
                     {
-                        format!("\x1b[G\n{}{}\x1b[K", frac_a, frac_b)
+                        format!("\x1b[G\n{frac_a}{frac_b}\x1b[K")
                     }
                     else
                     {
@@ -1394,7 +1394,7 @@ pub fn print_concurrent(
                         "\x1b[G\n\x1b[J{}\x1b[G{}{}",
                         if frac == 1 && options.frac.vec
                         {
-                            format!("{}\x1b[G\n", frac_out)
+                            format!("{frac_out}\x1b[G\n")
                         }
                         else
                         {
@@ -1450,7 +1450,7 @@ pub fn print_concurrent(
                     ),
                     if frac == 1
                     {
-                        format!("\x1b[G\n{}\x1b[K", frac_out)
+                        format!("\x1b[G\n{frac_out}\x1b[K")
                     }
                     else
                     {
@@ -1463,7 +1463,7 @@ pub fn print_concurrent(
                     }
                     else
                     {
-                        format!("\x1b[{}A", num)
+                        format!("\x1b[{num}A")
                     },
                     if frac == 1 { "\x1b[A" } else { "" },
                     if options.prompt { 2 } else { 0 } + (end - start),
@@ -1748,7 +1748,7 @@ pub fn print_concurrent(
                             {
                                 num += 1;
                             }
-                            format!("{}\x1b[G\n", frac_out)
+                            format!("{frac_out}\x1b[G\n")
                         }
                         else
                         {
@@ -1812,7 +1812,7 @@ pub fn print_concurrent(
                         {
                             num += 1;
                         }
-                        format!("\x1b[G\n{}\x1b[K", frac_out)
+                        format!("\x1b[G\n{frac_out}\x1b[K")
                     }
                     else
                     {
@@ -2576,7 +2576,7 @@ fn to_string(num: &Float, options: Options, imag: bool, radix: i32) -> String
     };
     if str.len() as i32 == exp
     {
-        return format!("{}{}", neg, str);
+        return format!("{neg}{str}");
     }
     if exp > str.len() as i32
     {
@@ -2613,7 +2613,7 @@ fn to_string(num: &Float, options: Options, imag: bool, radix: i32) -> String
     let mut r = split.next().unwrap().to_string();
     if r.is_empty()
     {
-        return format!("{}{}", neg, l);
+        return format!("{neg}{l}");
     }
     if r.len() > decimals
     {

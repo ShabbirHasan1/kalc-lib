@@ -18,8 +18,8 @@ use rug::{
     integer::IsPrime,
     ops::Pow,
 };
-use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum NumStr
 {
@@ -4147,7 +4147,7 @@ pub fn area(
                 fto: Vec<NumStr>,
             )
             {
-                let to = format!("@!@{}@", from);
+                let to = format!("@!@{from}@");
                 for v in func.iter_mut()
                 {
                     if *v == Func(from.clone())

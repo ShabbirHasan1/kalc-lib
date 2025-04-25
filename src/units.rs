@@ -9,6 +9,7 @@ use rug::{
     float::Constant::Pi,
     ops::{DivRounding, Pow},
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 #[cfg(feature = "bin-deps")]
 use std::{
@@ -18,7 +19,6 @@ use std::{
     net::TcpStream,
     time::SystemTime,
 };
-use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Variable
 {
@@ -49,10 +49,11 @@ pub struct Number
     pub units: Option<Units>,
 }
 #[derive(Serialize, Deserialize)]
-pub                struct Data {
-   pub                 vars: Vec<Variable>,
-      pub              options: Options
-                }
+pub struct Data
+{
+    pub vars: Vec<Variable>,
+    pub options: Options,
+}
 
 #[derive(Clone)]
 pub struct Colors
@@ -166,6 +167,7 @@ pub struct Options
     pub onaxis: bool,
     pub polar: bool,
     pub frac: Fractions,
+    pub gnuplot: bool,
     pub real_time_output: bool,
     pub decimal_places: usize,
     pub color: Auto,
@@ -211,6 +213,7 @@ impl Default for Options
             graphtype: GraphType::Normal,
             base: (10, 10),
             ticks: (16.0, 16.0, 16.0),
+            gnuplot: false,
             onaxis: true,
             polar: false,
             frac: Fractions {
@@ -481,7 +484,7 @@ impl Units
                         &(" F".to_owned()
                             + &if farad != 1.0
                             {
-                                format!("^{}", farad)
+                                format!("^{farad}")
                             }
                             else
                             {
@@ -495,7 +498,7 @@ impl Units
                         &(" Ω".to_owned()
                             + &if ohm != 1.0
                             {
-                                format!("^{}", ohm)
+                                format!("^{ohm}")
                             }
                             else
                             {
@@ -509,7 +512,7 @@ impl Units
                         &(" H".to_owned()
                             + &if henry != 1.0
                             {
-                                format!("^{}", henry)
+                                format!("^{henry}")
                             }
                             else
                             {
@@ -523,7 +526,7 @@ impl Units
                         &(" V".to_owned()
                             + &if volt != 1.0
                             {
-                                format!("^{}", volt)
+                                format!("^{volt}")
                             }
                             else
                             {
@@ -537,7 +540,7 @@ impl Units
                         &(" W".to_owned()
                             + &if watt != 1.0
                             {
-                                format!("^{}", watt)
+                                format!("^{watt}")
                             }
                             else
                             {
@@ -551,7 +554,7 @@ impl Units
                         &(" J".to_owned()
                             + &if joules != 1.0
                             {
-                                format!("^{}", joules)
+                                format!("^{joules}")
                             }
                             else
                             {
@@ -565,7 +568,7 @@ impl Units
                         &(" N".to_owned()
                             + &if newtons != 1.0
                             {
-                                format!("^{}", newtons)
+                                format!("^{newtons}")
                             }
                             else
                             {
@@ -579,7 +582,7 @@ impl Units
                         &(" Pa".to_owned()
                             + &if pascal != 1.0
                             {
-                                format!("^{}", pascal)
+                                format!("^{pascal}")
                             }
                             else
                             {
@@ -593,7 +596,7 @@ impl Units
                         &(" T".to_owned()
                             + &if tesla != 1.0
                             {
-                                format!("^{}", tesla)
+                                format!("^{tesla}")
                             }
                             else
                             {
@@ -607,7 +610,7 @@ impl Units
                         &(" C".to_owned()
                             + &if coulomb != 1.0
                             {
-                                format!("^{}", coulomb)
+                                format!("^{coulomb}")
                             }
                             else
                             {
