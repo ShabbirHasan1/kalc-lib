@@ -19,7 +19,8 @@ use rug::{
     ops::Pow,
 };
 use std::cmp::Ordering;
-#[derive(Clone, PartialEq)]
+use serde::{Deserialize, Serialize};
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum NumStr
 {
     Num(Number),

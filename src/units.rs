@@ -18,7 +18,8 @@ use std::{
     net::TcpStream,
     time::SystemTime,
 };
-#[derive(Clone)]
+use serde::{Deserialize, Serialize};
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Variable
 {
     pub name: Vec<char>,
@@ -26,7 +27,7 @@ pub struct Variable
     pub unparsed: String,
     pub funcvars: Vec<(String, Vec<NumStr>)>,
 }
-#[derive(Clone, PartialEq, Copy)]
+#[derive(Clone, PartialEq, Copy, Serialize, Deserialize)]
 pub struct Units
 {
     pub second: f64,
@@ -41,12 +42,18 @@ pub struct Units
     pub usd: f64,
     pub unit: f64,
 }
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Number
 {
     pub number: Complex,
     pub units: Option<Units>,
 }
+#[derive(Serialize, Deserialize)]
+pub                struct Data {
+   pub                 vars: Vec<Variable>,
+      pub              options: Options
+                }
+
 #[derive(Clone)]
 pub struct Colors
 {
@@ -102,14 +109,14 @@ impl Default for Colors
         }
     }
 }
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AngleType
 {
     Radians,
     Degrees,
     Gradians,
 }
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Auto
 {
     True,
@@ -123,14 +130,14 @@ pub struct HowGraphing
     pub x: bool,
     pub y: bool,
 }
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fractions
 {
     pub num: bool,
     pub vec: bool,
     pub mat: bool,
 }
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Notation
 {
     Normal,
@@ -138,7 +145,7 @@ pub enum Notation
     LargeEngineering,
     SmallEngineering,
 }
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum GraphType
 {
     Normal,
@@ -148,7 +155,7 @@ pub enum GraphType
     Depth,
     None,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Options
 {
     pub notation: Notation,
