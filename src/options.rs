@@ -67,6 +67,11 @@ pub fn arg_opts(
                 }
                 process::exit(0)
             }
+            "--man" =>
+            {
+                println!("{}", include_str!("../kalc.1"));
+                process::exit(0)
+            }
             "--default" =>
             {
                 args.remove(0);
