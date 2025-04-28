@@ -1,6 +1,5 @@
 use std::collections::HashSet;
-pub fn functions() -> HashSet<&'static str>
-{
+pub fn functions() -> HashSet<&'static str> {
     [
         "sum",
         "product",
@@ -310,8 +309,7 @@ pub fn functions() -> HashSet<&'static str>
     .cloned()
     .collect::<HashSet<&str>>()
 }
-pub fn functions_with_args() -> HashSet<&'static str>
-{
+pub fn functions_with_args() -> HashSet<&'static str> {
     [
         "sum(a,f(a),start,end)",
         "sum(vec)",
@@ -566,8 +564,7 @@ pub fn functions_with_args() -> HashSet<&'static str>
     .cloned()
     .collect::<HashSet<&str>>()
 }
-pub fn units_list() -> HashSet<&'static str>
-{
+pub fn units_list() -> HashSet<&'static str> {
     [
         "eV",
         "eC",
@@ -800,8 +797,7 @@ pub fn units_list() -> HashSet<&'static str>
     .cloned()
     .collect::<HashSet<&str>>()
 }
-pub fn options_list() -> HashSet<&'static str>
-{
+pub fn options_list() -> HashSet<&'static str> {
     [
         "graphcli=",
         "slowcheck=",

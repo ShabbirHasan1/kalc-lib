@@ -11,5 +11,7 @@ pub mod parse;
 pub mod print;
 #[cfg(test)]
 mod tests;
+pub mod types;
 pub mod units;
 //gui
+//https://docs.rs/fastnum/latest/fastnum/index.html

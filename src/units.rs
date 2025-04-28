@@ -1,5 +1,6 @@
 use crate::{
     complex::NumStr,
+    types::Type,
     units::{AngleType::Radians, Notation::Normal},
 };
 #[cfg(feature = "bin-deps")]
@@ -20,16 +21,14 @@ use std::{
     time::SystemTime,
 };
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Variable
-{
+pub struct Variable {
     pub name: Vec<char>,
     pub parsed: Vec<NumStr>,
     pub unparsed: String,
     pub funcvars: Vec<(String, Vec<NumStr>)>,
 }
 #[derive(Clone, PartialEq, Copy, Serialize, Deserialize)]
-pub struct Units
-{
+pub struct Units {
     pub second: f64,
     pub meter: f64,
     pub kilogram: f64,
@@ -43,21 +42,18 @@ pub struct Units
     pub unit: f64,
 }
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
-pub struct Number
-{
+pub struct Number {
     pub number: Complex,
     pub units: Option<Units>,
 }
 #[derive(Serialize, Deserialize)]
-pub struct Data
-{
+pub struct Data {
     pub vars: Vec<Variable>,
     pub options: Options,
 }
 
 #[derive(Clone)]
-pub struct Colors
-{
+pub struct Colors {
     pub text: String,
     pub prompt: String,
     pub imag: String,
@@ -70,10 +66,8 @@ pub struct Colors
     pub graphtofile: String,
     pub default_units: Vec<(String, Number)>,
 }
-impl Default for Colors
-{
-    fn default() -> Self
-    {
+impl Default for Colors {
+    fn default() -> Self {
         Self {
             text: "\x1b[0m".to_string(),
             prompt: "\x1b[94m".to_string(),
@@ -111,44 +105,38 @@ impl Default for Colors
     }
 }
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum AngleType
-{
+pub enum AngleType {
     Radians,
     Degrees,
     Gradians,
 }
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Auto
-{
+pub enum Auto {
     True,
     False,
     Auto,
 }
 #[derive(Default, Copy, Clone, PartialEq)]
-pub struct HowGraphing
-{
+pub struct HowGraphing {
     pub graph: bool,
     pub x: bool,
     pub y: bool,
 }
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Fractions
-{
+pub struct Fractions {
     pub num: bool,
     pub vec: bool,
     pub mat: bool,
 }
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Notation
-{
+pub enum Notation {
     Normal,
     Scientific,
     LargeEngineering,
     SmallEngineering,
 }
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum GraphType
-{
+pub enum GraphType {
     Normal,
     Domain,
     DomainAlt,
@@ -157,8 +145,8 @@ pub enum GraphType
     None,
 }
 #[derive(Clone, Copy, Serialize, Deserialize)]
-pub struct Options
-{
+pub struct Options {
+    pub float_type: Type,
     pub notation: Notation,
     pub angle: AngleType,
     pub graphtype: GraphType,
@@ -203,11 +191,10 @@ pub struct Options
     pub keep_data_file: bool,
     pub graphing: bool,
 }
-impl Default for Options
-{
-    fn default() -> Self
-    {
+impl Default for Options {
+    fn default() -> Self {
         Self {
+            float_type: Type::Rug,
             notation: Normal,
             angle: Radians,
             graphtype: GraphType::Normal,
@@ -258,10 +245,8 @@ impl Default for Options
         }
     }
 }
-impl Units
-{
-    pub fn is_none(&self) -> bool
-    {
+impl Units {
+    pub fn is_none(&self) -> bool {
         self.second == 0.0
             && self.meter == 0.0
             && self.kilogram == 0.0
@@ -272,8 +257,7 @@ impl Units
             && self.angle == 0.0
             && self.byte == 0.0
     }
-    pub fn mul(&self, b: &Self) -> Self
-    {
+    pub fn mul(&self, b: &Self) -> Self {
         Self {
             second: self.second + b.second,
             meter: self.meter + b.meter,
@@ -288,8 +272,7 @@ impl Units
             unit: self.unit + b.unit,
         }
     }
-    pub fn div(&self, b: &Self) -> Self
-    {
+    pub fn div(&self, b: &Self) -> Self {
         Self {
             second: self.second - b.second,
             meter: self.meter - b.meter,
@@ -304,8 +287,7 @@ impl Units
             unit: self.unit - b.unit,
         }
     }
-    pub fn pow(&self, b: f64) -> Self
-    {
+    pub fn pow(&self, b: f64) -> Self {
         Self {
             second: self.second * b,
             meter: self.meter * b,
@@ -320,8 +302,7 @@ impl Units
             unit: self.unit * b,
         }
     }
-    pub fn root(&self, b: f64) -> Self
-    {
+    pub fn root(&self, b: f64) -> Self {
         Self {
             second: self.second / b,
             meter: self.meter / b,
@@ -336,8 +317,7 @@ impl Units
             unit: self.unit / b,
         }
     }
-    pub fn to_string(mut self, options: Options, colors: &Colors) -> String
-    {
+    pub fn to_string(mut self, options: Options, colors: &Colors) -> String {
         let mut siunits = String::new();
         let mut meter = "m";
         let mut second = "s";
@@ -348,10 +328,8 @@ impl Units
         let mut byte = "B";
         let mut usd = "USD";
         let mut unit = "u";
-        if colors.default_units.is_empty()
-        {
-            if !options.si_units
-            {
+        if colors.default_units.is_empty() {
+            if !options.si_units {
                 let farad = self
                     .meter
                     .div_floor(-2.0)
@@ -359,8 +337,7 @@ impl Units
                     .min(self.kilogram.div_floor(-1.0))
                     .min(self.ampere.div_floor(2.0))
                     .max(0.0);
-                if farad != 0.0
-                {
+                if farad != 0.0 {
                     self.meter += 2.0 * farad;
                     self.second -= 4.0 * farad;
                     self.kilogram += 1.0 * farad;
@@ -373,8 +350,7 @@ impl Units
                     .min(self.kilogram.div_floor(1.0))
                     .min(self.ampere.div_floor(-2.0))
                     .max(0.0);
-                if ohm != 0.0
-                {
+                if ohm != 0.0 {
                     self.meter -= 2.0 * ohm;
                     self.second += 3.0 * ohm;
                     self.kilogram -= 1.0 * ohm;
@@ -387,8 +363,7 @@ impl Units
                     .min(self.kilogram.div_floor(1.0))
                     .min(self.ampere.div_floor(-2.0))
                     .max(0.0);
-                if henry != 0.0
-                {
+                if henry != 0.0 {
                     self.meter -= 2.0 * henry;
                     self.second += 2.0 * henry;
                     self.kilogram -= 1.0 * henry;
@@ -401,8 +376,7 @@ impl Units
                     .min(self.kilogram.div_floor(1.0))
                     .min(self.ampere.div_floor(-1.0))
                     .max(0.0);
-                if volt != 0.0
-                {
+                if volt != 0.0 {
                     self.meter -= 2.0 * volt;
                     self.second += 3.0 * volt;
                     self.kilogram -= 1.0 * volt;
@@ -414,8 +388,7 @@ impl Units
                     .min(self.second.div_floor(-3.0))
                     .min(self.kilogram.div_floor(1.0))
                     .max(0.0);
-                if watt != 0.0
-                {
+                if watt != 0.0 {
                     self.meter -= 2.0 * watt;
                     self.second += 3.0 * watt;
                     self.kilogram -= 1.0 * watt;
@@ -426,8 +399,7 @@ impl Units
                     .min(self.second.div_floor(-2.0))
                     .min(self.kilogram.div_floor(1.0))
                     .max(0.0);
-                if joules != 0.0
-                {
+                if joules != 0.0 {
                     self.meter -= 2.0 * joules;
                     self.second += 2.0 * joules;
                     self.kilogram -= 1.0 * joules;
@@ -438,8 +410,7 @@ impl Units
                     .min(self.second.div_floor(-2.0))
                     .min(self.kilogram.div_floor(1.0))
                     .max(0.0);
-                if newtons != 0.0
-                {
+                if newtons != 0.0 {
                     self.meter -= 1.0 * newtons;
                     self.second += 2.0 * newtons;
                     self.kilogram -= 1.0 * newtons;
@@ -450,8 +421,7 @@ impl Units
                     .min(self.second.div_floor(-2.0))
                     .min(self.kilogram.div_floor(1.0))
                     .max(0.0);
-                if pascal != 0.0
-                {
+                if pascal != 0.0 {
                     self.meter += 1.0 * pascal;
                     self.second += 2.0 * pascal;
                     self.kilogram -= 1.0 * pascal;
@@ -462,8 +432,7 @@ impl Units
                     .min(self.second.div_floor(-2.0))
                     .min(self.kilogram.div_floor(1.0))
                     .max(0.0);
-                if tesla != 0.0
-                {
+                if tesla != 0.0 {
                     self.ampere += 1.0 * tesla;
                     self.second += 2.0 * tesla;
                     self.kilogram -= 1.0 * tesla;
@@ -473,155 +442,112 @@ impl Units
                     .div_floor(1.0)
                     .min(self.second.div_floor(1.0))
                     .max(0.0);
-                if coulomb != 0.0
-                {
+                if coulomb != 0.0 {
                     self.ampere -= 1.0 * coulomb;
                     self.second -= 1.0 * coulomb;
                 }
-                if farad != 0.0
-                {
+                if farad != 0.0 {
                     siunits.push_str(
                         &(" F".to_owned()
-                            + &if farad != 1.0
-                            {
+                            + &if farad != 1.0 {
                                 format!("^{farad}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if ohm != 0.0
-                {
+                if ohm != 0.0 {
                     siunits.push_str(
                         &(" Ω".to_owned()
-                            + &if ohm != 1.0
-                            {
+                            + &if ohm != 1.0 {
                                 format!("^{ohm}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if henry != 0.0
-                {
+                if henry != 0.0 {
                     siunits.push_str(
                         &(" H".to_owned()
-                            + &if henry != 1.0
-                            {
+                            + &if henry != 1.0 {
                                 format!("^{henry}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if volt != 0.0
-                {
+                if volt != 0.0 {
                     siunits.push_str(
                         &(" V".to_owned()
-                            + &if volt != 1.0
-                            {
+                            + &if volt != 1.0 {
                                 format!("^{volt}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if watt != 0.0
-                {
+                if watt != 0.0 {
                     siunits.push_str(
                         &(" W".to_owned()
-                            + &if watt != 1.0
-                            {
+                            + &if watt != 1.0 {
                                 format!("^{watt}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if joules != 0.0
-                {
+                if joules != 0.0 {
                     siunits.push_str(
                         &(" J".to_owned()
-                            + &if joules != 1.0
-                            {
+                            + &if joules != 1.0 {
                                 format!("^{joules}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if newtons != 0.0
-                {
+                if newtons != 0.0 {
                     siunits.push_str(
                         &(" N".to_owned()
-                            + &if newtons != 1.0
-                            {
+                            + &if newtons != 1.0 {
                                 format!("^{newtons}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if pascal != 0.0
-                {
+                if pascal != 0.0 {
                     siunits.push_str(
                         &(" Pa".to_owned()
-                            + &if pascal != 1.0
-                            {
+                            + &if pascal != 1.0 {
                                 format!("^{pascal}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if tesla != 0.0
-                {
+                if tesla != 0.0 {
                     siunits.push_str(
                         &(" T".to_owned()
-                            + &if tesla != 1.0
-                            {
+                            + &if tesla != 1.0 {
                                 format!("^{tesla}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
-                if coulomb != 0.0
-                {
+                if coulomb != 0.0 {
                     siunits.push_str(
                         &(" C".to_owned()
-                            + &if coulomb != 1.0
-                            {
+                            + &if coulomb != 1.0 {
                                 format!("^{coulomb}")
-                            }
-                            else
-                            {
+                            } else {
                                 String::new()
                             }),
                     )
                 }
             }
-        }
-        else
-        {
+        } else {
             let m = Units {
                 meter: 1.0,
                 ..Units::default()
@@ -658,43 +584,25 @@ impl Units
                 unit: 1.0,
                 ..Units::default()
             };
-            for du in &colors.default_units
-            {
+            for du in &colors.default_units {
                 let u = du.1.units.unwrap_or_default();
-                if u == m
-                {
+                if u == m {
                     meter = &du.0
-                }
-                else if u == s
-                {
+                } else if u == s {
                     second = &du.0
-                }
-                else if u == kg
-                {
+                } else if u == kg {
                     kilogram = &du.0
-                }
-                else if u == a
-                {
+                } else if u == a {
                     ampere = &du.0
-                }
-                else if u == mol
-                {
+                } else if u == mol {
                     mole = &du.0
-                }
-                else if u == cd
-                {
+                } else if u == cd {
                     candela = &du.0
-                }
-                else if u == b
-                {
+                } else if u == b {
                     byte = &du.0
-                }
-                else if u == us
-                {
+                } else if u == us {
                     usd = &du.0
-                }
-                else if u == un
-                {
+                } else if u == un {
                     unit = &du.0
                 }
             }
@@ -702,248 +610,179 @@ impl Units
         format!(
             "{}{}{}{}{}{}{}{}{}{}{}{}",
             siunits,
-            if self.meter != 0.0
-            {
+            if self.meter != 0.0 {
                 format!(
                     " {meter}{}",
-                    if self.meter != 1.0
-                    {
+                    if self.meter != 1.0 {
                         format!("^{:.12}", self.meter)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.second != 0.0
-            {
+            if self.second != 0.0 {
                 format!(
                     " {second}{}",
-                    if self.second != 1.0
-                    {
+                    if self.second != 1.0 {
                         format!("^{:.12}", self.second)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.kilogram != 0.0
-            {
+            if self.kilogram != 0.0 {
                 format!(
                     " {kilogram}{}",
-                    if self.kilogram != 1.0
-                    {
+                    if self.kilogram != 1.0 {
                         format!("^{:.12}", self.kilogram)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.ampere != 0.0
-            {
+            if self.ampere != 0.0 {
                 format!(
                     " {ampere}{}",
-                    if self.ampere != 1.0
-                    {
+                    if self.ampere != 1.0 {
                         format!("^{:.12}", self.ampere)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.kelvin != 0.0
-            {
+            if self.kelvin != 0.0 {
                 format!(
                     " K{}",
-                    if self.kelvin != 1.0
-                    {
+                    if self.kelvin != 1.0 {
                         format!("^{:.12}", self.kelvin)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.mole != 0.0
-            {
+            if self.mole != 0.0 {
                 format!(
                     " {mole}{}",
-                    if self.mole != 1.0
-                    {
+                    if self.mole != 1.0 {
                         format!("^{:.12}", self.mole)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.candela != 0.0
-            {
+            if self.candela != 0.0 {
                 format!(
                     " {candela}{}",
-                    if self.candela != 1.0
-                    {
+                    if self.candela != 1.0 {
                         format!("^{:.12}", self.candela)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.angle != 0.0
-            {
-                match options.angle
-                {
+            if self.angle != 0.0 {
+                match options.angle {
                     AngleType::Degrees => " deg",
                     AngleType::Radians => " rad",
                     AngleType::Gradians => " grad",
                 }
                 .to_owned()
-                    + &if self.angle != 1.0
-                    {
+                    + &if self.angle != 1.0 {
                         format!("^{:.12}", self.angle)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.byte != 0.0
-            {
+            if self.byte != 0.0 {
                 format!(
                     " {byte}{}",
-                    if self.byte != 1.0
-                    {
+                    if self.byte != 1.0 {
                         format!("^{:.12}", self.byte)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.usd != 0.0
-            {
+            if self.usd != 0.0 {
                 format!(
                     " {usd}{}",
-                    if self.usd != 1.0
-                    {
+                    if self.usd != 1.0 {
                         format!("^{:.12}", self.usd)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
-            if self.unit != 0.0
-            {
+            if self.unit != 0.0 {
                 format!(
                     " {unit}{}",
-                    if self.unit != 1.0
-                    {
+                    if self.unit != 1.0 {
                         format!("^{:.12}", self.unit)
                             .trim_end_matches('0')
                             .trim_end_matches('.')
                             .to_string()
-                    }
-                    else
-                    {
+                    } else {
                         String::new()
                     }
                 )
-            }
-            else
-            {
+            } else {
                 String::new()
             },
         )
     }
 }
-impl Default for Units
-{
-    fn default() -> Self
-    {
+impl Default for Units {
+    fn default() -> Self {
         Self {
             second: 0.0,
             meter: 0.0,
@@ -959,8 +798,7 @@ impl Default for Units
         }
     }
 }
-pub fn is_unit(unit: &mut String) -> bool
-{
+pub fn is_unit(unit: &mut String) -> bool {
     units().contains(unit.as_str())
         || (unit.len() > 2 && unit.ends_with('s') && {
             let is_true = units().contains(&unit[..unit.len().saturating_sub(1)]);
@@ -970,33 +808,25 @@ pub fn is_unit(unit: &mut String) -> bool
             }
         })
 }
-pub fn prefixes(mut unit: String, prec: u32) -> (String, Float)
-{
-    if is_unit(&mut unit)
-    {
+pub fn prefixes(mut unit: String, prec: u32) -> (String, Float) {
+    if is_unit(&mut unit) {
         return (unit, Float::with_val(prec, 1));
     }
     let bak = unit.clone();
     let mut word = String::new();
-    while !unit.is_empty() && word.len() < 7
-    {
+    while !unit.is_empty() && word.len() < 7 {
         word.push(unit.remove(0));
-        match word.as_str()
-        {
-            "quetta" | "Q" if is_unit(&mut unit) =>
-            {
+        match word.as_str() {
+            "quetta" | "Q" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(30));
             }
-            "ronna" | "R" if is_unit(&mut unit) =>
-            {
+            "ronna" | "R" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(27));
             }
-            "yotta" | "Y" if is_unit(&mut unit) =>
-            {
+            "yotta" | "Y" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(24));
             }
-            "zetta" | "Z" if is_unit(&mut unit) =>
-            {
+            "zetta" | "Z" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(21));
             }
             "exa" | "E" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 10).pow(18)),
@@ -1008,45 +838,35 @@ pub fn prefixes(mut unit: String, prec: u32) -> (String, Float)
             "hecto" | "h" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 10).pow(2)),
             "deca" | "da" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 10).pow(1)),
             "deci" | "d" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 10).pow(-1)),
-            "centi" | "c" if is_unit(&mut unit) =>
-            {
+            "centi" | "c" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-2));
             }
-            "milli" | "m" if is_unit(&mut unit) =>
-            {
+            "milli" | "m" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-3));
             }
-            "micro" | "μ" if is_unit(&mut unit) =>
-            {
+            "micro" | "μ" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-6));
             }
             "nano" | "n" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 10).pow(-9)),
-            "pico" | "p" if is_unit(&mut unit) =>
-            {
+            "pico" | "p" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-12));
             }
-            "femto" | "f" if is_unit(&mut unit) =>
-            {
+            "femto" | "f" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-15));
             }
-            "atto" | "a" if is_unit(&mut unit) =>
-            {
+            "atto" | "a" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-18));
             }
-            "zepto" | "z" if is_unit(&mut unit) =>
-            {
+            "zepto" | "z" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-21));
             }
-            "yocto" | "y" if is_unit(&mut unit) =>
-            {
+            "yocto" | "y" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-24));
             }
-            "ronto" | "r" if is_unit(&mut unit) =>
-            {
+            "ronto" | "r" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-27));
             }
-            "qecto" | "q" if is_unit(&mut unit) =>
-            {
+            "qecto" | "q" if is_unit(&mut unit) => {
                 return (unit, Float::with_val(prec, 10).pow(-30));
             }
             "kibi" | "Ki" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 2).pow(10)),
@@ -1057,14 +877,12 @@ pub fn prefixes(mut unit: String, prec: u32) -> (String, Float)
             "exbi" | "Ei" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 2).pow(60)),
             "zebi" | "Zi" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 2).pow(70)),
             "yobi" | "Yi" if is_unit(&mut unit) => return (unit, Float::with_val(prec, 2).pow(80)),
-            _ =>
-            {}
+            _ => {}
         }
     }
     (bak, Float::with_val(prec, 1))
 }
-pub fn units() -> HashSet<&'static str>
-{
+pub fn units() -> HashSet<&'static str> {
     [
         "m",
         "meter",
@@ -1356,12 +1174,10 @@ pub fn units() -> HashSet<&'static str>
     .cloned()
     .collect::<HashSet<&str>>()
 }
-pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Option<Number>)
-{
+pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Option<Number>) {
     let mut units = Units::default();
     let mut add = None;
-    match unit.as_str()
-    {
+    match unit.as_str() {
         "u" | "unit" => units.unit = 1.0,
         "m" | "meter" => units.meter = 1.0,
         "s" | "second" => units.second = 1.0,
@@ -1371,169 +1187,137 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
         "cd" | "candela" => units.candela = 1.0,
         "byte" | "B" => units.byte = 1.0,
         "usd" | "USD" | "$" | "dollar" => units.usd = 1.0,
-        "¢" | "cent" =>
-        {
+        "¢" | "cent" => {
             num /= 100;
             units.usd = 1.0
         }
-        "steradian" | "sr" =>
-        {
-            match options.angle
-            {
+        "steradian" | "sr" => {
+            match options.angle {
                 AngleType::Gradians => num *= 40000 / Float::with_val(options.prec, Pi).pow(2),
                 AngleType::Degrees => num *= 32400 / Float::with_val(options.prec, Pi).pow(2),
-                AngleType::Radians =>
-                {}
+                AngleType::Radians => {}
             };
             units.angle = 2.0
         }
-        "bit" =>
-        {
+        "bit" => {
             num /= 8;
             units.byte = 1.0;
         }
-        "micron" =>
-        {
+        "micron" => {
             num /= 1000000;
             units.meter = 1.0
         }
-        "g" | "gram" =>
-        {
+        "g" | "gram" => {
             num /= 1000;
             units.kilogram = 1.0
         }
-        "nit" | "nt" =>
-        {
+        "nit" | "nt" => {
             units.candela = 1.0;
             units.meter = -2.0
         }
-        "gray" | "Gy" =>
-        {
+        "gray" | "Gy" => {
             units.second = -2.0;
             units.meter = 2.0;
         }
-        "sievert" | "Sv" =>
-        {
+        "sievert" | "Sv" => {
             units.second = -2.0;
             units.meter = 2.0;
         }
-        "katal" | "kat" =>
-        {
+        "katal" | "kat" => {
             units.second = -1.0;
             units.mole = 1.0;
         }
-        "lumen" | "lm" =>
-        {
-            match options.angle
-            {
+        "lumen" | "lm" => {
+            match options.angle {
                 AngleType::Gradians => num *= 40000 / Float::with_val(options.prec, Pi).pow(2),
                 AngleType::Degrees => num *= 32400 / Float::with_val(options.prec, Pi).pow(2),
-                AngleType::Radians =>
-                {}
+                AngleType::Radians => {}
             };
             units.angle = 2.0;
             units.candela = 1.0;
         }
-        "lux" | "lx" =>
-        {
-            match options.angle
-            {
+        "lux" | "lx" => {
+            match options.angle {
                 AngleType::Gradians => num *= 40000 / Float::with_val(options.prec, Pi).pow(2),
                 AngleType::Degrees => num *= 32400 / Float::with_val(options.prec, Pi).pow(2),
-                AngleType::Radians =>
-                {}
+                AngleType::Radians => {}
             };
             units.angle = 2.0;
             units.candela = 1.0;
             units.meter = -2.0;
         }
-        "J" | "joule" =>
-        {
+        "J" | "joule" => {
             units.kilogram = 1.0;
             units.meter = 2.0;
             units.second = -2.0;
         }
-        "mph" =>
-        {
+        "mph" => {
             num *= 1397;
             num /= 3125;
             units.meter = 1.0;
             units.second = -1.0;
         }
-        "kph" =>
-        {
+        "kph" => {
             num *= 5;
             num /= 18;
             units.meter = 1.0;
         }
-        "mi" | "mile" =>
-        {
+        "mi" | "mile" => {
             num *= 201168;
             num /= 125;
             units.meter = 1.0;
         }
-        "yd" | "yard" =>
-        {
+        "yd" | "yard" => {
             num *= 1143;
             num /= 1250;
             units.meter = 1.0;
         }
-        "parsec" | "pc" =>
-        {
+        "parsec" | "pc" => {
             units.meter = 1.0;
             num *= 648000 / Float::with_val(options.prec, Pi);
             num *= 149597870700u64;
         }
-        "au" =>
-        {
+        "au" => {
             units.meter = 1.0;
             num *= 149597870700u64;
         }
-        "ft" | "foot" | "feet" =>
-        {
+        "ft" | "foot" | "feet" => {
             units.meter = 1.0;
             num *= 381;
             num /= 1250;
         }
-        "in" | "inch" | "inches" =>
-        {
+        "in" | "inch" | "inches" => {
             units.meter = 1.0;
             num *= 127;
             num /= 5000;
         }
-        "lb" | "pound" =>
-        {
+        "lb" | "pound" => {
             units.kilogram = 1.0;
             num *= 45359237;
             num /= 100000000;
         }
-        "L" | "l" | "litre" =>
-        {
+        "L" | "l" | "litre" => {
             num /= 1000;
             units.meter = 3.0;
         }
-        "floz" =>
-        {
+        "floz" => {
             num *= 473176473;
             num /= 16000000000000u64;
             units.meter = 3.0;
         }
-        "gallon" | "gal" =>
-        {
+        "gallon" | "gal" => {
             num *= 473176473;
             num /= 125000000000u64;
             units.meter = 3.0;
         }
         "Hz" | "hertz" => units.second = -1.0,
-        "V" | "volt" | "voltage" =>
-        {
+        "V" | "volt" | "voltage" => {
             units.kilogram = 1.0;
             units.meter = 2.0;
             units.second = -3.0;
             units.ampere = -1.0;
         }
-        "°C" | "celsius" =>
-        {
+        "°C" | "celsius" => {
             units.kelvin = 1.0;
             let unit = Units {
                 kelvin: 1.0,
@@ -1544,8 +1328,7 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
                 Some(unit),
             ));
         }
-        "°F" | "fahrenheit" =>
-        {
+        "°F" | "fahrenheit" => {
             num *= 5;
             num /= 9;
             units.kelvin = 1.0;
@@ -1558,228 +1341,186 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
                 Some(unit),
             ));
         }
-        "Wh" =>
-        {
+        "Wh" => {
             num *= 3600;
             units.kilogram = 1.0;
             units.meter = 2.0;
             units.second = -2.0;
         }
-        "Ah" =>
-        {
+        "Ah" => {
             num *= 3600;
             units.ampere = 1.0;
             units.second = 1.0;
         }
-        "T" | "tesla" =>
-        {
+        "T" | "tesla" => {
             units.kilogram = 1.0;
             units.second = -2.0;
             units.ampere = -1.0;
         }
-        "H" | "henry" =>
-        {
+        "H" | "henry" => {
             units.kilogram = 1.0;
             units.meter = 2.0;
             units.second = -2.0;
             units.ampere = -2.0;
         }
-        "weber" | "Wb" =>
-        {
+        "weber" | "Wb" => {
             units.kilogram = 1.0;
             units.meter = 2.0;
             units.second = -2.0;
             units.ampere = -1.0;
         }
-        "siemens" | "S" =>
-        {
+        "siemens" | "S" => {
             units.kilogram = -1.0;
             units.meter = -2.0;
             units.second = 3.0;
             units.ampere = 2.0;
         }
-        "F" | "farad" =>
-        {
+        "F" | "farad" => {
             units.kilogram = -1.0;
             units.meter = -2.0;
             units.second = 4.0;
             units.ampere = 2.0;
         }
-        "W" | "watt" =>
-        {
+        "W" | "watt" => {
             units.kilogram = 1.0;
             units.meter = 2.0;
             units.second = -3.0;
         }
-        "Pa" | "pascal" =>
-        {
+        "Pa" | "pascal" => {
             units.kilogram = 1.0;
             units.meter = -1.0;
             units.second = -2.0;
         }
-        "atm" =>
-        {
+        "atm" => {
             num *= 101325;
             units.kilogram = 1.0;
             units.meter = -1.0;
             units.second = -2.0;
         }
-        "psi" =>
-        {
+        "psi" => {
             num *= 6894757;
             num /= 1000;
             units.kilogram = 1.0;
             units.meter = -1.0;
             units.second = -2.0;
         }
-        "bar" =>
-        {
+        "bar" => {
             num *= 100000;
             units.kilogram = 1.0;
             units.meter = -1.0;
             units.second = -2.0;
         }
-        "tonne" =>
-        {
+        "tonne" => {
             num *= 1000;
             units.kilogram = 1.0;
         }
-        "hectare" | "ha" =>
-        {
+        "hectare" | "ha" => {
             num *= 10000;
             units.meter = 2.0;
         }
-        "acre" | "ac" =>
-        {
+        "acre" | "ac" => {
             num *= 316160658;
             num /= 78125;
             units.meter = 2.0;
         }
-        "ton" =>
-        {
+        "ton" => {
             num *= 45359237;
             num /= 50000;
             units.kilogram = 1.0;
         }
-        "oz" =>
-        {
+        "oz" => {
             num *= 45359237;
             num /= 1600000000;
             units.kilogram = 1.0;
         }
-        "Ω" | "ohm" =>
-        {
+        "Ω" | "ohm" => {
             units.kilogram = 1.0;
             units.meter = 2.0;
             units.second = -3.0;
             units.ampere = -2.0;
         }
-        "min" | "minute" =>
-        {
+        "min" | "minute" => {
             units.second = 1.0;
             num *= 60;
         }
-        "h" | "hour" =>
-        {
+        "h" | "hour" => {
             units.second = 1.0;
             num *= 3600;
         }
-        "day" =>
-        {
+        "day" => {
             units.second = 1.0;
             num *= 86400;
         }
-        "week" =>
-        {
+        "week" => {
             units.second = 1.0;
             num *= 604800;
         }
-        "month" =>
-        {
+        "month" => {
             num *= 2629800;
             units.second = 1.0
         }
-        "year" =>
-        {
+        "year" => {
             num *= 31557600;
             units.second = 1.0;
         }
-        "ly" =>
-        {
+        "ly" => {
             num *= 9460730472580800u64;
             units.meter = 1.0;
         }
-        "N" | "newton" =>
-        {
+        "N" | "newton" => {
             units.kilogram = 1.0;
             units.meter = 1.0;
             units.second = -2.0;
         }
-        "lbf" =>
-        {
+        "lbf" => {
             num *= 8896443230521u64;
             num /= 2000000000000u64;
             units.kilogram = 1.0;
             units.meter = 1.0;
             units.second = -2.0;
         }
-        "C" | "coulomb" =>
-        {
+        "C" | "coulomb" => {
             units.ampere = 1.0;
             units.second = 1.0;
         }
-        "arcmin" =>
-        {
-            match options.angle
-            {
-                AngleType::Degrees =>
-                {
+        "arcmin" => {
+            match options.angle {
+                AngleType::Degrees => {
                     num /= 60;
                 }
-                AngleType::Gradians =>
-                {
+                AngleType::Gradians => {
                     num *= 200;
                     num /= 180;
                     num /= 60;
                 }
-                AngleType::Radians =>
-                {
+                AngleType::Radians => {
                     num *= Float::with_val(options.prec, Pi) / 180;
                     num /= 60;
                 }
             };
             units.angle = 1.0;
         }
-        "arcsec" =>
-        {
-            match options.angle
-            {
-                AngleType::Degrees =>
-                {
+        "arcsec" => {
+            match options.angle {
+                AngleType::Degrees => {
                     num /= 3600;
                 }
-                AngleType::Gradians =>
-                {
+                AngleType::Gradians => {
                     num *= 200;
                     num /= 180;
                     num /= 3600;
                 }
-                AngleType::Radians =>
-                {
+                AngleType::Radians => {
                     num *= Float::with_val(options.prec, Pi) / 180;
                     num /= 3600;
                 }
             };
             units.angle = 1.0;
         }
-        "°" | "deg" | "degree" =>
-        {
-            match options.angle
-            {
-                AngleType::Degrees =>
-                {}
-                AngleType::Gradians =>
-                {
+        "°" | "deg" | "degree" => {
+            match options.angle {
+                AngleType::Degrees => {}
+                AngleType::Gradians => {
                     num *= 200;
                     num /= 180
                 }
@@ -1787,47 +1528,37 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
             };
             units.angle = 1.0;
         }
-        "rad" | "radian" =>
-        {
-            match options.angle
-            {
+        "rad" | "radian" => {
+            match options.angle {
                 AngleType::Degrees => num *= 180 / Float::with_val(options.prec, Pi),
                 AngleType::Gradians => num *= 200 / Float::with_val(options.prec, Pi),
-                AngleType::Radians =>
-                {}
+                AngleType::Radians => {}
             };
             units.angle = 1.0
         }
-        "grad" | "gradian" =>
-        {
-            match options.angle
-            {
-                AngleType::Degrees =>
-                {
+        "grad" | "gradian" => {
+            match options.angle {
+                AngleType::Degrees => {
                     num *= 180;
                     num /= 200
                 }
-                AngleType::Gradians =>
-                {}
+                AngleType::Gradians => {}
                 AngleType::Radians => num *= Float::with_val(options.prec, Pi) / 200,
             };
             units.angle = 1.0;
         }
-        "c" =>
-        {
+        "c" => {
             units.meter = 1.0;
             units.second = -1.0;
             num *= 299792458;
         }
-        "gravity" =>
-        {
+        "gravity" => {
             units.meter = 1.0;
             units.second = -2.0;
             num *= 196133;
             num /= 20000;
         }
-        "G" =>
-        {
+        "G" => {
             units.meter = 3.0;
             units.kilogram = -1.0;
             units.second = -2.0;
@@ -1835,8 +1566,7 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
             num /= 10000;
             num /= 100000000000u64;
         }
-        "planck" =>
-        {
+        "planck" => {
             units.meter = 2.0;
             units.kilogram = 1.0;
             units.second = -1.0;
@@ -1844,8 +1574,7 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
             num /= 20000000;
             num /= 10000000000000000000000000000000000u128;
         }
-        "reduced_planck" =>
-        {
+        "reduced_planck" => {
             units.meter = 2.0;
             units.kilogram = 1.0;
             units.second = -1.0;
@@ -1854,44 +1583,38 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
             num /= Float::with_val(options.prec, Pi);
             num /= 10000000000000000000000000000000000u128;
         }
-        "eV" =>
-        {
+        "eV" => {
             units.meter = 2.0;
             units.second = -2.0;
             units.kilogram = 1.0;
             num *= 801088317;
             num /= 5000000000000000000000000000u128;
         }
-        "eC" =>
-        {
+        "eC" => {
             units.ampere = 1.0;
             units.second = 1.0;
             num *= 801088317;
             num /= 5000000000000000000000000000u128;
         }
-        "eM" =>
-        {
+        "eM" => {
             units.kilogram = 1.0;
             num *= 18218767403u64;
             num /= 2000000000;
             num /= 10000000000000000000000000000000u128;
         }
-        "pM" =>
-        {
+        "pM" => {
             units.kilogram = 1.0;
             num *= 167262192369u64;
             num /= 100000000000u64;
             num /= 1000000000000000000000000000u128;
         }
-        "nM" =>
-        {
+        "nM" => {
             units.kilogram = 1.0;
             num *= 167492749804u64;
             num /= 100000000000u64;
             num /= 1000000000000000000000000000u128;
         }
-        "ke" =>
-        {
+        "ke" => {
             units.meter = 2.0;
             units.second = -4.0;
             units.kilogram = 1.0;
@@ -1899,14 +1622,12 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
             num *= 89875517923u64;
             num /= 10;
         }
-        "Na" =>
-        {
+        "Na" => {
             units.mole = -1.0;
             num *= 602214076;
             num *= 1000000000000000u64;
         }
-        "R" =>
-        {
+        "R" => {
             units.meter = 2.0;
             units.second = -2.0;
             units.kilogram = 1.0;
@@ -1915,8 +1636,7 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
             num *= 207861565453831u64;
             num /= 25000000000000u64;
         }
-        "boltzmann" =>
-        {
+        "boltzmann" => {
             units.meter = 2.0;
             units.second = -2.0;
             units.kilogram = 1.0;
@@ -1927,8 +1647,7 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
         _ =>
         {
             #[cfg(feature = "bin-deps")]
-            if get_new_currency_data()
-            {
+            if get_new_currency_data() {
                 let dir = dirs::config_dir().unwrap().to_str().unwrap().to_owned()
                     + "/kalc/kalc.currency";
                 let file = File::open(dir).unwrap();
@@ -1937,8 +1656,7 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
                     .map(|a| a.unwrap())
                     .collect::<Vec<String>>()
                 {
-                    if l.starts_with(&unit)
-                    {
+                    if l.starts_with(&unit) {
                         units.usd = 1.0;
                         num *= Float::parse(l.split(' ').next_back().unwrap())
                             .unwrap()
@@ -1951,22 +1669,16 @@ pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Optio
     (Number::from(num.into(), Some(units)), add)
 }
 #[cfg(feature = "bin-deps")]
-fn get_new_currency_data() -> bool
-{
+fn get_new_currency_data() -> bool {
     let dir = dirs::config_dir().unwrap().to_str().unwrap().to_owned() + "/kalc/kalc.currency";
     if fs::metadata(dir.clone()).map_or(true, |a| {
-        if let Ok(n) = SystemTime::now().duration_since(a.modified().unwrap())
-        {
+        if let Ok(n) = SystemTime::now().duration_since(a.modified().unwrap()) {
             n.as_secs() > 7 * 24 * 3600
-        }
-        else
-        {
+        } else {
             false
         }
-    })
-    {
-        let mut stream = match TcpStream::connect("www.floatrates.com:80")
-        {
+    }) {
+        let mut stream = match TcpStream::connect("www.floatrates.com:80") {
             Ok(n) => n,
             _ => return false,
         };
@@ -1981,21 +1693,14 @@ fn get_new_currency_data() -> bool
             .replace(['\r', '\n'], "")
             .chars()
             .collect::<Vec<char>>();
-        for (i, c) in chars.iter().enumerate()
-        {
-            if c.is_alphabetic()
-            {
+        for (i, c) in chars.iter().enumerate() {
+            if c.is_alphabetic() {
                 word.push(*c)
-            }
-            else
-            {
-                if word == "code"
-                {
+            } else {
+                if word == "code" {
                     output.push_str(&chars[i + 3..i + 6].iter().collect::<String>());
                     output.push(' ')
-                }
-                else if word == "inverseRate"
-                {
+                } else if word == "inverseRate" {
                     output.push_str(
                         &chars
                             [i + 2..i + 2 + chars[i + 2..].iter().position(|c| *c == '}').unwrap()]

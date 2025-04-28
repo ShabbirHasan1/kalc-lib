@@ -24,71 +24,52 @@ use std::{fs::File, io::Write};
 use term_size::dimensions;
 #[cfg(feature = "bin-deps")]
 #[cfg(unix)]
-pub fn get_terminal_dimensions() -> (usize, usize)
-{
+pub fn get_terminal_dimensions() -> (usize, usize) {
     unsafe {
         let mut size: winsize = std::mem::zeroed();
-        if ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut size) == 0 && size.ws_col != 0
-        {
+        if ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut size) == 0 && size.ws_col != 0 {
             (size.ws_col as usize, size.ws_row as usize)
-        }
-        else
-        {
+        } else {
             (80, 80)
         }
     }
 }
 #[cfg(feature = "bin-deps")]
 #[cfg(unix)]
-pub fn get_terminal_dimensions_pixel() -> (usize, usize)
-{
+pub fn get_terminal_dimensions_pixel() -> (usize, usize) {
     unsafe {
         let mut size: winsize = std::mem::zeroed();
-        if ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut size) == 0 && size.ws_col != 0
-        {
+        if ioctl(STDOUT_FILENO, TIOCGWINSZ, &mut size) == 0 && size.ws_col != 0 {
             (size.ws_xpixel as usize, size.ws_ypixel as usize)
-        }
-        else
-        {
+        } else {
             (80, 80)
         }
     }
 }
 #[cfg(feature = "bin-deps")]
 #[cfg(not(unix))]
-pub fn get_terminal_dimensions() -> (usize, usize)
-{
-    if let Some((width, height)) = dimensions()
-    {
+pub fn get_terminal_dimensions() -> (usize, usize) {
+    if let Some((width, height)) = dimensions() {
         (width, height)
-    }
-    else
-    {
+    } else {
         (80, 80)
     }
 }
 #[cfg(not(feature = "bin-deps"))]
-pub fn get_terminal_dimensions() -> (usize, usize)
-{
+pub fn get_terminal_dimensions() -> (usize, usize) {
     (usize::MAX, usize::MAX)
 }
 #[cfg(not(feature = "bin-deps"))]
-pub fn get_terminal_dimensions_pixel() -> (usize, usize)
-{
+pub fn get_terminal_dimensions_pixel() -> (usize, usize) {
     (usize::MAX, usize::MAX)
 }
 #[cfg(feature = "bin-deps")]
-pub fn digraph(char: Option<char>) -> char
-{
-    match if let Some(c) = char
-    {
+pub fn digraph(char: Option<char>) -> char {
+    match if let Some(c) = char {
         c
-    }
-    else
-    {
+    } else {
         read_single_char()
-    }
-    {
+    } {
         ';' => '°',
         'a' => 'α',
         'A' => 'Α',
@@ -168,15 +149,13 @@ pub fn digraph(char: Option<char>) -> char
         _ => '\0',
     }
 }
-pub fn convert(c: &char) -> char
-{
+pub fn convert(c: &char) -> char {
     let valid_chars = [
         '+', '^', '(', ')', '.', '=', ',', '#', '|', '&', '!', '%', '_', '<', '>', ' ', '[', ']',
         '{', '}', '√', '∛', '⁻', 'ⁱ', '`', '±', '∞', ';', ':', '\'', '⌊', '⌈', '⌉', '⌋', '∫', '°',
         '$', '¢', '≈', '~', '¬',
     ];
-    match c
-    {
+    match c {
         c if c.is_alphanumeric() || valid_chars.contains(c) => *c,
         '∗' | '∙' | '·' | '⋅' | '*' | '×' => '*',
         '∕' | '⁄' | '/' | '÷' => '/',
@@ -185,25 +164,19 @@ pub fn convert(c: &char) -> char
     }
 }
 #[cfg(feature = "bin-deps")]
-pub fn read_single_char() -> char
-{
-    match match read()
-    {
+pub fn read_single_char() -> char {
+    match match read() {
         Ok(c) => c,
         _ => return '\0',
-    }
-    {
+    } {
         Event::Key(KeyEvent {
             code,
             modifiers,
             kind,
             ..
-        }) =>
-        {
-            if kind == KeyEventKind::Press
-            {
-                match (code, modifiers)
-                {
+        }) => {
+            if kind == KeyEventKind::Press {
+                match (code, modifiers) {
                     (KeyCode::Char('c'), KeyModifiers::CONTROL) => '\x14',
                     (KeyCode::Home, KeyModifiers::NONE)
                     | (KeyCode::Char('a'), KeyModifiers::CONTROL) => '\x10',
@@ -242,17 +215,14 @@ pub fn read_single_char() -> char
                     (KeyCode::Tab, KeyModifiers::NONE) => '\x1F',
                     _ => '\0',
                 }
-            }
-            else
-            {
+            } else {
                 '\0'
             }
         }
         _ => '\0',
     }
 }
-pub fn end_word(c: char) -> bool
-{
+pub fn end_word(c: char) -> bool {
     matches!(
         c,
         '(' | '{'
@@ -276,74 +246,55 @@ pub fn end_word(c: char) -> bool
             | ';'
     )
 }
-pub fn no_col(input: &str, color: bool) -> Vec<char>
-{
-    if color
-    {
+pub fn no_col(input: &str, color: bool) -> Vec<char> {
+    if color {
         let mut skip = false;
         let mut output = String::new();
-        for c in input.chars()
-        {
-            if skip
-            {
-                if c == 'm' || c == 'G' || c == 'K'
-                {
+        for c in input.chars() {
+            if skip {
+                if c == 'm' || c == 'G' || c == 'K' {
                     skip = false
                 }
-            }
-            else if c == '\x1b'
-            {
+            } else if c == '\x1b' {
                 skip = true
-            }
-            else
-            {
+            } else {
                 output.push(c)
             }
         }
         output.chars().collect::<Vec<char>>()
-    }
-    else
-    {
+    } else {
         input.chars().collect::<Vec<char>>()
     }
 }
-pub fn no_col_len(input: &str, color: bool) -> usize
-{
-    if color
-    {
+pub fn no_col_len(input: &str, color: bool) -> usize {
+    if color {
         let mut skip = false;
         let mut count = 0;
-        for c in input.chars()
-        {
-            if skip
-            {
-                if c == 'm' || c == 'G' || c == 'K'
-                {
+        for c in input.chars() {
+            if skip {
+                if c == 'm' || c == 'G' || c == 'K' {
                     skip = false
                 }
-            }
-            else if c == '\x1b'
-            {
+            } else if c == '\x1b' {
                 skip = true
-            }
-            else
-            {
+            } else {
                 count += 1
             }
         }
         count
-    }
-    else
-    {
+    } else {
         input.len()
     }
 }
-pub fn write(mut input: String, file: &mut File, lines: &mut Vec<String>, slow: bool, last: String)
-{
-    if last != input && !input.replace(' ', "").is_empty() && !input.starts_with('#')
-    {
-        if slow
-        {
+pub fn write(
+    mut input: String,
+    file: &mut File,
+    lines: &mut Vec<String>,
+    slow: bool,
+    last: String,
+) {
+    if last != input && !input.replace(' ', "").is_empty() && !input.starts_with('#') {
+        if slow {
             input.push('\t');
         }
         lines.push(input.clone());
@@ -357,8 +308,7 @@ pub fn clearln(
     end: usize,
     options: Options,
     colors: &Colors,
-)
-{
+) {
     print!(
         "\x1b[G{}{}\x1b[K{}",
         prompt(options, colors),
@@ -368,12 +318,9 @@ pub fn clearln(
             options.color == Auto::True,
             colors
         ),
-        if options.color == Auto::True
-        {
+        if options.color == Auto::True {
             "\x1b[0m"
-        }
-        else
-        {
+        } else {
             ""
         }
     );
@@ -385,8 +332,7 @@ pub fn clear(
     end: usize,
     options: Options,
     colors: &Colors,
-)
-{
+) {
     print!(
         "\x1b[G{}{}\x1b[J{}",
         prompt(options, colors),
@@ -396,20 +342,15 @@ pub fn clear(
             options.color == Auto::True,
             colors
         ),
-        if options.color == Auto::True
-        {
+        if options.color == Auto::True {
             "\x1b[0m"
-        }
-        else
-        {
+        } else {
             ""
         }
     );
 }
-pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors) -> String
-{
-    if color
-    {
+pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors) -> String {
+    if color {
         let mut count: isize = (input
             .iter()
             .filter(|a| matches!(a, ')' | '}' | ']'))
@@ -423,24 +364,19 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
         let mut abs: Vec<(usize, isize)> = Vec::new();
         let mut i = 0;
         let mut ignore = false;
-        while i < input.len()
-        {
+        while i < input.len() {
             let c = input[i];
-            match c
-            {
-                '#' =>
-                {
+            match c {
+                '#' => {
                     count = 0;
                     output.push(c)
                 }
-                '\x1b' =>
-                {
+                '\x1b' => {
                     ignore = true;
                     output.push(c)
                 }
                 '[' if ignore => output.push(c),
-                '|' =>
-                {
+                '|' => {
                     if !abs.is_empty()
                         && abs[0].1 == count
                         && input[abs[0].0 + 1..i]
@@ -448,10 +384,8 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                             .filter(|c| !c.is_ascii_whitespace())
                             .count()
                             != 0
-                        && match input[..i].iter().rev().position(|c| !c.is_alphabetic())
-                        {
-                            Some(n) =>
-                            {
+                        && match input[..i].iter().rev().position(|c| !c.is_alphabetic()) {
+                            Some(n) => {
                                 let s = input[i - n..i].iter().collect::<String>();
                                 let sb = &(s.clone() + "(");
                                 !(functions().contains(s.as_str())
@@ -469,8 +403,7 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                             colors.brackets[count as usize % colors.brackets.len()],
                             colors.text
                         ))
-                    }
-                    else if i + 1 == input.len()
+                    } else if i + 1 == input.len()
                         || input[i + 1] != '|'
                         || i == 0
                         || input[0..=i - 1]
@@ -487,15 +420,12 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                         ));
                         count += 1;
                         abs.insert(0, (i, count));
-                    }
-                    else
-                    {
+                    } else {
                         i += 1;
                         output.push_str("||")
                     }
                 }
-                '(' | '{' | '[' =>
-                {
+                '(' | '{' | '[' => {
                     output.push_str(&format!(
                         "{}{}{}",
                         colors.brackets[count as usize % colors.brackets.len()],
@@ -504,8 +434,7 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                     ));
                     count += 1
                 }
-                ')' | '}' | ']' =>
-                {
+                ')' | '}' | ']' => {
                     count -= 1;
                     output.push_str(&format!(
                         "{}{}{}",
@@ -514,16 +443,13 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
                         colors.text
                     ))
                 }
-                '@' =>
-                {}
+                '@' => {}
                 _ => output.push(c),
             }
             i += 1;
         }
         output
-    }
-    else
-    {
+    } else {
         input.iter().collect::<String>()
     }
 }
@@ -535,25 +461,18 @@ pub fn handle_err(
     colors: &Colors,
     start: usize,
     end: usize,
-)
-{
-    let num = if cfg!(feature = "bin-deps")
-    {
+) {
+    let num = if cfg!(feature = "bin-deps") {
         err.len().div_ceil(get_terminal_dimensions().0) - 1
-    }
-    else
-    {
+    } else {
         err.len()
     };
     print!(
         "\x1b[J\x1b[G\n{}{}\x1b[G\x1b[A\x1b[K{}{}{}",
         err,
-        if num == 0
-        {
+        if num == 0 {
             String::new()
-        }
-        else
-        {
+        } else {
             format!("\x1b[{num}A")
         },
         prompt(options, colors),
@@ -563,85 +482,57 @@ pub fn handle_err(
             options.color == Auto::True,
             colors
         ),
-        if options.color == Auto::True
-        {
+        if options.color == Auto::True {
             "\x1b[0m"
-        }
-        else
-        {
+        } else {
             ""
         },
     );
 }
-pub fn prompt(options: Options, colors: &Colors) -> String
-{
-    if !options.interactive
-    {
+pub fn prompt(options: Options, colors: &Colors) -> String {
+    if !options.interactive {
         String::new()
-    }
-    else if options.prompt
-    {
-        if options.color == Auto::True
-        {
+    } else if options.prompt {
+        if options.color == Auto::True {
             format!("{}>{} ", colors.prompt, colors.text)
-        }
-        else
-        {
+        } else {
             "> ".to_string()
         }
-    }
-    else if options.color == Auto::True
-    {
+    } else if options.color == Auto::True {
         colors.text.to_string()
-    }
-    else
-    {
+    } else {
         String::new()
     }
 }
 pub fn place_funcvarxy(
     mut funcvar: Vec<(String, Vec<NumStr>)>,
     num: NumStr,
-) -> Vec<(String, Vec<NumStr>)>
-{
-    for i in funcvar.iter_mut()
-    {
-        if !i.0.contains('(')
-        {
+) -> Vec<(String, Vec<NumStr>)> {
+    for i in funcvar.iter_mut() {
+        if !i.0.contains('(') {
             let mut sum: Vec<(usize, String)> = Vec::new();
             let mut bracket = 0;
             let mut j = 0;
-            while i.1.len() > j
-            {
-                match &i.1[j]
-                {
+            while i.1.len() > j {
+                match &i.1[j] {
                     LeftBracket => bracket += 1,
                     RightBracket => bracket -= 1,
-                    Comma if !sum.is_empty() && sum[0].0 == bracket =>
-                    {
+                    Comma if !sum.is_empty() && sum[0].0 == bracket => {
                         sum.remove(0);
                     }
-                    Func(s) =>
-                    {
-                        if matches!(s.as_str(), "x" | "y") && !sum.iter().any(|a| a.1 == *s)
-                        {
+                    Func(s) => {
+                        if matches!(s.as_str(), "x" | "y") && !sum.iter().any(|a| a.1 == *s) {
                             i.1[j] = num.clone();
-                        }
-                        else
-                        {
-                            match s.as_str()
-                            {
+                        } else {
+                            match s.as_str() {
                                 "sum" | "summation" | "prod" | "product" | "Σ" | "Π" | "vec"
                                 | "mat" | "D" | "integrate" | "arclength" | "∫" | "area"
                                 | "surfacearea" | "sarea" | "solve" | "length" | "slope"
                                 | "lim" | "set" | "limit" | "iter" | "extrema" | "taylor"
                                     if j + 2 < i.1.len()
-                                        && if let Func(s) = &i.1[j + 2]
-                                        {
+                                        && if let Func(s) = &i.1[j + 2] {
                                             matches!(s.as_str(), "x" | "y")
-                                        }
-                                        else
-                                        {
+                                        } else {
                                             false
                                         } =>
                                 {
@@ -649,24 +540,18 @@ pub fn place_funcvarxy(
                                     j += 3;
                                     sum.push((
                                         bracket,
-                                        if let Func(s) = &i.1[j - 1]
-                                        {
+                                        if let Func(s) = &i.1[j - 1] {
                                             s.to_string()
-                                        }
-                                        else
-                                        {
+                                        } else {
                                             String::new()
                                         },
                                     ))
                                 }
                                 "surfacearea" | "sarea"
                                     if j + 4 < i.1.len()
-                                        && if let Func(s) = &i.1[j + 4]
-                                        {
+                                        && if let Func(s) = &i.1[j + 4] {
                                             matches!(s.as_str(), "x" | "y")
-                                        }
-                                        else
-                                        {
+                                        } else {
                                             false
                                         } =>
                                 {
@@ -674,23 +559,18 @@ pub fn place_funcvarxy(
                                     j += 5;
                                     sum.push((
                                         bracket,
-                                        if let Func(s) = &i.1[j - 1]
-                                        {
+                                        if let Func(s) = &i.1[j - 1] {
                                             s.to_string()
-                                        }
-                                        else
-                                        {
+                                        } else {
                                             String::new()
                                         },
                                     ))
                                 }
-                                _ =>
-                                {}
+                                _ => {}
                             }
                         }
                     }
-                    _ =>
-                    {}
+                    _ => {}
                 }
                 j += 1;
             }
@@ -698,42 +578,30 @@ pub fn place_funcvarxy(
     }
     funcvar
 }
-pub fn place_varxy(mut func: Vec<NumStr>, num: NumStr) -> Vec<NumStr>
-{
+pub fn place_varxy(mut func: Vec<NumStr>, num: NumStr) -> Vec<NumStr> {
     let mut sum: Vec<(usize, String)> = Vec::new();
     let mut bracket = 0;
     let mut i = 0;
-    while func.len() > i
-    {
-        match &func[i]
-        {
+    while func.len() > i {
+        match &func[i] {
             LeftBracket => bracket += 1,
             RightBracket => bracket -= 1,
-            Comma if !sum.is_empty() && sum[0].0 == bracket =>
-            {
+            Comma if !sum.is_empty() && sum[0].0 == bracket => {
                 sum.remove(0);
             }
-            Func(s) =>
-            {
-                if matches!(s.as_str(), "x" | "y") && !sum.iter().any(|a| a.1 == *s)
-                {
+            Func(s) => {
+                if matches!(s.as_str(), "x" | "y") && !sum.iter().any(|a| a.1 == *s) {
                     func[i] = num.clone();
-                }
-                else
-                {
-                    match s.as_str()
-                    {
+                } else {
+                    match s.as_str() {
                         "sum" | "summation" | "prod" | "product" | "Σ" | "Π" | "vec" | "mat"
                         | "D" | "integrate" | "arclength" | "∫" | "area" | "surfacearea"
                         | "sarea" | "solve" | "length" | "slope" | "lim" | "limit" | "set"
                         | "iter" | "extrema" | "taylor"
                             if i + 2 < func.len()
-                                && if let Func(s) = &func[i + 2]
-                                {
+                                && if let Func(s) = &func[i + 2] {
                                     matches!(s.as_str(), "x" | "y")
-                                }
-                                else
-                                {
+                                } else {
                                     false
                                 } =>
                         {
@@ -741,24 +609,18 @@ pub fn place_varxy(mut func: Vec<NumStr>, num: NumStr) -> Vec<NumStr>
                             i += 3;
                             sum.push((
                                 bracket,
-                                if let Func(s) = &func[i - 1]
-                                {
+                                if let Func(s) = &func[i - 1] {
                                     s.to_string()
-                                }
-                                else
-                                {
+                                } else {
                                     String::new()
                                 },
                             ))
                         }
                         "surfacearea" | "sarea"
                             if i + 4 < func.len()
-                                && if let Func(s) = &func[i + 4]
-                                {
+                                && if let Func(s) = &func[i + 4] {
                                     matches!(s.as_str(), "x" | "y")
-                                }
-                                else
-                                {
+                                } else {
                                     false
                                 } =>
                         {
@@ -766,23 +628,18 @@ pub fn place_varxy(mut func: Vec<NumStr>, num: NumStr) -> Vec<NumStr>
                             i += 5;
                             sum.push((
                                 bracket,
-                                if let Func(s) = &func[i - 1]
-                                {
+                                if let Func(s) = &func[i - 1] {
                                     s.to_string()
-                                }
-                                else
-                                {
+                                } else {
                                     String::new()
                                 },
                             ))
                         }
-                        _ =>
-                        {}
+                        _ => {}
                     }
                 }
             }
-            _ =>
-            {}
+            _ => {}
         }
         i += 1;
     }
@@ -792,37 +649,25 @@ pub fn place_funcvar(
     mut funcvar: Vec<(String, Vec<NumStr>)>,
     var: &str,
     num: NumStr,
-) -> Vec<(String, Vec<NumStr>)>
-{
-    if !var.is_empty()
-    {
-        for i in funcvar.iter_mut()
-        {
-            if !i.0.contains('(')
-            {
+) -> Vec<(String, Vec<NumStr>)> {
+    if !var.is_empty() {
+        for i in funcvar.iter_mut() {
+            if !i.0.contains('(') {
                 let mut sum = Vec::new();
                 let mut bracket = 0;
                 let mut j = 0;
-                while i.1.len() > j
-                {
-                    match &i.1[j]
-                    {
+                while i.1.len() > j {
+                    match &i.1[j] {
                         LeftBracket => bracket += 1,
                         RightBracket => bracket -= 1,
-                        Comma if sum.contains(&bracket) =>
-                        {
+                        Comma if sum.contains(&bracket) => {
                             sum.remove(0);
                         }
-                        Func(s) =>
-                        {
-                            if s == var && sum.is_empty()
-                            {
+                        Func(s) => {
+                            if s == var && sum.is_empty() {
                                 i.1[j] = num.clone();
-                            }
-                            else
-                            {
-                                match s.as_str()
-                                {
+                            } else {
+                                match s.as_str() {
                                     "sum" | "summation" | "prod" | "product" | "Σ" | "Π"
                                     | "vec" | "mat" | "D" | "integrate" | "arclength" | "∫"
                                     | "area" | "solve" | "length" | "slope" | "lim" | "limit"
@@ -841,13 +686,11 @@ pub fn place_funcvar(
                                         j += 5;
                                         sum.push(bracket)
                                     }
-                                    _ =>
-                                    {}
+                                    _ => {}
                                 }
                             }
                         }
-                        _ =>
-                        {}
+                        _ => {}
                     }
                     j += 1;
                 }
@@ -856,33 +699,23 @@ pub fn place_funcvar(
     }
     funcvar
 }
-pub fn place_var(mut func: Vec<NumStr>, var: &str, num: NumStr) -> Vec<NumStr>
-{
-    if !var.is_empty()
-    {
+pub fn place_var(mut func: Vec<NumStr>, var: &str, num: NumStr) -> Vec<NumStr> {
+    if !var.is_empty() {
         let mut sum = Vec::new();
         let mut bracket = 0;
         let mut i = 0;
-        while func.len() > i
-        {
-            match &func[i]
-            {
+        while func.len() > i {
+            match &func[i] {
                 LeftBracket => bracket += 1,
                 RightBracket => bracket -= 1,
-                Comma if sum.contains(&bracket) =>
-                {
+                Comma if sum.contains(&bracket) => {
                     sum.remove(0);
                 }
-                Func(s) =>
-                {
-                    if s == var && sum.is_empty()
-                    {
+                Func(s) => {
+                    if s == var && sum.is_empty() {
                         func[i] = num.clone();
-                    }
-                    else
-                    {
-                        match s.as_str()
-                        {
+                    } else {
+                        match s.as_str() {
                             "sum" | "summation" | "prod" | "product" | "Σ" | "Π" | "vec"
                             | "mat" | "D" | "integrate" | "arclength" | "∫" | "area" | "solve"
                             | "length" | "slope" | "lim" | "set" | "limit" | "iter" | "extrema"
@@ -898,13 +731,11 @@ pub fn place_var(mut func: Vec<NumStr>, var: &str, num: NumStr) -> Vec<NumStr>
                                 i += 5;
                                 sum.push(bracket)
                             }
-                            _ =>
-                            {}
+                            _ => {}
                         }
                     }
                 }
-                _ =>
-                {}
+                _ => {}
             }
             i += 1;
         }
@@ -917,8 +748,7 @@ pub fn do_math_with_var(
     func_vars: Vec<(String, Vec<NumStr>)>,
     var: &str,
     num: NumStr,
-) -> Result<NumStr, &'static str>
-{
+) -> Result<NumStr, &'static str> {
     do_math(
         place_var(function, var, num.clone()),
         options,
@@ -931,17 +761,12 @@ pub fn parsed_to_string(
     func_vars: Vec<(String, Vec<NumStr>)>,
     options: &Options,
     colors: &Colors,
-) -> String
-{
+) -> String {
     let mut i = 0;
-    'main: while i < input.len()
-    {
-        if let Func(s) = &input[i]
-        {
-            for v in &func_vars
-            {
-                if *s == v.0 && !v.0.ends_with(')')
-                {
+    'main: while i < input.len() {
+        if let Func(s) = &input[i] {
+            for v in &func_vars {
+                if *s == v.0 && !v.0.ends_with(')') {
                     if i != 0
                         && i + 1 < input.len()
                         && input[i - 1] == LeftBracket
@@ -949,9 +774,7 @@ pub fn parsed_to_string(
                     {
                         input.remove(i);
                         input.splice(i..i, v.1.clone());
-                    }
-                    else
-                    {
+                    } else {
                         input[i] = LeftBracket;
                         input.splice(i + 1..i + 1, v.1.clone());
                         input.insert(i + v.1.len() + 1, RightBracket);
@@ -963,12 +786,9 @@ pub fn parsed_to_string(
         i += 1;
     }
     let mut out = String::new();
-    for i in input
-    {
-        out.push_str(&match i
-        {
-            Num(n) =>
-            {
+    for i in input {
+        out.push_str(&match i {
+            Num(n) => {
                 let n = custom_units(n, *options, colors);
                 let n = get_output(*options, colors, &n);
                 format!(
@@ -976,22 +796,17 @@ pub fn parsed_to_string(
                     n.0,
                     n.1,
                     n.2.unwrap_or_default(),
-                    if options.color == Auto::True
-                    {
+                    if options.color == Auto::True {
                         "\x1b[0m"
-                    }
-                    else
-                    {
+                    } else {
                         ""
                     }
                 )
             }
-            Vector(n) =>
-            {
+            Vector(n) => {
                 let mut str = String::new();
                 let mut num;
-                for i in n
-                {
+                for i in n {
                     let i = custom_units(i, *options, colors);
                     num = get_output(*options, colors, &i);
                     str.push_str(&format!(
@@ -999,12 +814,9 @@ pub fn parsed_to_string(
                         num.0,
                         num.1,
                         num.2.unwrap_or_default(),
-                        if options.color == Auto::True
-                        {
+                        if options.color == Auto::True {
                             "\x1b[0m"
-                        }
-                        else
-                        {
+                        } else {
                             ""
                         }
                     ));
@@ -1012,15 +824,12 @@ pub fn parsed_to_string(
                 str.pop();
                 format!("{{{str}}}")
             }
-            Matrix(n) =>
-            {
+            Matrix(n) => {
                 let mut str = String::new();
                 let mut num;
-                for i in n
-                {
+                for i in n {
                     str.push('{');
-                    for j in i
-                    {
+                    for j in i {
                         let j = custom_units(j, *options, colors);
                         num = get_output(*options, colors, &j);
                         str.push_str(&format!(
@@ -1028,12 +837,9 @@ pub fn parsed_to_string(
                             num.0,
                             num.1,
                             num.2.unwrap_or_default(),
-                            if options.color == Auto::True
-                            {
+                            if options.color == Auto::True {
                                 "\x1b[0m"
-                            }
-                            else
-                            {
+                            } else {
                                 ""
                             }
                         ));
@@ -1043,8 +849,7 @@ pub fn parsed_to_string(
                 str.pop();
                 format!("{{{str}}}")
             }
-            Func(n) if n.starts_with('@') && n.contains('(') =>
-            {
+            Func(n) if n.starts_with('@') && n.contains('(') => {
                 n.split('(').next().unwrap().replace('@', "")
             }
             Func(n) => n.replace('@', ""),
@@ -1091,28 +896,20 @@ pub fn parsed_to_string(
         colors,
     )
 }
-pub fn insert_last(input: &[char], last: &str) -> String
-{
+pub fn insert_last(input: &[char], last: &str) -> String {
     let mut output = String::new();
     let mut word = String::new();
-    for c in input
-    {
-        if c.is_alphanumeric() || matches!(c, '\'' | '`' | '_')
-        {
+    for c in input {
+        if c.is_alphanumeric() || matches!(c, '\'' | '`' | '_') {
             output.push(*c);
             word.push(*c)
-        }
-        else
-        {
-            if word.eq_ignore_ascii_case("ans")
-            {
+        } else {
+            if word.eq_ignore_ascii_case("ans") {
                 output.drain(output.len() - 3..);
                 output.push('(');
                 output.push_str(last);
                 output.push(')');
-            }
-            else if word == "_"
-            {
+            } else if word == "_" {
                 output.pop();
                 output.push('(');
                 output.push_str(last);
@@ -1122,29 +919,22 @@ pub fn insert_last(input: &[char], last: &str) -> String
             word.clear()
         }
     }
-    if word.eq_ignore_ascii_case("ans")
-    {
+    if word.eq_ignore_ascii_case("ans") {
         output.drain(output.len() - 3..);
-        if !last.contains('#')
-        {
+        if !last.contains('#') {
             output.push('(');
         }
         output.push_str(last);
-        if !last.contains('#')
-        {
+        if !last.contains('#') {
             output.push(')');
         }
-    }
-    else if word == "_"
-    {
+    } else if word == "_" {
         output.pop();
-        if !last.contains('#')
-        {
+        if !last.contains('#') {
             output.push('(');
         }
         output.push_str(last);
-        if !last.contains('#')
-        {
+        if !last.contains('#') {
             output.push(')');
         }
     }

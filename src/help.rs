@@ -1,6 +1,5 @@
 const MSG: &str = include_str!("../README.md");
-pub fn help()
-{
+pub fn help() {
     let lines = MSG.lines();
     let p = lines.clone().position(|l| l == "# usage").unwrap() + 3;
     let e = lines.clone().skip(p).position(|l| l == "```").unwrap() - 1;
@@ -14,8 +13,7 @@ pub fn help()
             .join("\x1b[G\n")
     );
 }
-fn all_units() -> &'static str
-{
+fn all_units() -> &'static str {
     "\"m\" | \"meter\"\x1b[G\n\
 \"s\" | \"second\"\x1b[G\n\
 \"A\" | \"ampere\"\x1b[G\n\
@@ -85,8 +83,7 @@ fn all_units() -> &'static str
 \"floz\"\x1b[G\n\
 \"AUD\",\"CAD\",\"CNY\",\"EUR\",\"GBP\",\"HKD\",\"IDR\",\"INR\",\"JPY\",\"KRW\",\"MYR\",\"NZD\",\"PHP\",\"SGD\",\"THB\",\"TWD\",\"VND\",\"BGN\",\"BRL\",\"CHF\",\"CLP\",\"CZK\",\"DKK\",\"HUF\",\"ILS\",\"ISK\",\"MXN\",\"NOK\",\"PLN\",\"RON\",\"SEK\",\"TRY\",\"UAH\",\"ZAR\",\"EGP\",\"JOD\",\"LBP\",\"AED\",\"MDL\",\"RSD\",\"RUB\",\"AMD\",\"AZN\",\"BDT\",\"DOP\",\"DZD\",\"GEL\",\"IQD\",\"IRR\",\"KGS\",\"KZT\",\"LYD\",\"MAD\",\"PKR\",\"SAR\",\"TJS\",\"TMT\",\"TND\",\"UZS\",\"XAF\",\"XOF\",\"BYN\",\"PEN\",\"VES\",\"ARS\",\"BOB\",\"COP\",\"CRC\",\"HTG\",\"PAB\",\"PYG\",\"UYU\",\"NGN\",\"AFN\",\"ALL\",\"ANG\",\"AOA\",\"AWG\",\"BAM\",\"BBD\",\"BHD\",\"BIF\",\"BND\",\"BSD\",\"BWP\",\"BZD\",\"CDF\",\"CUP\",\"CVE\",\"DJF\",\"ERN\",\"ETB\",\"FJD\",\"GHS\",\"GIP\",\"GMD\",\"GNF\",\"GTQ\",\"GYD\",\"HNL\",\"JMD\",\"KES\",\"KHR\",\"KMF\",\"KWD\",\"LAK\",\"LKR\",\"LRD\",\"LSL\",\"MGA\",\"MKD\",\"MMK\",\"MNT\",\"MOP\",\"MRU\",\"MUR\",\"MVR\",\"MWK\",\"MZN\",\"NAD\",\"NIO\",\"NPR\",\"OMR\",\"PGK\",\"QAR\",\"RWF\",\"SBD\",\"SCR\",\"SDG\",\"SOS\",\"SRD\",\"SSP\",\"STN\",\"SVC\",\"SYP\",\"SZL\",\"TOP\",\"TTD\",\"TZS\",\"UGX\",\"VUV\",\"WST\",\"XCD\",\"XPF\",\"YER\",\"ZMW\""
 }
-pub fn help_for(thing: &str) -> String
-{
+pub fn help_for(thing: &str) -> String {
     match thing
     {
         "W" | "productlog" | "lambertw" =>

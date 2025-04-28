@@ -12,75 +12,54 @@ pub fn get_file_vars(
     lines: Vec<String>,
     r: &str,
     blacklist: &mut Vec<String>,
-)
-{
-    if r.chars().all(|c| !c.is_alphabetic())
-    {
+) {
+    if r.chars().all(|c| !c.is_alphabetic()) {
         return;
     }
     get_preset_vars(options, r, vars, blacklist);
-    'lower: for i in lines.clone()
-    {
+    'lower: for i in lines.clone() {
         let mut split = i.splitn(2, '=');
-        if split.clone().count() == 2
-        {
+        if split.clone().count() == 2 {
             let l = split.next().unwrap().to_string();
-            let left = if l.contains('(')
-            {
+            let left = if l.contains('(') {
                 l.split('(').next().unwrap().to_owned()
-            }
-            else
-            {
+            } else {
                 l.clone()
             };
             if !blacklist.contains(&l) && {
                 let mut word = String::new();
                 let mut b = false;
-                for c in r.chars()
-                {
-                    if c.is_alphanumeric() || matches!(c, '\'' | '`' | '_')
-                    {
+                for c in r.chars() {
+                    if c.is_alphanumeric() || matches!(c, '\'' | '`' | '_') {
                         word.push(c)
-                    }
-                    else
-                    {
-                        if l.contains('(')
-                        {
+                    } else {
+                        if l.contains('(') {
                             b = word.trim_end_matches('\'').trim_end_matches('`') == left
                                 && matches!(c, '(' | '{' | '[' | '|');
-                        }
-                        else
-                        {
+                        } else {
                             b = word == left;
                         }
-                        if b
-                        {
+                        if b {
                             break;
                         }
                         word.clear()
                     }
                 }
                 b
-            }
-            {
-                if let Some(r) = split.next()
-                {
+            } {
+                if let Some(r) = split.next() {
                     let le = l.chars().collect::<Vec<char>>();
                     blacklist.push(l.clone());
                     get_file_vars(options, vars, lines.clone(), r, blacklist);
-                    for (i, j) in vars.iter().enumerate()
-                    {
-                        if j.name.len() <= le.len()
-                        {
-                            if let Err(s) = add_var(le, r, i, vars, options, false, false, false)
-                            {
+                    for (i, j) in vars.iter().enumerate() {
+                        if j.name.len() <= le.len() {
+                            if let Err(s) = add_var(le, r, i, vars, options, false, false, false) {
                                 println!("{s}")
                             }
                             continue 'lower;
                         }
                     }
-                    if let Err(s) = add_var(le, r, 0, vars, options, false, false, false)
-                    {
+                    if let Err(s) = add_var(le, r, 0, vars, options, false, false, false) {
                         println!("{s}")
                     }
                 }
@@ -93,16 +72,13 @@ fn get_preset_vars(
     args: &str,
     vars: &mut Vec<Variable>,
     blacklist: &mut Vec<String>,
-)
-{
+) {
     {
         let phi1 = args.contains("phi") && !blacklist.contains(&"phi".to_string());
         let phi2 = args.contains('φ') && !blacklist.contains(&"φ".to_string());
-        if phi1 || phi2
-        {
+        if phi1 || phi2 {
             let phi: Float = (1 + Float::with_val(options.prec, 5).sqrt()) / 2;
-            if phi1
-            {
+            if phi1 {
                 blacklist.push("phi".to_string());
                 vars.insert(
                     0,
@@ -114,8 +90,7 @@ fn get_preset_vars(
                     },
                 );
             }
-            if phi2
-            {
+            if phi2 {
                 blacklist.push("φ".to_string());
                 vars.push(Variable {
                     name: vec!['φ'],
@@ -131,11 +106,9 @@ fn get_preset_vars(
         let pi2 = args.contains('π') && !blacklist.contains(&"π".to_string());
         let tau1 = args.contains("tau") && !blacklist.contains(&"tau".to_string());
         let tau2 = args.contains('τ') && !blacklist.contains(&"τ".to_string());
-        if pi1 || pi2 || tau1 || tau2
-        {
+        if pi1 || pi2 || tau1 || tau2 {
             let pi = Float::with_val(options.prec, Pi);
-            if pi1
-            {
+            if pi1 {
                 blacklist.push("pi".to_string());
                 vars.insert(
                     vars.iter().position(|c| c.name.len() != 3).unwrap_or(0),
@@ -147,8 +120,7 @@ fn get_preset_vars(
                     },
                 );
             }
-            if pi2
-            {
+            if pi2 {
                 blacklist.push("π".to_string());
                 vars.push(Variable {
                     name: vec!['π'],
@@ -157,11 +129,9 @@ fn get_preset_vars(
                     funcvars: Vec::new(),
                 });
             }
-            if tau1 || tau2
-            {
+            if tau1 || tau2 {
                 let tau: Float = pi.clone() * 2;
-                if tau1
-                {
+                if tau1 {
                     blacklist.push("tau".to_string());
                     vars.insert(
                         0,
@@ -173,8 +143,7 @@ fn get_preset_vars(
                         },
                     );
                 }
-                if tau2
-                {
+                if tau2 {
                     blacklist.push("τ".to_string());
                     vars.push(Variable {
                         name: vec!['τ'],
@@ -186,8 +155,7 @@ fn get_preset_vars(
             }
         }
     }
-    if args.contains('e') && !blacklist.contains(&"e".to_string())
-    {
+    if args.contains('e') && !blacklist.contains(&"e".to_string()) {
         blacklist.push("e".to_string());
         let e = Float::with_val(options.prec, 1).exp();
         vars.push(Variable {
@@ -198,20 +166,16 @@ fn get_preset_vars(
         });
     }
 }
-pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
-{
-    if args.chars().all(|c| !c.is_alphabetic())
-    {
+pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
+    if args.chars().all(|c| !c.is_alphabetic()) {
         return;
     }
     {
         let phi1 = args.contains("phi");
         let phi2 = args.contains('φ');
-        if phi1 || phi2
-        {
+        if phi1 || phi2 {
             let phi: Float = (1 + Float::with_val(options.prec, 5).sqrt()) / 2;
-            if phi1
-            {
+            if phi1 {
                 vars.insert(
                     0,
                     Variable {
@@ -222,8 +186,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
                     },
                 );
             }
-            if phi2
-            {
+            if phi2 {
                 vars.push(Variable {
                     name: vec!['φ'],
                     parsed: vec![Num(Number::from(phi.into(), None))],
@@ -238,11 +201,9 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
         let pi2 = args.contains('π');
         let tau1 = args.contains("tau");
         let tau2 = args.contains('τ');
-        if pi1 || pi2 || tau1 || tau2
-        {
+        if pi1 || pi2 || tau1 || tau2 {
             let pi = Float::with_val(options.prec, Pi);
-            if pi1
-            {
+            if pi1 {
                 vars.insert(
                     vars.iter().position(|c| c.name.len() != 3).unwrap_or(0),
                     Variable {
@@ -253,8 +214,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
                     },
                 );
             }
-            if pi2
-            {
+            if pi2 {
                 vars.push(Variable {
                     name: vec!['π'],
                     parsed: vec![Num(Number::from(pi.clone().into(), None))],
@@ -262,11 +222,9 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
                     funcvars: Vec::new(),
                 });
             }
-            if tau1 || tau2
-            {
+            if tau1 || tau2 {
                 let tau: Float = pi.clone() * 2;
-                if tau1
-                {
+                if tau1 {
                     vars.insert(
                         0,
                         Variable {
@@ -277,8 +235,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
                         },
                     );
                 }
-                if tau2
-                {
+                if tau2 {
                     vars.push(Variable {
                         name: vec!['τ'],
                         parsed: vec![Num(Number::from(tau.into(), None))],
@@ -289,8 +246,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
             }
         }
     }
-    if args.contains('e')
-    {
+    if args.contains('e') {
         let e = Float::with_val(options.prec, 1).exp();
         vars.push(Variable {
             name: vec!['e'],
@@ -300,8 +256,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>)
         });
     }
 }
-pub fn get_vars(options: Options) -> Vec<Variable>
-{
+pub fn get_vars(options: Options) -> Vec<Variable> {
     let pi = Float::with_val(options.prec, Pi);
     let tau: Float = pi.clone() * 2;
     let phi: Float = (1 + Float::with_val(options.prec, 5).sqrt()) / 2;
@@ -361,44 +316,32 @@ pub fn add_var(
     redef: bool,
     replace: bool,
     null: bool,
-) -> Result<(), &'static str>
-{
-    if null
-    {
+) -> Result<(), &'static str> {
+    if null {
         vars.remove(i);
-    }
-    else
-    {
+    } else {
         let orig = r;
         let mut func_vars: Vec<(isize, String)> = Vec::new();
-        if l.contains(&'(')
-        {
+        if l.contains(&'(') {
             let mut l = l.clone();
             l.pop();
             let st = l
                 .drain(0..=l.iter().position(|c| c == &'(').unwrap_or(0))
                 .collect::<String>();
-            if st.contains(',') || st.len() == 1
-            {
+            if st.contains(',') || st.len() == 1 {
                 return Err("bad var name");
             }
-            for i in l.split(|c| c == &',')
-            {
+            for i in l.split(|c| c == &',') {
                 func_vars.push((-1, i.iter().collect()));
             }
-        }
-        else if l.contains(&',') || l.is_empty()
-        {
+        } else if l.contains(&',') || l.is_empty() {
             return Err("bad var name");
         }
         let mut fvs = Vec::new();
-        let mut parsed = if r.contains("pw") || r.contains("piecewise")
-        {
+        let mut parsed = if r.contains("pw") || r.contains("piecewise") {
             let mut k = 0;
-            for (j, v) in vars.iter().enumerate()
-            {
-                if v.name.len() <= l.len()
-                {
+            for (j, v) in vars.iter().enumerate() {
+                if v.name.len() <= l.len() {
                     k = j;
                     break;
                 }
@@ -413,14 +356,11 @@ pub fn add_var(
                     funcvars: Vec::new(),
                 },
             );
-            if r.contains(':')
-            {
+            if r.contains(':') {
                 let mut split = r.split(':').collect::<Vec<&str>>();
                 r = split.pop().unwrap();
-                for i in split
-                {
-                    if i.contains('=')
-                    {
+                for i in split {
+                    if i.contains('=') {
                         let mut split = i.splitn(2, '=');
                         let s = split.next().unwrap().to_string();
                         let parsed = input_var(
@@ -455,17 +395,12 @@ pub fn add_var(
                 &mut Vec::new(),
                 None,
             )?
-        }
-        else
-        {
-            if r.contains(':')
-            {
+        } else {
+            if r.contains(':') {
                 let mut split = r.split(':').collect::<Vec<&str>>();
                 r = split.pop().unwrap();
-                for i in split
-                {
-                    if i.contains('=')
-                    {
+                for i in split {
+                    if i.contains('=') {
                         let mut split = i.splitn(2, '=');
                         let s = split.next().unwrap().to_string();
                         let parsed = input_var(
@@ -510,38 +445,27 @@ pub fn add_var(
                 .1
                 .push((l.iter().collect::<String>(), parsed.0.clone()))
         }
-        if parsed.0.is_empty()
-        {
+        if parsed.0.is_empty() {
             return Err("bad input");
-        }
-        else if replace
-        {
+        } else if replace {
             vars[i] = Variable {
                 name: l.clone(),
-                parsed: if l.contains(&'(')
-                {
+                parsed: if l.contains(&'(') {
                     parsed.0
-                }
-                else
-                {
+                } else {
                     vec![do_math(parsed.0, options, parsed.1.clone())?]
                 },
                 unparsed: orig.to_string(),
                 funcvars: parsed.1,
             };
-        }
-        else
-        {
+        } else {
             vars.insert(
                 i,
                 Variable {
                     name: l.clone(),
-                    parsed: if l.contains(&'(')
-                    {
+                    parsed: if l.contains(&'(') {
                         parsed.0
-                    }
-                    else
-                    {
+                    } else {
                         vec![do_math(parsed.0, options, parsed.1.clone())?]
                     },
                     unparsed: orig.to_string(),
@@ -550,15 +474,12 @@ pub fn add_var(
             )
         }
     }
-    if redef
-    {
+    if redef {
         let mut redef = vec![(l.clone(), Vec::new())];
         let mut k = 0;
-        while k < redef.len()
-        {
+        while k < redef.len() {
             let mut j = 0;
-            while j < vars.len()
-            {
+            while j < vars.len() {
                 let v = &vars[j];
                 let check = &redef[k].0[0..=redef[k]
                     .0
@@ -571,27 +492,22 @@ pub fn add_var(
                     && v.unparsed.contains(check)
                 {
                     let mut func_vars: Vec<(isize, String)> = Vec::new();
-                    if v.name.contains(&'(')
-                    {
+                    if v.name.contains(&'(') {
                         let mut l = v.name.clone();
                         l.drain(0..=l.iter().position(|c| c == &'(').unwrap());
                         l.pop();
-                        for i in l.split(|c| c == &',')
-                        {
+                        for i in l.split(|c| c == &',') {
                             func_vars.push((-1, i.iter().collect::<String>()));
                         }
                     }
                     let mut fvs = Vec::new();
                     let mut unparsed = v.unparsed.clone();
-                    if unparsed.contains(':')
-                    {
+                    if unparsed.contains(':') {
                         let un = unparsed;
                         let mut split = un.split(':').collect::<Vec<&str>>();
                         unparsed = split.pop().unwrap().to_string();
-                        for i in split
-                        {
-                            if i.contains('=')
-                            {
+                        for i in split {
+                            if i.contains('=') {
                                 let mut split = i.splitn(2, '=');
                                 let s = split.next().unwrap().to_string();
                                 let parsed = input_var(
@@ -636,19 +552,14 @@ pub fn add_var(
                             .1
                             .push((v.name.iter().collect::<String>(), parsed.0.clone()));
                     }
-                    if v.name.contains(&'(')
-                    {
-                        if v.parsed != parsed.0 || v.funcvars != parsed.1
-                        {
+                    if v.name.contains(&'(') {
+                        if v.parsed != parsed.0 || v.funcvars != parsed.1 {
                             redef.push((v.name.clone(), redef[k].0.clone()));
                             vars[j].parsed = parsed.0;
                             vars[j].funcvars = parsed.1;
                         }
-                    }
-                    else if let Ok(n) = do_math(parsed.0.clone(), options, parsed.1.clone())
-                    {
-                        if n != v.parsed[0]
-                        {
+                    } else if let Ok(n) = do_math(parsed.0.clone(), options, parsed.1.clone()) {
+                        if n != v.parsed[0] {
                             redef.push((v.name.clone(), redef[k].0.clone()));
                             vars[j].parsed = vec![n];
                         }
@@ -666,8 +577,7 @@ pub fn set_commands_or_vars(
     options: &mut Options,
     vars: &mut Vec<Variable>,
     input: &[char],
-) -> Result<(), &'static str>
-{
+) -> Result<(), &'static str> {
     let n = input.iter().collect::<String>();
     let mut split = n.splitn(2, '=');
     let s = split.next().unwrap().replace(' ', "");
@@ -678,38 +588,29 @@ pub fn set_commands_or_vars(
             .any(|c| !c.is_alphanumeric() && !matches!(c, '(' | ')' | ',' | '\'' | '`' | '_'))
     {
         return Ok(());
-    }
-    else if let Err(s) = set_commands(options, colors, vars, &l, r)
-    {
-        if s.is_empty()
-        {
+    } else if let Err(s) = set_commands(options, colors, vars, &l, r) {
+        if s.is_empty() {
             return Ok(());
         }
         return Err(s);
     }
     let l = l.chars().collect::<Vec<char>>();
-    for (i, v) in vars.iter().enumerate()
-    {
+    for (i, v) in vars.iter().enumerate() {
         if v.name.split(|c| c == &'(').next() == l.split(|c| c == &'(').next()
             && v.name.contains(&'(') == l.contains(&'(')
             && v.name.iter().filter(|c| c == &&',').count()
                 == l.iter().filter(|c| c == &&',').count()
         {
-            if r == "null"
-            {
+            if r == "null" {
                 add_var(l, r, i, vars, *options, true, true, true)?
-            }
-            else
-            {
+            } else {
                 add_var(l, r, i, vars, *options, true, true, false)?
             }
             return Ok(());
         }
     }
-    for (i, j) in vars.iter().enumerate()
-    {
-        if j.name.len() <= l.len()
-        {
+    for (i, j) in vars.iter().enumerate() {
+        if j.name.len() <= l.len() {
             add_var(l, r, i, vars, *options, true, false, false)?;
             return Ok(());
         }

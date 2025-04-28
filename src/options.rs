@@ -30,112 +30,80 @@ pub fn arg_opts(
     args: &mut Vec<String>,
     vars: &[Variable],
     soft: bool,
-) -> Result<bool, &'static str>
-{
+) -> Result<bool, &'static str> {
     let mut default = false;
-    if soft
-    {
+    if soft {
         args.remove(0);
     }
-    loop
-    {
-        if args.is_empty()
-        {
+    loop {
+        if args.is_empty() {
             break;
         }
-        match args[0].as_str()
-        {
-            "-i" =>
-            {
+        match args[0].as_str() {
+            "-i" => {
                 options.stay_interactive = !options.stay_interactive;
                 args.remove(0);
             }
-            "-v" | "--version" =>
-            {
+            "-v" | "--version" => {
                 println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
                 process::exit(0)
             }
-            "-h" | "--help" =>
-            {
-                if args.len() > 1
-                {
+            "-h" | "--help" => {
+                if args.len() > 1 {
                     println!("{}", help_for(&args[1..].join(" ")));
-                }
-                else
-                {
+                } else {
                     help();
                 }
                 process::exit(0)
             }
-            "--man" =>
-            {
+            "--man" => {
                 println!("{}", include_str!("../kalc.1"));
                 process::exit(0)
             }
-            "--default" =>
-            {
+            "--default" => {
                 args.remove(0);
                 *options = Options::default();
                 default = true;
             }
-            "--" =>
-            {
+            "--" => {
                 args.remove(0);
                 break;
             }
-            _ if !args[0].starts_with("--") =>
-            {
+            _ if !args[0].starts_with("--") => {
                 break;
             }
-            _ =>
-            {
+            _ => {
                 let arg = args[0].trim_start_matches('-');
                 let mut split = arg.splitn(2, '=');
-                if split.clone().count() == 2
-                {
+                if split.clone().count() == 2 {
                     match set_commands(
                         options,
                         colors,
                         &mut vars.to_vec(),
                         split.next().unwrap(),
                         split.next().unwrap(),
-                    )
-                    {
-                        Err(s) if !s.is_empty() =>
-                        {
-                            if soft
-                            {
+                    ) {
+                        Err(s) if !s.is_empty() => {
+                            if soft {
                                 break;
-                            }
-                            else
-                            {
+                            } else {
                                 return Err(s);
                             }
                         }
-                        Ok(()) =>
-                        {
-                            if soft
-                            {
+                        Ok(()) => {
+                            if soft {
                                 break;
-                            }
-                            else
-                            {
+                            } else {
                                 println!("{arg} failed");
                                 process::exit(1);
                             }
                         }
-                        _ =>
-                        {}
+                        _ => {}
                     }
-                }
-                else if !silent_commands(options, &arg.chars().collect::<Vec<char>>())
-                {
-                    if soft
-                    {
+                } else if !silent_commands(options, &arg.chars().collect::<Vec<char>>()) {
+                    if soft {
                         break;
-                    }
-                    else
-                    {
+                    } else {
                         println!("{} failed", args[0]);
                         process::exit(1);
                     }
@@ -153,68 +121,47 @@ pub fn file_opts(
     vars: &[Variable],
     check: Vec<usize>,
     soft: bool,
-) -> Result<Vec<usize>, &'static str>
-{
+) -> Result<Vec<usize>, &'static str> {
     let mut err = Vec::new();
-    if let Ok(file) = File::open(file_path)
-    {
+    if let Ok(file) = File::open(file_path) {
         let reader = BufReader::new(file);
-        for (i, line) in reader.lines().map(|l| l.unwrap()).enumerate()
-        {
-            if !(check.is_empty() || check.iter().any(|n| n == &i))
-            {
+        for (i, line) in reader.lines().map(|l| l.unwrap()).enumerate() {
+            if !(check.is_empty() || check.iter().any(|n| n == &i)) {
                 continue;
             }
-            if line.starts_with('#') || line.is_empty()
-            {
+            if line.starts_with('#') || line.is_empty() {
                 continue;
             }
             let mut split = line.splitn(2, '=');
-            if split.clone().count() == 2
-            {
+            if split.clone().count() == 2 {
                 match set_commands(
                     options,
                     colors,
                     &mut vars.to_vec(),
                     split.next().unwrap(),
                     split.next().unwrap(),
-                )
-                {
-                    Err(s) if !s.is_empty() =>
-                    {
-                        if soft
-                        {
+                ) {
+                    Err(s) if !s.is_empty() => {
+                        if soft {
                             err.push(i)
-                        }
-                        else
-                        {
+                        } else {
                             return Err(s);
                         }
                     }
-                    Ok(()) =>
-                    {
-                        if soft
-                        {
+                    Ok(()) => {
+                        if soft {
                             err.push(i);
-                        }
-                        else
-                        {
+                        } else {
                             println!("{line} failed");
                             process::exit(1);
                         }
                     }
-                    _ =>
-                    {}
+                    _ => {}
                 }
-            }
-            else if !silent_commands(options, &line.chars().collect::<Vec<char>>())
-            {
-                if soft
-                {
+            } else if !silent_commands(options, &line.chars().collect::<Vec<char>>()) {
+                if soft {
                     err.push(i);
-                }
-                else
-                {
+                } else {
                     println!("{line} failed");
                     process::exit(1);
                 }
@@ -229,46 +176,36 @@ pub fn set_commands(
     vars: &mut [Variable],
     l: &str,
     o: &str,
-) -> Result<(), &'static str>
-{
+) -> Result<(), &'static str> {
     let s = o.replace(" ", "");
     let r = s.as_str();
-    match l
-    {
-        "color" | "colour" =>
-        {
-            options.color = match r
-            {
+    match l {
+        "color" | "colour" => {
+            options.color = match r {
                 "1" | "true" | "True" | "always" => Auto::True,
                 "Auto" | "auto" => Auto::Auto,
                 "0" | "false" | "False" | "never" => Auto::False,
                 _ => return Err("not true/false/auto"),
             }
         }
-        "line" | "lines" =>
-        {
-            options.lines = match r
-            {
+        "line" | "lines" => {
+            options.lines = match r {
                 "1" | "true" | "True" | "always" => Auto::True,
                 "Auto" | "auto" => Auto::Auto,
                 "0" | "false" | "False" | "never" => Auto::False,
                 _ => return Err("not true/false/auto"),
             }
         }
-        "angle" =>
-        {
-            options.angle = match r
-            {
+        "angle" => {
+            options.angle = match r {
                 "deg" | "degree" | "degrees" => Degrees,
                 "rad" | "radians" | "radian" => Radians,
                 "grad" | "gradians" | "gradian" => Gradians,
                 _ => return Err("bad angle type"),
             }
         }
-        "notation" =>
-        {
-            options.notation = match r
-            {
+        "notation" => {
+            options.notation = match r {
                 "sci" | "scientific" | "s" | "10^" | "*10^" | "10" => Scientific,
                 "engSmall" | "e" => SmallEngineering,
                 "engLarge" | "eng" | "engineering" | "E" => LargeEngineering,
@@ -276,10 +213,8 @@ pub fn set_commands(
                 _ => return Err("bad notation type"),
             }
         }
-        "graph" =>
-        {
-            options.graphtype = match r
-            {
+        "graph" => {
+            options.graphtype = match r {
                 "normal" | "true" => GraphType::Normal,
                 "null" | "none" | "false" => GraphType::None,
                 "depth" => GraphType::Depth,
@@ -289,28 +224,20 @@ pub fn set_commands(
                 _ => return Err("bad graph type"),
             }
         }
-        "saveto" =>
-        {
-            if r == "null"
-            {
+        "saveto" => {
+            if r == "null" {
                 colors.graphtofile.clear()
-            }
-            else
-            {
+            } else {
                 colors.graphtofile = r.to_string()
             }
         }
-        "recol" =>
-        {
+        "recol" => {
             colors.recol = r
                 .split(',')
                 .map(|a| {
-                    if a.len() == 6 && a.chars().all(|c| c.is_ascii_hexdigit())
-                    {
+                    if a.len() == 6 && a.chars().all(|c| c.is_ascii_hexdigit()) {
                         Some("#".to_owned() + a)
-                    }
-                    else
-                    {
+                    } else {
                         None
                     }
                 })
@@ -318,17 +245,13 @@ pub fn set_commands(
                 .map(|a| a.unwrap())
                 .collect::<Vec<String>>()
         }
-        "imcol" =>
-        {
+        "imcol" => {
             colors.imcol = r
                 .split(',')
                 .map(|a| {
-                    if a.len() == 6 && a.chars().all(|c| c.is_ascii_hexdigit())
-                    {
+                    if a.len() == 6 && a.chars().all(|c| c.is_ascii_hexdigit()) {
                         Some("#".to_owned() + a)
-                    }
-                    else
-                    {
+                    } else {
                         None
                     }
                 })
@@ -341,28 +264,20 @@ pub fn set_commands(
         "imagc" => colors.imag = "\x1b[".to_owned() + r,
         "scic" => colors.sci = "\x1b[".to_owned() + r,
         "unitsc" => colors.units = "\x1b[".to_owned() + r,
-        "bracketc" =>
-        {
-            if r == "null"
-            {
+        "bracketc" => {
+            if r == "null" {
                 colors.brackets.clear()
-            }
-            else
-            {
+            } else {
                 colors.brackets = r
                     .split(',')
                     .map(|a| "\x1b[".to_owned() + a)
                     .collect::<Vec<String>>()
             }
         }
-        "default_units" =>
-        {
-            if r == "null"
-            {
+        "default_units" => {
+            if r == "null" {
                 colors.default_units.clear()
-            }
-            else
-            {
+            } else {
                 let n = Number::from(Complex::with_val(options.prec, Nan), None);
                 colors.default_units = r
                     .split(',')
@@ -397,16 +312,12 @@ pub fn set_commands(
                     .collect::<Vec<(String, Number)>>()
             }
         }
-        "label" =>
-        {
+        "label" => {
             let mut split = o.split(',');
-            if split.clone().count() == 2
-            {
+            if split.clone().count() == 2 {
                 colors.label.0 = split.next().unwrap().to_string();
                 colors.label.1 = split.next().unwrap().to_string();
-            }
-            else if split.clone().count() == 3
-            {
+            } else if split.clone().count() == 3 {
                 colors.label = (
                     split.next().unwrap().to_string(),
                     split.next().unwrap().to_string(),
@@ -414,17 +325,12 @@ pub fn set_commands(
                 )
             }
         }
-        "point" | "points" =>
-        {
-            if r.is_empty()
-            {
+        "point" | "points" => {
+            if r.is_empty() {
                 return Err("Invalid point type");
-            }
-            else
-            {
+            } else {
                 let r = r.chars().next().unwrap();
-                options.point_style = match r
-                {
+                options.point_style = match r {
                     '.' => 0,
                     '+' => 1,
                     'x' => 2,
@@ -448,21 +354,17 @@ pub fn set_commands(
         | "tabbed" | "comma" | "units" | "scalegraph" | "debug" | "vars" | "onaxis" | "base"
         | "ticks" | "decimal" | "deci" | "decimals" | "graphprec" | "graphprecision" | "prec"
         | "windowsize" | "precision" | "range" | "xr" | "yr" | "zr" | "vrange" | "vxr" | "vyr"
-        | "vzr" | "2d" | "3d" | "progress" =>
-        {
+        | "vzr" | "2d" | "3d" | "progress" => {
             let mut args: Vec<Float> = Vec::new();
             {
                 let mut bracket = 0;
                 let mut last = 0;
                 let oc = o.chars().collect::<Vec<char>>();
-                for (i, c) in oc.iter().enumerate()
-                {
-                    match c
-                    {
+                for (i, c) in oc.iter().enumerate() {
+                    match c {
                         '(' | '{' | '[' => bracket += 1,
                         ')' | '}' | ']' => bracket -= 1,
-                        ',' if bracket == 0 =>
-                        {
+                        ',' if bracket == 0 => {
                             let parsed = input_var(
                                 &oc[last..i].iter().collect::<String>(),
                                 vars,
@@ -485,8 +387,7 @@ pub fn set_commands(
                             );
                             last = i + 1;
                         }
-                        _ =>
-                        {}
+                        _ => {}
                     }
                 }
                 let parsed = input_var(
@@ -510,8 +411,7 @@ pub fn set_commands(
                         .clone(),
                 );
             }
-            match l
-            {
+            match l {
                 "keep_data_file" => options.keep_data_file = args[0] != 0.0,
                 "graphcli" => options.graph_cli = args[0] != 0.0,
                 "interactive" => options.stay_interactive = args[0] != 0.0,
@@ -534,10 +434,8 @@ pub fn set_commands(
                 "debug" => options.debug = args[0] != 0.0,
                 "vars" => options.allow_vars = args[0] != 0.0,
                 "onaxis" => options.onaxis = args[0] != 0.0,
-                "base" =>
-                {
-                    if args.len() == 2
-                    {
+                "base" => {
+                    if args.len() == 2 {
                         let n1 = args[0]
                             .to_integer()
                             .unwrap_or_default()
@@ -548,58 +446,42 @@ pub fn set_commands(
                             .unwrap_or_default()
                             .to_i32()
                             .unwrap_or_default();
-                        if (2..=36).contains(&n1) && (2..=36).contains(&n2)
-                        {
+                        if (2..=36).contains(&n1) && (2..=36).contains(&n2) {
                             options.base = (n1, n2)
-                        }
-                        else
-                        {
+                        } else {
                             return Err("out of range of 2..=36");
                         }
-                    }
-                    else
-                    {
+                    } else {
                         let n = args[0]
                             .to_integer()
                             .unwrap_or_default()
                             .to_i32()
                             .unwrap_or_default();
-                        if (2..=36).contains(&n)
-                        {
+                        if (2..=36).contains(&n) {
                             options.base = (n, n)
-                        }
-                        else
-                        {
+                        } else {
                             return Err("out of range of 2..=36");
                         }
                     }
                 }
-                "ticks" =>
-                {
-                    if args.len() == 3
-                    {
+                "ticks" => {
+                    if args.len() == 3 {
                         options.ticks = (args[0].to_f64(), args[1].to_f64(), args[2].to_f64())
-                    }
-                    else if args.len() == 2
-                    {
+                    } else if args.len() == 2 {
                         (options.ticks.0, options.ticks.1) = (args[0].to_f64(), args[1].to_f64())
-                    }
-                    else
-                    {
+                    } else {
                         let n = args[0].to_f64();
                         options.ticks = (n, n, n);
                     }
                 }
-                "slowcheck" =>
-                {
+                "slowcheck" => {
                     options.slowcheck = args[0]
                         .to_integer()
                         .unwrap_or_default()
                         .to_u128()
                         .unwrap_or_default()
                 }
-                "decimal" | "deci" | "decimals" =>
-                {
+                "decimal" | "deci" | "decimals" => {
                     options.decimal_places = match args[0]
                         .to_integer()
                         .unwrap_or_default()
@@ -621,10 +503,8 @@ pub fn set_commands(
                     n if n != 0 => options.graph_prec = n,
                     _ => return Err("Invalid graphprecision"),
                 },
-                "windowsize" =>
-                {
-                    if args.len() == 1
-                    {
+                "windowsize" => {
+                    if args.len() == 1 {
                         options.window_size = (
                             args[0]
                                 .to_integer()
@@ -637,9 +517,7 @@ pub fn set_commands(
                                 .to_usize()
                                 .unwrap_or_default(),
                         )
-                    }
-                    else
-                    {
+                    } else {
                         options.window_size = (
                             args[0]
                                 .to_integer()
@@ -660,48 +538,36 @@ pub fn set_commands(
                     .to_u32()
                     .unwrap_or_default()
                 {
-                    n if n != 0 =>
-                    {
+                    n if n != 0 => {
                         options.prec = n;
-                        if !vars.is_empty()
-                        {
+                        if !vars.is_empty() {
                             let v = get_vars(*options);
-                            for var in vars.iter_mut()
-                            {
-                                for i in &v
-                                {
-                                    if i.name == var.name && i.unparsed == var.unparsed
-                                    {
+                            for var in vars.iter_mut() {
+                                for i in &v {
+                                    if i.name == var.name && i.unparsed == var.unparsed {
                                         *var = i.clone();
                                     }
                                 }
                             }
-                            for (i, var) in vars.to_vec().iter().enumerate()
-                            {
-                                if !var.unparsed.is_empty()
-                                {
+                            for (i, var) in vars.to_vec().iter().enumerate() {
+                                if !var.unparsed.is_empty() {
                                     let mut func_vars: Vec<(isize, String)> = Vec::new();
-                                    if var.name.contains(&'(')
-                                    {
+                                    if var.name.contains(&'(') {
                                         let mut l = var.name.clone();
                                         l.drain(0..=l.iter().position(|c| c == &'(').unwrap());
                                         l.pop();
-                                        for i in l.split(|c| c == &',')
-                                        {
+                                        for i in l.split(|c| c == &',') {
                                             func_vars.push((-1, i.iter().collect()));
                                         }
                                     }
                                     let mut fvs = Vec::new();
                                     let mut unparsed = var.unparsed.clone();
-                                    if unparsed.contains(':')
-                                    {
+                                    if unparsed.contains(':') {
                                         let un = unparsed;
                                         let mut split = un.split(':').collect::<Vec<&str>>();
                                         unparsed = split.pop().unwrap().to_string();
-                                        for i in split
-                                        {
-                                            if i.contains('=')
-                                            {
+                                        for i in split {
+                                            if i.contains('=') {
                                                 let mut split = i.splitn(2, '=');
                                                 let s = split.next().unwrap().to_string();
                                                 let parsed = input_var(
@@ -735,8 +601,7 @@ pub fn set_commands(
                                         false,
                                         &mut Vec::new(),
                                         None,
-                                    )
-                                    {
+                                    ) {
                                         Ok(n) => (n.0, n.1),
                                         _ => return Err("prec crash"),
                                     };
@@ -753,12 +618,9 @@ pub fn set_commands(
                                             parsed.0.clone(),
                                         ))
                                     }
-                                    vars[i].parsed = if var.name.contains(&'(')
-                                    {
+                                    vars[i].parsed = if var.name.contains(&'(') {
                                         parsed.0
-                                    }
-                                    else
-                                    {
+                                    } else {
                                         vec![
                                             do_math(parsed.0, *options, parsed.1.clone())
                                                 .unwrap_or(Num(Number::from(
@@ -774,13 +636,10 @@ pub fn set_commands(
                     }
                     _ => return Err("Invalid precision"),
                 },
-                "range" =>
-                {
-                    if args.len() == 1
-                    {
+                "range" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         (
@@ -791,13 +650,10 @@ pub fn set_commands(
                             options.zr.0,
                             options.zr.1,
                         ) = (-range, range, -range, range, -range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         (
@@ -810,79 +666,58 @@ pub fn set_commands(
                         ) = (min, max, min, max, min, max)
                     }
                 }
-                "xr" =>
-                {
-                    if args.len() == 1
-                    {
+                "xr" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         options.xr = (-range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         options.xr = (min, max)
                     }
                 }
-                "yr" =>
-                {
-                    if args.len() == 1
-                    {
+                "yr" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         options.yr = (-range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         options.yr = (min, max)
                     }
                 }
-                "zr" =>
-                {
-                    if args.len() == 1
-                    {
+                "zr" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         options.zr = (-range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         options.zr = (min, max)
                     }
                 }
-                "vrange" =>
-                {
-                    if args.len() == 1
-                    {
+                "vrange" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         (
@@ -893,13 +728,10 @@ pub fn set_commands(
                             options.vzr.0,
                             options.vzr.1,
                         ) = (-range, range, -range, range, -range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         (
@@ -912,80 +744,58 @@ pub fn set_commands(
                         ) = (min, max, min, max, min, max)
                     }
                 }
-                "vxr" =>
-                {
-                    if args.len() == 1
-                    {
+                "vxr" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         options.vxr = (-range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         options.vxr = (min, max)
                     }
                 }
-                "vyr" =>
-                {
-                    if args.len() == 1
-                    {
+                "vyr" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         options.vyr = (-range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         options.vyr = (min, max)
                     }
                 }
-                "vzr" =>
-                {
-                    if args.len() == 1
-                    {
+                "vzr" => {
+                    if args.len() == 1 {
                         let range = args[0].to_f64();
-                        if range == 0.0
-                        {
+                        if range == 0.0 {
                             return Err("bad range");
                         }
                         options.vzr = (-range, range)
-                    }
-                    else
-                    {
+                    } else {
                         let min = args[0].to_f64();
                         let max = args[1].to_f64();
-                        if min == max
-                        {
+                        if min == max {
                             return Err("bad range");
                         }
                         options.vzr = (min, max)
                     }
                 }
-                "2d" =>
-                {
-                    if args[0].is_sign_negative()
-                    {
+                "2d" => {
+                    if args[0].is_sign_negative() {
                         options.samples_2d = (options.xr.1 - options.xr.0) as usize
-                    }
-                    else
-                    {
+                    } else {
                         options.samples_2d = args[0]
                             .to_integer()
                             .unwrap_or_default()
@@ -993,19 +803,14 @@ pub fn set_commands(
                             .unwrap_or_default()
                     }
                 }
-                "3d" =>
-                {
-                    if args.len() == 1
-                    {
-                        if args[0].is_sign_negative()
-                        {
+                "3d" => {
+                    if args.len() == 1 {
+                        if args[0].is_sign_negative() {
                             options.samples_3d = (
                                 (options.xr.1 - options.xr.0) as usize,
                                 (options.yr.1 - options.yr.0) as usize,
                             )
-                        }
-                        else
-                        {
+                        } else {
                             let range = args[0]
                                 .to_integer()
                                 .unwrap_or_default()
@@ -1013,15 +818,10 @@ pub fn set_commands(
                                 .unwrap_or_default();
                             options.samples_3d = (range, range)
                         }
-                    }
-                    else
-                    {
-                        if args[0].is_sign_negative()
-                        {
+                    } else {
+                        if args[0].is_sign_negative() {
                             options.samples_3d.0 = (options.xr.1 - options.xr.0) as usize
-                        }
-                        else
-                        {
+                        } else {
                             let range = args[0]
                                 .to_integer()
                                 .unwrap_or_default()
@@ -1029,12 +829,9 @@ pub fn set_commands(
                                 .unwrap_or_default();
                             options.samples_3d.0 = range
                         }
-                        if args[1].is_sign_negative()
-                        {
+                        if args[1].is_sign_negative() {
                             options.samples_3d.1 = (options.yr.1 - options.yr.0) as usize
-                        }
-                        else
-                        {
+                        } else {
                             let range = args[1]
                                 .to_integer()
                                 .unwrap_or_default()
@@ -1051,18 +848,14 @@ pub fn set_commands(
     }
     Err("")
 }
-pub fn silent_commands(options: &mut Options, input: &[char]) -> bool
-{
-    match input.iter().collect::<String>().as_str()
-    {
+pub fn silent_commands(options: &mut Options, input: &[char]) -> bool {
+    match input.iter().collect::<String>().as_str() {
         "default" | "defaults" | "reset" => *options = Options::default(),
         "interactive" => options.stay_interactive = !options.stay_interactive,
         "scalegraph" => options.scale_graph = !options.scale_graph,
         "debug" => options.debug = !options.debug,
-        "color" | "colour" =>
-        {
-            options.color = match options.color
-            {
+        "color" | "colour" => {
+            options.color = match options.color {
                 Auto::Auto | Auto::True => Auto::False,
                 Auto::False => Auto::True,
             };
@@ -1076,10 +869,8 @@ pub fn silent_commands(options: &mut Options, input: &[char]) -> bool
         "keep_data_file" => options.keep_data_file = !options.keep_data_file,
         "siunits" => options.si_units = !options.si_units,
         "keepzeros" => options.keep_zeros = !options.keep_zeros,
-        "line" | "lines" =>
-        {
-            options.lines = match options.lines
-            {
+        "line" | "lines" => {
+            options.lines = match options.lines {
                 Auto::Auto | Auto::False => Auto::True,
                 Auto::True => Auto::False,
             };
@@ -1099,212 +890,172 @@ pub fn silent_commands(options: &mut Options, input: &[char]) -> bool
     true
 }
 #[allow(clippy::too_many_arguments)]
-pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout: &mut Stdout)
-{
-    match input.iter().collect::<String>().trim_start().trim_end()
-    {
-        "graphcli" =>
-        {
+pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout: &mut Stdout) {
+    match input.iter().collect::<String>().trim_start().trim_end() {
+        "graphcli" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.graph_cli = !options.graph_cli
         }
-        "default" | "defaults" | "reset" =>
-        {
+        "default" | "defaults" | "reset" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             *options = Options::default();
         }
-        "scalegraph" =>
-        {
+        "scalegraph" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.scale_graph = !options.scale_graph
         }
-        "color" | "colour" =>
-        {
+        "color" | "colour" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
-            options.color = match options.color
-            {
+            options.color = match options.color {
                 Auto::Auto | Auto::True => Auto::False,
                 Auto::False => Auto::True,
             };
         }
-        "prompt" =>
-        {
+        "prompt" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.prompt = !options.prompt;
         }
-        "gnuplot" =>
-        {
+        "gnuplot" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.gnuplot = !options.gnuplot;
         }
-        "onaxis" =>
-        {
+        "onaxis" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.onaxis = !options.onaxis;
         }
-        "surface" =>
-        {
+        "surface" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.surface = !options.surface;
         }
-        "rt" =>
-        {
+        "rt" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.real_time_output = !options.real_time_output;
         }
-        "progress" =>
-        {
+        "progress" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.progress = !options.progress;
         }
-        "siunits" =>
-        {
+        "siunits" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.si_units = !options.si_units;
         }
-        "keepzeros" =>
-        {
+        "keepzeros" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.keep_zeros = !options.keep_zeros;
         }
-        "clear" =>
-        {
+        "clear" => {
             #[cfg(feature = "bin-deps")]
             execute!(stdout, Clear(ClearType::Purge)).unwrap();
             print!("\x1b[H\x1b[J");
             stdout.flush().unwrap();
         }
-        "debug" =>
-        {
+        "debug" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.debug = !options.debug;
         }
-        "help" =>
-        {
+        "help" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             help();
         }
-        "line" | "lines" =>
-        {
+        "line" | "lines" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
-            options.lines = match options.lines
-            {
+            options.lines = match options.lines {
                 Auto::Auto | Auto::False => Auto::True,
                 Auto::True => Auto::False,
             };
         }
-        "polar" =>
-        {
+        "polar" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.polar = !options.polar;
         }
-        "frac" | "fractions" =>
-        {
+        "frac" | "fractions" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.frac.num = !options.frac.num;
         }
-        "fractionsv" =>
-        {
+        "fractionsv" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.frac.vec = !options.frac.vec;
         }
-        "fractionsm" =>
-        {
+        "fractionsm" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.frac.mat = !options.frac.mat;
         }
-        "multi" =>
-        {
+        "multi" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.multi = !options.multi;
         }
-        "tabbed" =>
-        {
+        "tabbed" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.tabbed = !options.tabbed;
         }
-        "comma" =>
-        {
+        "comma" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.comma = !options.comma;
         }
-        "units" =>
-        {
+        "units" => {
             print!("\x1b[G\x1b[A\x1b[K");
             stdout.flush().unwrap();
             options.units = !options.units;
         }
-        "history" =>
-        {
+        "history" => {
             print!("\x1b[G\x1b[A\x1b[K");
-            for l in lines
-            {
+            for l in lines {
                 println!("{l}\x1b[G");
             }
             stdout.flush().unwrap();
         }
-        "exit" | "quit" | "break" =>
-        {
+        "exit" | "quit" | "break" => {
             print!("\x1b[G\x1b[A\x1b[J");
             stdout.flush().unwrap();
             #[cfg(feature = "bin-deps")]
             terminal::disable_raw_mode().unwrap();
             process::exit(0);
         }
-        _ =>
-        {
+        _ => {
             let n = input.iter().collect::<String>();
             let mut split = n.splitn(2, ' ');
-            match split.next().unwrap()
-            {
-                "history" | "his" =>
-                {
+            match split.next().unwrap() {
+                "history" | "his" => {
                     print!("\x1b[A\x1b[G\x1b[K");
                     let r = split.next().unwrap();
-                    for i in lines
-                    {
-                        if i.contains(r)
-                        {
+                    for i in lines {
+                        if i.contains(r) {
                             println!("{i}\x1b[G");
                         }
                     }
                     stdout.flush().unwrap();
                 }
-                _ =>
-                {}
+                _ => {}
             }
         }
     }
 }
-pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> String
-{
+pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> String {
     let mut out = String::new();
-    for v in vars.iter()
-    {
-        if !v.unparsed.is_empty()
-        {
+    for v in vars.iter() {
+        if !v.unparsed.is_empty() {
             out += format!(
                 "{}={}\x1b[G\n",
                 to_output(&v.name, vars, options.color == Auto::True, colors,),
@@ -1316,13 +1067,9 @@ pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> Strin
                 )
             )
             .as_str()
-        }
-        else
-        {
-            match &v.parsed[0]
-            {
-                Num(n) =>
-                {
+        } else {
+            match &v.parsed[0] {
+                Num(n) => {
                     let n = custom_units(n.clone(), *options, colors);
                     let n = get_output(*options, colors, &n);
                     out += format!(
@@ -1331,29 +1078,23 @@ pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> Strin
                         n.0,
                         n.1,
                         n.2.unwrap_or_default(),
-                        if options.color == Auto::True
-                        {
+                        if options.color == Auto::True {
                             &colors.text
-                        }
-                        else
-                        {
+                        } else {
                             ""
                         }
                     )
                     .as_str()
                 }
-                Vector(m) =>
-                {
+                Vector(m) => {
                     let mut st = String::new();
-                    for i in m
-                    {
+                    for i in m {
                         let i = custom_units(i.clone(), *options, colors);
                         let n = get_output(*options, colors, &i);
                         st.push_str(&n.0);
                         st.push_str(&n.1);
                         st.push_str(&n.2.unwrap_or_default());
-                        if options.color == Auto::True
-                        {
+                        if options.color == Auto::True {
                             st.push_str(&colors.text)
                         }
                         st.push(',');
@@ -1365,21 +1106,17 @@ pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> Strin
                     )
                     .as_str()
                 }
-                Matrix(m) =>
-                {
+                Matrix(m) => {
                     let mut st = String::new();
-                    for i in m
-                    {
+                    for i in m {
                         st.push('{');
-                        for g in i
-                        {
+                        for g in i {
                             let g = custom_units(g.clone(), *options, colors);
                             let n = get_output(*options, colors, &g);
                             st.push_str(&n.0);
                             st.push_str(&n.1);
                             st.push_str(&n.2.unwrap_or_default());
-                            if options.color == Auto::True
-                            {
+                            if options.color == Auto::True {
                                 st.push_str(&colors.text)
                             }
                             st.push(',');
@@ -1401,13 +1138,15 @@ pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> Strin
     }
     out
 }
-pub fn equal_to(options: Options, colors: &Colors, vars: &[Variable], l: &str, last: &str)
--> String
-{
-    match l.replace(' ', "").as_str()
-    {
-        "colors" =>
-        {
+pub fn equal_to(
+    options: Options,
+    colors: &Colors,
+    vars: &[Variable],
+    l: &str,
+    last: &str,
+) -> String {
+    match l.replace(' ', "").as_str() {
+        "colors" => {
             format!(
                 "{}textc={} {}promptc={} {}imagc={} {}scic={} {}unitsc={} \x1b[0mbracketc={}\x1b[0m{}{}",
                 colors.text,
@@ -1439,8 +1178,7 @@ pub fn equal_to(options: Options, colors: &Colors, vars: &[Variable], l: &str, l
         }
         "slowcheck" => format!("{}", options.slowcheck),
         "label" => format!("{},{},{}", colors.label.0, colors.label.1, colors.label.2),
-        "color" | "colour" => (match options.color
-        {
+        "color" | "colour" => (match options.color {
             Auto::Auto => "auto",
             Auto::False => "false",
             Auto::True => "true",
@@ -1455,8 +1193,7 @@ pub fn equal_to(options: Options, colors: &Colors, vars: &[Variable], l: &str, l
         "keepzeros" => format!("{}", options.keep_zeros),
         "debug" => format!("{}", options.debug),
         "scalegraph" => format!("{}", options.scale_graph),
-        "line" | "lines" => (match options.lines
-        {
+        "line" | "lines" => (match options.lines {
             Auto::Auto => "auto",
             Auto::False => "false",
             Auto::True => "true",
@@ -1503,23 +1240,20 @@ pub fn equal_to(options: Options, colors: &Colors, vars: &[Variable], l: &str, l
         ),
         "2d" => format!("{}", options.samples_2d),
         "3d" => format!("{} {}", options.samples_3d.0, options.samples_3d.1),
-        "angle" => match options.angle
-        {
+        "angle" => match options.angle {
             Degrees => "deg",
             Radians => "rad",
             Gradians => "grad",
         }
         .to_string(),
-        "notation" => match options.notation
-        {
+        "notation" => match options.notation {
             SmallEngineering => "e",
             LargeEngineering => "E",
             Scientific => "s",
             Normal => "n",
         }
         .to_string(),
-        "graph" => match options.graphtype
-        {
+        "graph" => match options.graphtype {
             GraphType::Normal => "normal",
             GraphType::Domain => "domain",
             GraphType::DomainAlt => "domain_alt",
@@ -1556,8 +1290,7 @@ pub fn equal_to(options: Options, colors: &Colors, vars: &[Variable], l: &str, l
             .map(|(i, a)| format!("im{}col={}", i, formatcol(a)))
             .collect::<Vec<String>>()
             .join(" "),
-        _ =>
-        {
+        _ => {
             let input = input_var(
                 &insert_last(&l.chars().collect::<Vec<char>>(), last),
                 vars,
@@ -1571,16 +1304,14 @@ pub fn equal_to(options: Options, colors: &Colors, vars: &[Variable], l: &str, l
                 &mut Vec::new(),
                 None,
             );
-            match input
-            {
+            match input {
                 Ok(f) => parsed_to_string(f.0, vars, f.1, &options, colors),
                 Err(s) => s.to_string(),
             }
         }
     }
 }
-fn formatcol(color: &str) -> String
-{
+fn formatcol(color: &str) -> String {
     format!(
         "\x1b[38;2;{};{};{}m{}\x1b[0m",
         u8::from_str_radix(&color[1..3], 16).unwrap(),
@@ -1589,8 +1320,7 @@ fn formatcol(color: &str) -> String
         color
     )
 }
-fn bracketcol(bracket: &[String]) -> String
-{
+fn bracketcol(bracket: &[String]) -> String {
     bracket
         .iter()
         .fold(String::new(), |out, a| out + a + &a[2..] + ",")
