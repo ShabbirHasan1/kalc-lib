@@ -2,6 +2,7 @@ use rug::ops::Pow as RugPow;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
+//TODO malachite num maybe
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CDecimal(Decimal, Decimal);
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -27,6 +28,7 @@ pub enum Float {
     F64(f64),
     F32(f32),
 }
+//maybe box some things to avoid memory bads
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Integer {
     Rug(rug::Integer),
@@ -44,9 +46,11 @@ pub enum Type {
 
 pub trait WithVal<T> {
     fn with_val(obj: Type, prec: u32, val: T) -> Self;
+    fn new(obj: Type, prec: u32) -> Self;
 }
 pub trait WithValDeci<T> {
     fn with_val(prec: u32, val: T) -> Self;
+    fn new(prec: u32) -> Self;
 }
 
 pub trait Pow<T> {
@@ -77,20 +81,20 @@ impl_pow!(
 impl_pow!(
     Decimal,
     i32,
-    (D512, |x| fastnum::D512::from(x)),
-    (D256, |x| fastnum::D256::from(x))
+    (D512, fastnum::D512::from),
+    (D256, fastnum::D256::from)
 );
 impl_pow!(
     Decimal,
     f32,
-    (D512, |x| fastnum::D512::from(x)),
-    (D256, |x| fastnum::D256::from(x))
+    (D512, fastnum::D512::from),
+    (D256, fastnum::D256::from)
 );
 impl_pow!(
     Decimal,
     f64,
-    (D512, |x| fastnum::D512::from(x)),
-    (D256, |x| fastnum::D256::from(x))
+    (D512, fastnum::D512::from),
+    (D256, fastnum::D256::from)
 );
 
 impl_pow!(
@@ -98,7 +102,7 @@ impl_pow!(
     f32,
     (Rug, |x| x),
     (Fastnum, |x| x),
-    (F64, |x| x as f32),
+    (F64, |x| x),
     (F32, |x| x)
 );
 
@@ -134,49 +138,40 @@ macro_rules! impl_with_val_deci {
         impl WithValDeci<$other> for $ty {
             fn with_val(prec: u32, rhs: $other) -> Self {
                 match prec.next_power_of_two() {
-                        512 => Self::D512(fastnum::D512::from(rhs)),
-                        256 => Self::D256(fastnum::D256::from(rhs)),
-                        _=>unreachable!()
+                    512 => Self::D512(fastnum::D512::from(rhs)),
+                    256 => Self::D256(fastnum::D256::from(rhs)),
+                    _ => unreachable!(),
+                }
+            }
+            fn new(prec: u32) -> Self {
+                match prec.next_power_of_two() {
+                    512 => Self::D512(fastnum::D512::from(0)),
+                    256 => Self::D256(fastnum::D256::from(0)),
+                    _ => unreachable!(),
                 }
             }
         }
     };
 }
 
-impl_with_val_deci!(
-    Decimal,
-    f64
-);
-impl_with_val_deci!(
-    Decimal,
-    f32
-);
-impl_with_val_deci!(
-    Decimal,
-    i32
-);
+impl_with_val_deci!(Decimal, f64);
+impl_with_val_deci!(Decimal, f32);
+impl_with_val_deci!(Decimal, i32);
 macro_rules! impl_with_val_cdeci {
     ($ty:ty, $other:ty) => {
         impl WithValDeci<$other> for $ty {
             fn with_val(prec: u32, rhs: $other) -> Self {
                 CDecimal(Decimal::with_val(prec, rhs), Decimal::with_val(prec, 0))
             }
+            fn new(prec: u32) -> Self {
+                CDecimal(Decimal::with_val(prec, 0), Decimal::with_val(prec, 0))
+            }
         }
     };
 }
-impl_with_val_cdeci!(
-    CDecimal,
-    f64
-);
-impl_with_val_cdeci!(
-    CDecimal,
-    f32
-);
-impl_with_val_cdeci!(
-    CDecimal,
-    i32
-);
-
+impl_with_val_cdeci!(CDecimal, f64);
+impl_with_val_cdeci!(CDecimal, f32);
+impl_with_val_cdeci!(CDecimal, i32);
 
 macro_rules! impl_with_val {
     ($ty:ty, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
@@ -188,165 +183,40 @@ macro_rules! impl_with_val {
                     )*
                 }
             }
+            fn new(obj: Type, prec: u32) -> Self {
+                match obj {
+                    $(
+                        Type::$variant => Self::$variant($cast(prec, 0.0)),
+                    )*
+                }
+            }
         }
     };
 }
 impl_with_val!(
     Complex,
     f64,
-    (Rug,  |prec, x| rug::Complex::with_val(prec, x)),
-    (Fastnum,  |prec, x| CDecimal::with_val(prec, x)),
-    (F64,  |_, x| CF64(x,0.0)),
-    (F32,  |_, x| CF32(x as f32,0.0))
+    (Rug, rug::Complex::with_val),
+    (Fastnum, CDecimal::with_val),
+    (F64, |_, x| CF64(x, 0.0)),
+    (F32, |_, x| CF32(x as f32, 0.0))
 );
 impl_with_val!(
     Float,
     f64,
-    (Rug,  |prec, x| rug::Float::with_val(prec, x)),
-    (Fastnum,  |prec, x| Decimal::with_val(prec, x)),
-    (F64,  |_, x| x),
-    (F32,  |_, x| x as f32)
+    (Rug, rug::Float::with_val),
+    (Fastnum, Decimal::with_val),
+    (F64, |_, x| x),
+    (F32, |_, x| x as f32)
 );
-impl CDecimal {
-    pub fn exp(self) -> Self {
-        todo!()
-    }
-}
 
-impl Complex {
-    pub fn pi(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::with_val(prec, rug::float::Constant::Pi)),
-        }
-    }
-    pub fn inf(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::with_val(prec, rug::float::Special::Infinity)),
-        }
-    }
-    pub fn nan(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::with_val(prec, rug::float::Special::Nan)),
-        }
-    }
-    pub fn new(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::new(prec)),
-        }
-    }
-    pub fn real(&self) -> Float {
-        match self {
-            Self::Rug(a) => Float::Rug(a.real().clone()),
-        }
-    }
-    pub fn imag(&self) -> Float {
-        match self {
-            Self::Rug(a) => Float::Rug(a.imag().clone()),
-        }
-    }
-    pub fn into_real(self) -> Float {
-        match self {
-            Self::Rug(a) => Float::Rug(a.into_real_imag().0),
-        }
-    }
-    pub fn into_imag(self) -> Float {
-        match self {
-            Self::Rug(a) => Float::Rug(a.into_real_imag().1),
-        }
-    }
-    pub fn into_real_imag(self) -> (Float, Float) {
-        match self {
-            Self::Rug(a) => {
-                let (a, b) = a.into_real_imag();
-                (Float::Rug(a), Float::Rug(b))
-            }
-        }
-    }
-    pub fn prec(&self) -> u32 {
-        match self {
-            Self::Rug(a) => a.prec().0,
-        }
-    }
-    pub fn abs(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.abs()),
-        }
-    }
-    pub fn ln(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.ln()),
-        }
-    }
-    pub fn exp(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.exp()),
-        }
-    }
-    pub fn sin(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.sin()),
-        }
-    }
-    pub fn cos(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.cos()),
-        }
-    }
-    pub fn tan(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.tan()),
-        }
-    }
-    pub fn sinh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.sinh()),
-        }
-    }
-    pub fn cosh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.cosh()),
-        }
-    }
-    pub fn tanh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.tanh()),
-        }
-    }
-    pub fn asin(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.asin()),
-        }
-    }
-    pub fn acos(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.acos()),
-        }
-    }
-    pub fn atan(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.atan()),
-        }
-    }
-    pub fn asinh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.asinh()),
-        }
-    }
-    pub fn acosh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.acosh()),
-        }
-    }
-    pub fn atanh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.atanh()),
-        }
-    }
-}
 impl Display for Complex {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Rug(a) => a.fmt(f),
+            Self::Fastnum(a) => a.fmt(f),
+            Self::F32(a) => a.fmt(f),
+            Self::F64(a) => a.fmt(f),
         }
     }
 }
@@ -354,6 +224,9 @@ impl Display for Float {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Rug(a) => a.fmt(f),
+            Self::Fastnum(a) => a.fmt(f),
+            Self::F32(a) => a.fmt(f),
+            Self::F64(a) => a.fmt(f),
         }
     }
 }
@@ -361,6 +234,7 @@ impl Display for Decimal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::D512(a) => a.fmt(f),
+            Self::D256(a) => a.fmt(f),
         }
     }
 }
@@ -389,209 +263,277 @@ impl Display for Integer {
         }
     }
 }
-impl PartialOrd for Float {
+macro_rules! impl_partial_ord {
+    ($t:ty,$($variant:ident),*) => {
+impl PartialOrd for $t {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (Self::Rug(a), Self::Rug(b)) => a.partial_cmp(b),
+            $((Self::$variant(a), Self::$variant(b)) => a.partial_cmp(b),)*
+            _=>unreachable!()
         }
     }
     fn lt(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Rug(a), Self::Rug(b)) => a.lt(b),
+            $((Self::$variant(a), Self::$variant(b)) => a.lt(b),)*
+            _=>unreachable!()
         }
     }
     fn le(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Rug(a), Self::Rug(b)) => a.le(b),
+        $(    (Self::$variant(a), Self::$variant(b)) => a.le(b),)*
+            _=>unreachable!()
         }
     }
     fn gt(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Rug(a), Self::Rug(b)) => a.gt(b),
+          $(  (Self::$variant(a), Self::$variant(b)) => a.gt(b),)*
+            _=>unreachable!()
         }
     }
     fn ge(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Rug(a), Self::Rug(b)) => a.ge(b),
+            $((Self::$variant(a), Self::$variant(b)) => a.ge(b),)*
+            _=>unreachable!()
         }
     }
 }
-impl PartialOrd for Decimal {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (Self::D512(a), Self::D512(b)) => a.partial_cmp(b),
-        }
-    }
-    fn lt(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::D512(a), Self::D512(b)) => a.lt(b),
-        }
-    }
-    fn le(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::D512(a), Self::D512(b)) => a.le(b),
-        }
-    }
-    fn gt(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::D512(a), Self::D512(b)) => a.gt(b),
-        }
-    }
-    fn ge(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::D512(a), Self::D512(b)) => a.ge(b),
-        }
-    }
+
+    };
 }
-impl Float {
-    pub fn pi(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Float::with_val(prec, rug::float::Constant::Pi)),
+impl_partial_ord!(Float, Rug, Fastnum, F64, F32);
+impl_partial_ord!(Decimal, D512, D256);
+macro_rules! dec_impl {
+    ($t:ty,$($variant:ident),*) => {
+        impl $t {
+            pub fn abs(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.abs()),)*
+                }
+            }
+
+            pub fn recip(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.recip()),)*
+                }
+            }
+
+            pub fn sqrt(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.sqrt()),)*
+                }
+            }
+
+            pub fn exp(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.exp()),)*
+                }
+            }
+
+            pub fn ln(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.ln()),)*
+                }
+            }
+
+            pub fn log2(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.log2()),)*
+                }
+            }
+
+            pub fn log10(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.log10()),)*
+                }
+            }
+
+            pub fn cbrt(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.cbrt()),)*
+                }
+            }
+
+            pub fn sin(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.sin()),)*
+                }
+            }
+
+            pub fn cos(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.cos()),)*
+                }
+            }
+
+            pub fn tan(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.tan()),)*
+                }
+            }
+
+            pub fn asin(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.asin()),)*
+                }
+            }
+
+            pub fn acos(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.acos()),)*
+                }
+            }
+
+            pub fn atan(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.atan()),)*
+                }
+            }
+
+            pub fn atan2(self, other: Self) -> Self {
+                match (self, other) {
+                    $( (Self::$variant(a), Self::$variant(b)) => Self::$variant(a.atan2(b)), )*
+                    _ => unreachable!(),
+                }
+            }
+
+            pub fn sinh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.sinh()),)*
+                }
+            }
+
+            pub fn cosh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.cosh()),)*
+                }
+            }
+
+            pub fn tanh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.tanh()),)*
+                }
+            }
+
+            pub fn asinh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.asinh()),)*
+                }
+            }
+
+            pub fn acosh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.acosh()),)*
+                }
+            }
+
+            pub fn atanh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.atanh()),)*
+                }
+            }
+
+            /*pub fn round(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.round()),)*
+                }
+            }*/
+
+            pub fn floor(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.floor()),)*
+                }
+            }
+
+            pub fn ceil(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.ceil()),)*
+                }
+            }
+
+            /*pub fn trunc(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.trunc()),)*
+                }
+            }
+
+            pub fn fract(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.fract()),)*
+                }
+            }*/
+
+            pub fn sin_cos(self) -> (Self, Self) {
+                match self {
+                    $(Self::$variant(a) => {
+                        let (s, c) = a.sin_cos();
+                        (Self::$variant(s), Self::$variant(c))
+                    },)*
+                }
+            }
+
+            pub fn hypot(self, other: Self) -> Self {
+                match (self, other) {
+                    $( (Self::$variant(a), Self::$variant(b)) => Self::$variant(a.hypot(b)), )*
+                    _ => unreachable!(),
+                }
+            }
+
+            pub fn is_nan(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_nan(),)*
+                }
+            }
+
+            pub fn is_infinite(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_infinite(),)*
+                }
+            }
+
+            pub fn is_finite(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_finite(),)*
+                }
+            }
+
+            pub fn is_sign_positive(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_sign_positive(),)*
+                }
+            }
+
+            pub fn is_sign_negative(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_sign_negative(),)*
+                }
+            }
         }
-    }
-    pub fn inf(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Float::with_val(prec, rug::float::Special::Infinity)),
-        }
-    }
-    pub fn nan(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Float::with_val(prec, rug::float::Special::Nan)),
-        }
-    }
-    pub fn new(obj: Type, prec: u32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Float::new(prec)),
-        }
-    }
-    pub fn prec(&self) -> u32 {
-        match self {
-            Self::Rug(a) => a.prec(),
-        }
-    }
-    pub fn abs(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.abs()),
-        }
-    }
-    pub fn ln(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.ln()),
-        }
-    }
-    pub fn exp(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.exp()),
-        }
-    }
-    pub fn sin(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.sin()),
-        }
-    }
-    pub fn cos(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.cos()),
-        }
-    }
-    pub fn tan(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.tan()),
-        }
-    }
-    pub fn sinh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.sinh()),
-        }
-    }
-    pub fn cosh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.cosh()),
-        }
-    }
-    pub fn tanh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.tanh()),
-        }
-    }
-    pub fn asin(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.asin()),
-        }
-    }
-    pub fn acos(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.acos()),
-        }
-    }
-    pub fn atan(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.atan()),
-        }
-    }
-    pub fn asinh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.asinh()),
-        }
-    }
-    pub fn acosh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.acosh()),
-        }
-    }
-    pub fn atanh(self) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.atanh()),
-        }
-    }
-    pub fn max(self, other: Self) -> Self {
-        match (self, other) {
-            (Self::Rug(a), Self::Rug(b)) => Self::Rug(a.max(&b)),
-        }
-    }
-    pub fn min(self, other: Self) -> Self {
-        match (self, other) {
-            (Self::Rug(a), Self::Rug(b)) => Self::Rug(a.min(&b)),
-        }
-    }
+    };
 }
-impl Decimal {
-    pub fn recip(self) -> Self {
-        match self {
-            Decimal::D512(a) => Decimal::D512(a.recip()),
-        }
-    }
-    pub fn atan2(self, adj: Self) -> Self {
-        match (self, adj) {
-            (Decimal::D512(a), Decimal::D512(b)) => Decimal::D512(a.atan2(b)),
-        }
-    }
-    pub fn sin_cos(self) -> (Self, Self) {
-        match self {
-            Decimal::D512(a) => {
-                let (a,b) = a.sin_cos();
-                (Decimal::D512(a),Decimal::D512(b))
-            },
-        }
-    }
-}
+dec_impl!(Decimal, D512, D256);
 impl Integer {
     pub fn is_probably_prime(&self, reps: u32) -> bool {
         match self {
             Self::Rug(a) => a.is_probably_prime(reps) != rug::integer::IsPrime::No,
-            Self::Fastnum(_) => todo!(),
-            Self::F64(_) => todo!(),
-            Self::F32(_) => todo!(),
+            Self::Fastnum(_) => false,
+            Self::F64(_) => false,
+            Self::F32(_) => false,
         }
     }
     pub fn from(obj: Type, val: u32) -> Self {
         match obj {
             Type::Rug => Self::Rug(rug::Integer::from(val)),
+            Type::Fastnum => Self::Fastnum(fastnum::I512::from(val)),
+            Type::F64 => Self::F64(val as i128),
+            Type::F32 => Self::F32(val as i128),
         }
     }
     pub fn new(obj: Type) -> Self {
         match obj {
             Type::Rug => Self::Rug(rug::Integer::new()),
+            Type::Fastnum => Self::Fastnum(fastnum::I512::from(0)),
+            Type::F64 => Self::F64(0),
+            Type::F32 => Self::F32(0),
         }
     }
 }
@@ -1010,7 +952,7 @@ impl_pow!(CDecimal, f64, |x| x);
 impl_pow!(CF64, f64, |x| x);
 impl_pow!(CF32, f64, |x| x as f32);
 impl_pow!(CDecimal, i32, |x| x as f64);
-impl_pow!(CF64, i32, |x| x as f64); //TODO
+impl_pow!(CF64, i32, |x| x as f64);
 impl_pow!(CF32, i32, |x| x as f32);
 impl_ops!(
     Complex,
