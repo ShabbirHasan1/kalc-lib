@@ -1,9 +1,7 @@
 use rug::ops::Pow as RugPow;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
-use std::{
-    cmp::Ordering,
-};
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CDecimal(Decimal, Decimal);
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -47,6 +45,9 @@ pub enum Type {
 pub trait WithVal<T> {
     fn with_val(obj: Type, prec: u32, val: T) -> Self;
 }
+pub trait WithValDeci<T> {
+    fn with_val(prec: u32, val: T) -> Self;
+}
 
 pub trait Pow<T> {
     fn pow(self, val: T) -> Self;
@@ -67,97 +68,148 @@ macro_rules! impl_pow {
 impl_pow!(
     Complex,
     f64,
-    Rug,
-    Fastnum,
-    F64,
-    F32
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x)
+);
+
+impl_pow!(
+    Decimal,
+    i32,
+    (D512, |x| fastnum::D512::from(x)),
+    (D256, |x| fastnum::D256::from(x))
+);
+impl_pow!(
+    Decimal,
+    f32,
+    (D512, |x| fastnum::D512::from(x)),
+    (D256, |x| fastnum::D256::from(x))
+);
+impl_pow!(
+    Decimal,
+    f64,
+    (D512, |x| fastnum::D512::from(x)),
+    (D256, |x| fastnum::D256::from(x))
+);
+
+impl_pow!(
+    Complex,
+    f32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f32),
+    (F32, |x| x)
 );
 
 impl_pow!(
     Complex,
     i32,
-    Rug,
-    Fastnum,
-    F64,
-    F32
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x)
 );
 
-impl WithVal<f64> for Complex {
-    fn with_val(obj: Type, prec: u32, val: f64) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::with_val(prec, val)),
+impl_pow!(
+    Float,
+    f32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f64),
+    (F32, |x| x)
+);
+
+impl_pow!(
+    Float,
+    i32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x)
+);
+
+macro_rules! impl_with_val_deci {
+    ($ty:ty, $other:ty) => {
+        impl WithValDeci<$other> for $ty {
+            fn with_val(prec: u32, rhs: $other) -> Self {
+                match prec.next_power_of_two() {
+                        512 => Self::D512(fastnum::D512::from(rhs)),
+                        256 => Self::D256(fastnum::D256::from(rhs)),
+                        _=>unreachable!()
+                }
+            }
         }
-    }
-}
-impl WithVal<i32> for Complex {
-    fn with_val(obj: Type, prec: u32, val: i32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::with_val(prec, val)),
-        }
-    }
-}
-impl WithVal<(f64, f64)> for Complex {
-    fn with_val(obj: Type, prec: u32, val: (f64, f64)) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::with_val(prec, val)),
-        }
-    }
-}
-impl WithVal<(i32, i32)> for Complex {
-    fn with_val(obj: Type, prec: u32, val: (i32, i32)) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Complex::with_val(prec, val)),
-        }
-    }
+    };
 }
 
-impl Pow<f64> for Float {
-    fn pow(self, val: f64) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.pow(val)),
+impl_with_val_deci!(
+    Decimal,
+    f64
+);
+impl_with_val_deci!(
+    Decimal,
+    f32
+);
+impl_with_val_deci!(
+    Decimal,
+    i32
+);
+macro_rules! impl_with_val_cdeci {
+    ($ty:ty, $other:ty) => {
+        impl WithValDeci<$other> for $ty {
+            fn with_val(prec: u32, rhs: $other) -> Self {
+                CDecimal(Decimal::with_val(prec, rhs), Decimal::with_val(prec, 0))
+            }
         }
-    }
+    };
 }
-impl WithVal<f64> for Float {
-    fn with_val(obj: Type, prec: u32, val: f64) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Float::with_val(prec, val)),
+impl_with_val_cdeci!(
+    CDecimal,
+    f64
+);
+impl_with_val_cdeci!(
+    CDecimal,
+    f32
+);
+impl_with_val_cdeci!(
+    CDecimal,
+    i32
+);
+
+
+macro_rules! impl_with_val {
+    ($ty:ty, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
+        impl WithVal<$other> for $ty {
+            fn with_val(obj: Type, prec: u32, rhs: $other) -> Self {
+                match obj {
+                    $(
+                        Type::$variant => Self::$variant($cast(prec, rhs)),
+                    )*
+                }
+            }
         }
-    }
+    };
 }
-impl Pow<i32> for Float {
-    fn pow(self, val: i32) -> Self {
-        match self {
-            Self::Rug(a) => Self::Rug(a.pow(val)),
-        }
-    }
-}
-impl WithVal<i32> for Float {
-    fn with_val(obj: Type, prec: u32, val: i32) -> Self {
-        match obj {
-            Type::Rug => Self::Rug(rug::Float::with_val(prec, val)),
-        }
-    }
-}
-impl Pow<Decimal> for Decimal {
-    fn pow(self, val: Decimal) -> Self {
-        match (self, val) {
-            (Decimal::D512(a), Decimal::D512(b)) => Decimal::D512(a.pow(b)),
-        }
-    }
-}
-impl Pow<i32> for Decimal {
-    fn pow(self, val: i32) -> Self {
-        match self {
-            Decimal::D512(a) => Decimal::D512(a.powi(val)),
-        }
-    }
-}
-impl Pow<f64> for Decimal {
-    fn pow(self, val: f64) -> Self {
-        match self {
-            Decimal::D512(a) => Decimal::D512(a.pow(fastnum::D512::from(val))),
-        }
+impl_with_val!(
+    Complex,
+    f64,
+    (Rug,  |prec, x| rug::Complex::with_val(prec, x)),
+    (Fastnum,  |prec, x| CDecimal::with_val(prec, x)),
+    (F64,  |_, x| CF64(x,0.0)),
+    (F32,  |_, x| CF32(x as f32,0.0))
+);
+impl_with_val!(
+    Float,
+    f64,
+    (Rug,  |prec, x| rug::Float::with_val(prec, x)),
+    (Fastnum,  |prec, x| Decimal::with_val(prec, x)),
+    (F64,  |_, x| x),
+    (F32,  |_, x| x as f32)
+);
+impl CDecimal {
+    pub fn exp(self) -> Self {
+        todo!()
     }
 }
 
@@ -509,6 +561,19 @@ impl Decimal {
             Decimal::D512(a) => Decimal::D512(a.recip()),
         }
     }
+    pub fn atan2(self, adj: Self) -> Self {
+        match (self, adj) {
+            (Decimal::D512(a), Decimal::D512(b)) => Decimal::D512(a.atan2(b)),
+        }
+    }
+    pub fn sin_cos(self) -> (Self, Self) {
+        match self {
+            Decimal::D512(a) => {
+                let (a,b) = a.sin_cos();
+                (Decimal::D512(a),Decimal::D512(b))
+            },
+        }
+    }
 }
 impl Integer {
     pub fn is_probably_prime(&self, reps: u32) -> bool {
@@ -536,12 +601,13 @@ macro_rules! impl_pow {
             fn pow(self, rhs: $rhs) -> Self {
                 let rhs = $cast(rhs);
                 let t = self.1.atan2(self.0);
-                let r = rhs * Self::exp(rhs * 0.5 * (self.0 * self.0 + self.1 * self.1).ln());
-                let (s,c) = t.sin_cos();
-                Self(r*c,r*s)
+                let abs = self.0 * self.0 + self.1 * self.1;
+                let r = abs.pow(rhs * 0.5) * rhs;
+                let (s, c) = t.sin_cos();
+                Self(r * c, r * s)
             }
         }
-    }
+    };
 }
 macro_rules! impl_c_ops {
     ($t:ty, $rhs:ty, $cast:expr) => {
@@ -934,22 +1000,64 @@ impl_self_ops!(Decimal, D512, D256);
 impl_self_ops!(Complex, Rug, Fastnum, F64, F32);
 impl_self_ops!(Float, Rug, Fastnum, F64, F32);
 impl_self_ops!(Integer, Rug, Fastnum, F64, F32);
-impl_ops!(Decimal, f64, (D512, |x|x),(D256, |x|x));
-impl_ops!(Decimal, f32, (D512, |x|x),(D256, |x|x));
-impl_ops!(Decimal, i32, (D512, |x|x),(D256, |x|x));
+impl_ops!(Decimal, f64, (D512, |x| x), (D256, |x| x));
+impl_ops!(Decimal, f32, (D512, |x| x), (D256, |x| x));
+impl_ops!(Decimal, i32, (D512, |x| x), (D256, |x| x));
 impl_pow!(CDecimal, f32, |x| x);
 impl_pow!(CF64, f32, |x| x as f64);
 impl_pow!(CF32, f32, |x| x);
 impl_pow!(CDecimal, f64, |x| x);
-impl_pow!(CF64, f64, |x| x as f64);
-impl_pow!(CF32, f64, |x| x);
-impl_pow!(CDecimal, i32, |x| x);
-impl_pow!(CF64, i32, |x| x as i32);
-impl_pow!(CF32, i32, |x| x as i32);
-impl_ops!(Complex, f64,(Rug,|x|x), (Fastnum,|x|x), (F64,|x|x), (F32,|x|x as f32));
-impl_ops!(Complex, f32,(Rug,|x|x), (Fastnum,|x|x), (F64,|x|x as f64), (F32,|x|x));
-impl_ops!(Complex, i32,(Rug,|x|x), (Fastnum,|x|x), (F64,|x|x as f64), (F32,|x|x as f32));
-impl_ops!(Float, f64,(Rug,|x|x), (Fastnum,|x|x), (F64,|x|x), (F32,|x|x as f32));
-impl_ops!(Float, f32,(Rug,|x|x), (Fastnum,|x|x), (F64,|x|x as f64), (F32,|x|x));
-impl_ops!(Float, i32,(Rug,|x|x), (Fastnum,|x|x), (F64,|x|x as f64), (F32,|x|x as f32));
+impl_pow!(CF64, f64, |x| x);
+impl_pow!(CF32, f64, |x| x as f32);
+impl_pow!(CDecimal, i32, |x| x as f64);
+impl_pow!(CF64, i32, |x| x as f64); //TODO
+impl_pow!(CF32, i32, |x| x as f32);
+impl_ops!(
+    Complex,
+    f64,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x as f32)
+);
+impl_ops!(
+    Complex,
+    f32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f64),
+    (F32, |x| x)
+);
+impl_ops!(
+    Complex,
+    i32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f64),
+    (F32, |x| x as f32)
+);
+impl_ops!(
+    Float,
+    f64,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x as f32)
+);
+impl_ops!(
+    Float,
+    f32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f64),
+    (F32, |x| x)
+);
+impl_ops!(
+    Float,
+    i32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f64),
+    (F32, |x| x as f32)
+);
 impl_int_ops!(Integer, i32);
