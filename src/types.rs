@@ -21,6 +21,7 @@ pub enum Complex {
     F64(CF64),
     F32(CF32),
 }
+//make real only an option
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Float {
     Rug(rug::Float),
@@ -91,6 +92,28 @@ pub trait SinhCosh {
     fn sinh_cosh(self) -> (Self, Self)
     where
         Self: Sized;
+}
+pub trait Pi {
+    fn pi(prec: u32) -> Self;
+}
+impl Pi for Decimal {
+    fn pi(prec: u32) -> Self {
+        match prec.next_power_of_two() {
+            512 => Self::D512(fastnum::D512::PI),
+            256 => Self::D256(fastnum::D256::PI),
+            _ => unreachable!(),
+        }
+    }
+}
+impl Pi for f64 {
+    fn pi(_: u32) -> Self {
+        std::f64::consts::PI
+    }
+}
+impl Pi for f32 {
+    fn pi(_: u32) -> Self {
+        std::f32::consts::PI
+    }
 }
 macro_rules! impl_sinh_cosh {
     ($($t:ty),*) => {
@@ -458,12 +481,13 @@ macro_rules! dec_impl {
     };
 }
 macro_rules! dec_c_impl {
-    ($t:ty, $new:expr) => {
+    ($t:ty, $l:ty, $new:expr) => {
+        #[allow(clippy::unnecessary_cast)]
         impl $t {
             pub fn abs(self) -> Self {
                 Self(
                     (self.0 * self.0 + self.1 * self.1).sqrt(),
-                    $new(self.prec()),
+                    $new(self.prec(), 0.0),
                 )
             }
             pub fn recip(self) -> Self {
@@ -474,19 +498,28 @@ macro_rules! dec_c_impl {
                 self.pow(0.5)
             }
             pub fn exp(self) -> Self {
-                todo!()
+                let r = self.0.exp();
+                let (c, s) = self.1.sin_cos();
+                r * Self(c, s)
+            }
+            pub fn arg(self) -> Self {
+                Self(self.1.atan2(self.0), $new(self.prec(), 0.0))
             }
             pub fn ln(self) -> Self {
-                todo!()
+                let abs = self.0 * self.0 + self.1 * self.1;
+                Self(abs.ln() * 0.5, self.1.atan2(self.0))
             }
             pub fn log2(self) -> Self {
-                todo!()
+                self.ln() / $new(self.prec(), 2.0).ln()
             }
             pub fn log10(self) -> Self {
-                todo!()
+                self.ln() / $new(self.prec(), 10.0).ln()
             }
             pub fn cbrt(self) -> Self {
                 self.root(3)
+            }
+            pub fn conj(self) -> Self {
+                Self(self.0, -self.1)
             }
             pub fn sin(self) -> Self {
                 let (a, b) = self.0.sin_cos();
@@ -503,71 +536,66 @@ macro_rules! dec_c_impl {
                 self.1 *= 2.0;
                 let (a, b) = self.0.sin_cos();
                 let (c, d) = self.1.sinh_cosh();
-                let r = (b + d).recip();
-                Self(a * r, c * r)
+                Self(a, c) / (b + d)
             }
             pub fn asin(self) -> Self {
-                todo!()
+                let p: $t = 1.0 - self * self;
+                let v = Self(-self.1, self.0) + p.sqrt();
+                v.ln()
             }
             pub fn acos(self) -> Self {
-                todo!()
+                <$l>::pi(self.prec()) / 2.0 - self.asin()
             }
             pub fn atan(self) -> Self {
-                todo!()
+                let v = Self(-self.1, self.0);
+                ((1 + v).arg() - (1 - v).arg()) / 2.0
             }
-            pub fn atan2(self, _other: Self) -> Self {
-                todo!()
+            pub fn atan2(self, other: Self) -> Self {
+                let v = (Self(-self.1, self.0) + other) / (self * self + other * other).sqrt();
+                v.ln()
             }
             pub fn sinh(self) -> Self {
-                todo!()
+                let (a, b) = self.0.sinh_cosh();
+                let (c, d) = self.1.sin_cos();
+                Self(a * d, b * c)
             }
             pub fn cosh(self) -> Self {
-                todo!()
+                let (a, b) = self.0.sinh_cosh();
+                let (c, d) = self.1.sin_cos();
+                Self(b * d, a * c)
             }
-            pub fn tanh(self) -> Self {
-                todo!()
+            pub fn tanh(mut self) -> Self {
+                self.0 *= 2.0;
+                self.1 *= 2.0;
+                let (a, b) = self.0.sinh_cosh();
+                let (c, d) = self.1.sin_cos();
+                Self(a, c) / (b + d)
             }
             pub fn asinh(self) -> Self {
-                todo!()
+                let v: $t = 1.0 + self * self;
+                (v.sqrt() + self).ln()
             }
             pub fn acosh(self) -> Self {
-                todo!()
+                let v: $t = self * self - 1.0;
+                (v.sqrt() + self).ln()
             }
             pub fn atanh(self) -> Self {
-                todo!()
-            }
-            pub fn round(self) -> Self {
-                todo!()
-            }
-            pub fn floor(self) -> Self {
-                todo!()
-            }
-            pub fn ceil(self) -> Self {
-                todo!()
-            }
-            pub fn trunc(self) -> Self {
-                todo!()
-            }
-            pub fn fract(self) -> Self {
-                todo!()
+                ((1 + self).ln() - (1 - self).ln()) / 2.0
             }
             pub fn sin_cos(self) -> (Self, Self) {
-                todo!()
+                (self.sin(), self.cos())
             }
             pub fn sinh_cosh(self) -> (Self, Self) {
-                todo!()
-            }
-            pub fn hypot(self, _other: Self) -> Self {
-                todo!()
+                (self.sinh(), self.cosh())
             }
             pub fn is_nan(self) -> bool {
-                todo!()
+                self.0.is_nan() || self.1.is_nan()
             }
             pub fn is_infinite(self) -> bool {
-                todo!()
+                self.0.is_infinite() || self.1.is_infinite()
             }
             pub fn is_finite(self) -> bool {
-                todo!()
+                self.0.is_finite() && self.1.is_finite()
             }
         }
     };
@@ -1191,7 +1219,8 @@ impl_ops!(
         )*
     };
 }
-impl_types!(f64, f32, i32, i8, i16, i64, i128, u8, u16, u32, u64, u128);
+impl_c_ops!(CDecimal, CDecimal, Decimal, |x| x);
+impl_types!(f64, f32, i32);
 impl_new_val_deci!(Decimal);
 impl_new_val_cdeci!(CDecimal);
 impl_with_val!(
@@ -1227,9 +1256,9 @@ impl_new_val!(
 impl_partial_ord!(Float, Rug, Fastnum, F64, F32);
 impl_partial_ord!(Decimal, D512, D256);
 dec_impl!(Decimal, D512, D256);
-dec_c_impl!(CDecimal, Decimal::new);
-dec_c_impl!(CF64, |_| 0.0);
-dec_c_impl!(CF32, |_| 0.0);
+dec_c_impl!(CDecimal, Decimal, Decimal::with_val);
+dec_c_impl!(CF64, f64, |_, x| x as f64);
+dec_c_impl!(CF32, f32, |_, x| x as f32);
 impl_cneg!(CDecimal);
 impl_cneg!(CF64);
 impl_cneg!(CF32);
