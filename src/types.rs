@@ -1,4 +1,4 @@
-use rug::ops::Pow as RugPow;
+use rug::ops::{CompleteRound, Pow as RugPow};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
@@ -45,10 +45,18 @@ pub enum Type {
     F32,
 }
 pub trait Prec {
-    fn prec(self) -> u32;
+    fn prec(&self) -> u32;
+}
+pub trait DivFloor {
+    fn div_floor(self, rhs: f64) -> Self;
+}
+impl DivFloor for f64 {
+    fn div_floor(self, rhs: f64) -> Self {
+        (self / rhs).floor()
+    }
 }
 impl Prec for Decimal {
-    fn prec(self) -> u32 {
+    fn prec(&self) -> u32 {
         match self {
             Decimal::D512(_) => 512,
             Decimal::D256(_) => 256,
@@ -56,18 +64,83 @@ impl Prec for Decimal {
     }
 }
 impl Prec for CDecimal {
-    fn prec(self) -> u32 {
+    fn prec(&self) -> u32 {
         self.0.prec()
     }
 }
 impl Prec for CF64 {
-    fn prec(self) -> u32 {
+    fn prec(&self) -> u32 {
         64
     }
 }
 impl Prec for CF32 {
-    fn prec(self) -> u32 {
+    fn prec(&self) -> u32 {
         32
+    }
+}
+impl Prec for Float {
+    fn prec(&self) -> u32 {
+        match self {
+            Self::Rug(a) => a.prec(),
+            Self::Fastnum(a) => a.prec(),
+            Self::F64(_) => 64,
+            Self::F32(_) => 32,
+        }
+    }
+}
+impl Prec for Complex {
+    fn prec(&self) -> u32 {
+        match self {
+            Self::Rug(a) => a.prec().0,
+            Self::Fastnum(a) => a.prec(),
+            Self::F64(a) => a.prec(),
+            Self::F32(a) => a.prec(),
+        }
+    }
+}
+pub trait Parse<T> {
+    fn parse(prec: u32, s: T) -> Option<Self>
+    where
+        Self: Sized;
+}
+impl Parse<&str> for Decimal {
+    fn parse(prec: u32, s: &str) -> Option<Self> {
+        match prec.next_power_of_two() {
+            512 => fastnum::D512::from_str(s, fastnum::decimal::Context::default())
+                .ok()
+                .map(Self::D512),
+            256 => fastnum::D256::from_str(s, fastnum::decimal::Context::default())
+                .ok()
+                .map(Self::D256),
+            _ => unreachable!(),
+        }
+    }
+}
+pub trait ParseU<T> {
+    fn parse(t: Type, prec: u32, s: T) -> Option<Self>
+    where
+        Self: Sized;
+}
+impl ParseU<&str> for Float {
+    fn parse(t: Type, prec: u32, s: &str) -> Option<Self> {
+        match t {
+            Type::Rug => rug::Float::parse(s)
+                .ok()
+                .map(|a| Float::Rug(a.complete(prec))),
+            Type::Fastnum => Decimal::parse(prec, s).map(Float::Fastnum),
+            Type::F64 => s.parse().ok().map(Float::F64),
+            Type::F32 => s.parse().ok().map(Float::F32),
+        }
+    }
+}
+impl ParseU<&str> for Complex {
+    fn parse(t: Type, prec: u32, s: &str) -> Option<Self> {
+        match t {
+            Type::Rug => Float::parse(t, prec, s).map(|a| a.into()),
+            Type::Fastnum => Float::parse(t, prec, s).map(|a| a.into()),
+            Type::F64 => Float::parse(t, prec, s).map(|a| a.into()),
+            Type::F32 => Float::parse(t, prec, s).map(|a| a.into()),
+        }
     }
 }
 pub trait WithVal<T> {
@@ -93,10 +166,17 @@ pub trait SinhCosh {
     where
         Self: Sized;
 }
-pub trait Pi {
+pub trait Special {
     fn pi(prec: u32) -> Self;
+    fn nan(prec: u32) -> Self;
+    fn inf(prec: u32) -> Self;
 }
-impl Pi for Decimal {
+pub trait SpecialU {
+    fn pi(t: Type, prec: u32) -> Self;
+    fn nan(t: Type, prec: u32) -> Self;
+    fn inf(t: Type, prec: u32) -> Self;
+}
+impl Special for Decimal {
     fn pi(prec: u32) -> Self {
         match prec.next_power_of_two() {
             512 => Self::D512(fastnum::D512::PI),
@@ -104,15 +184,118 @@ impl Pi for Decimal {
             _ => unreachable!(),
         }
     }
+    fn nan(prec: u32) -> Self {
+        match prec.next_power_of_two() {
+            512 => Self::D512(fastnum::D512::NAN),
+            256 => Self::D256(fastnum::D256::NAN),
+            _ => unreachable!(),
+        }
+    }
+    fn inf(prec: u32) -> Self {
+        match prec.next_power_of_two() {
+            512 => Self::D512(fastnum::D512::INFINITY),
+            256 => Self::D256(fastnum::D256::INFINITY),
+            _ => unreachable!(),
+        }
+    }
 }
-impl Pi for f64 {
+impl Special for f64 {
     fn pi(_: u32) -> Self {
         std::f64::consts::PI
     }
+    fn nan(_: u32) -> Self {
+        f64::NAN
+    }
+    fn inf(_: u32) -> Self {
+        f64::INFINITY
+    }
 }
-impl Pi for f32 {
+impl Special for f32 {
     fn pi(_: u32) -> Self {
         std::f32::consts::PI
+    }
+    fn nan(_: u32) -> Self {
+        f32::NAN
+    }
+    fn inf(_: u32) -> Self {
+        f32::INFINITY
+    }
+}
+impl SpecialU for Float {
+    fn pi(t: Type, prec: u32) -> Self {
+        match t {
+            Type::Rug => Self::Rug(rug::Float::with_val(prec, rug::float::Constant::Pi)),
+            Type::Fastnum => Self::Fastnum(Decimal::pi(prec)),
+            Type::F64 => Self::F64(f64::pi(prec)),
+            Type::F32 => Self::F32(f32::pi(prec)),
+        }
+    }
+    fn nan(t: Type, prec: u32) -> Self {
+        match t {
+            Type::Rug => Self::Rug(rug::Float::with_val(prec, rug::float::Special::Nan)),
+            Type::Fastnum => Self::Fastnum(Decimal::nan(prec)),
+            Type::F64 => Self::F64(f64::nan(prec)),
+            Type::F32 => Self::F32(f32::nan(prec)),
+        }
+    }
+    fn inf(t: Type, prec: u32) -> Self {
+        match t {
+            Type::Rug => Self::Rug(rug::Float::with_val(prec, rug::float::Special::Infinity)),
+            Type::Fastnum => Self::Fastnum(Decimal::inf(prec)),
+            Type::F64 => Self::F64(f64::inf(prec)),
+            Type::F32 => Self::F32(f32::inf(prec)),
+        }
+    }
+}
+impl SpecialU for Complex {
+    fn pi(t: Type, prec: u32) -> Self {
+        match t {
+            Type::Rug => Self::Rug(rug::Complex::with_val(prec, rug::float::Constant::Pi)),
+            Type::Fastnum => Self::Fastnum(Decimal::pi(prec).into()),
+            Type::F64 => Self::F64(f64::pi(prec).into()),
+            Type::F32 => Self::F32(f32::pi(prec).into()),
+        }
+    }
+    fn nan(t: Type, prec: u32) -> Self {
+        match t {
+            Type::Rug => Self::Rug(rug::Complex::with_val(prec, rug::float::Special::Nan)),
+            Type::Fastnum => Self::Fastnum(Decimal::nan(prec).into()),
+            Type::F64 => Self::F64(f64::nan(prec).into()),
+            Type::F32 => Self::F32(f32::nan(prec).into()),
+        }
+    }
+    fn inf(t: Type, prec: u32) -> Self {
+        match t {
+            Type::Rug => Self::Rug(rug::Complex::with_val(prec, rug::float::Special::Infinity)),
+            Type::Fastnum => Self::Fastnum(Decimal::inf(prec).into()),
+            Type::F64 => Self::F64(f64::inf(prec).into()),
+            Type::F32 => Self::F32(f32::inf(prec).into()),
+        }
+    }
+}
+impl From<f32> for CF32 {
+    fn from(value: f32) -> Self {
+        Self(value, 0.0)
+    }
+}
+impl From<f64> for CF64 {
+    fn from(value: f64) -> Self {
+        Self(value, 0.0)
+    }
+}
+impl From<Decimal> for CDecimal {
+    fn from(value: Decimal) -> Self {
+        Self(value, Decimal::new(value.prec()))
+    }
+}
+impl From<Float> for Complex {
+    fn from(value: Float) -> Self {
+        match value {
+            Float::Rug(a) => Complex::Rug(a.into()),
+            Float::Fastnum(a) => Complex::Fastnum(a.into()),
+            Float::F64(a) => Complex::F64(a.into()),
+            Float::F32(a) => Complex::F32(a.into()),
+        }
     }
 }
 macro_rules! impl_sinh_cosh {
@@ -480,6 +663,224 @@ macro_rules! dec_impl {
         }
     };
 }
+macro_rules! float_impl {
+    ($t:ty,$($variant:ident),*) => {
+        impl $t {
+            pub fn abs(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.abs()),)*
+                }
+            }
+            pub fn recip(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.recip()),)*
+                }
+            }
+            pub fn sqrt(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.sqrt()),)*
+                }
+            }
+            pub fn exp(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.exp()),)*
+                }
+            }
+            pub fn ln(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.ln()),)*
+                }
+            }
+            pub fn log2(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.log2()),)*
+                }
+            }
+            pub fn log10(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.log10()),)*
+                }
+            }
+            pub fn cbrt(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.cbrt()),)*
+                }
+            }
+            pub fn sin(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.sin()),)*
+                }
+            }
+            pub fn cos(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.cos()),)*
+                }
+            }
+            pub fn tan(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.tan()),)*
+                }
+            }
+            pub fn asin(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.asin()),)*
+                }
+            }
+            pub fn acos(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.acos()),)*
+                }
+            }
+            pub fn atan(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.atan()),)*
+                }
+            }
+            pub fn sinh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.sinh()),)*
+                }
+            }
+            pub fn cosh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.cosh()),)*
+                }
+            }
+            pub fn tanh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.tanh()),)*
+                }
+            }
+            pub fn asinh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.asinh()),)*
+                }
+            }
+            pub fn acosh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.acosh()),)*
+                }
+            }
+            pub fn atanh(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.atanh()),)*
+                }
+            }
+            /*pub fn round(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.round()),)*
+                }
+            }*/
+            pub fn floor(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.floor()),)*
+                }
+            }
+            pub fn ceil(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.ceil()),)*
+                }
+            }
+            /*pub fn trunc(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.trunc()),)*
+                }
+            }
+            pub fn fract(self) -> Self {
+                match self {
+                    $(Self::$variant(a) => Self::$variant(a.fract()),)*
+                }
+            }*/
+            pub fn is_nan(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_nan(),)*
+                }
+            }
+            pub fn is_infinite(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_infinite(),)*
+                }
+            }
+            pub fn is_finite(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_finite(),)*
+                }
+            }
+            pub fn is_sign_positive(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_sign_positive(),)*
+                }
+            }
+            pub fn is_sign_negative(self) -> bool {
+                match self {
+                    $(Self::$variant(a) => a.is_sign_negative(),)*
+                }
+            }
+        }
+    };
+}
+impl Float {
+    pub fn sin_cos(self) -> (Self, Self) {
+        match self {
+            Self::Rug(a) => {
+                let p = a.prec();
+                let (s, c) = a.sin_cos(rug::Float::new(p));
+                (Self::Rug(s), Self::Rug(c))
+            }
+            Self::Fastnum(a) => {
+                let (s, c) = a.sin_cos();
+                (Self::Fastnum(s), Self::Fastnum(c))
+            }
+            Self::F64(a) => {
+                let (s, c) = a.sin_cos();
+                (Self::F64(s), Self::F64(c))
+            }
+            Self::F32(a) => {
+                let (s, c) = a.sin_cos();
+                (Self::F32(s), Self::F32(c))
+            }
+        }
+    }
+    pub fn sinh_cosh(self) -> (Self, Self) {
+        match self {
+            Self::Rug(a) => {
+                let p = a.prec();
+                let (s, c) = a.sinh_cosh(rug::Float::new(p));
+                (Self::Rug(s), Self::Rug(c))
+            }
+            Self::Fastnum(a) => {
+                let (s, c) = a.sinh_cosh();
+                (Self::Fastnum(s), Self::Fastnum(c))
+            }
+            Self::F64(a) => {
+                let (s, c) = a.sinh_cosh();
+                (Self::F64(s), Self::F64(c))
+            }
+            Self::F32(a) => {
+                let (s, c) = a.sinh_cosh();
+                (Self::F32(s), Self::F32(c))
+            }
+        }
+    }
+    pub fn atan2(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Rug(a), Self::Rug(b)) => Self::Rug(a.atan2(&b)),
+            (Self::Fastnum(a), Self::Fastnum(b)) => Self::Fastnum(a.atan2(b)),
+            (Self::F64(a), Self::F64(b)) => Self::F64(a.atan2(b)),
+            (Self::F32(a), Self::F32(b)) => Self::F32(a.atan2(b)),
+            _ => unreachable!(),
+        }
+    }
+    pub fn hypot(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Rug(a), Self::Rug(b)) => Self::Rug(a.hypot(&b)),
+            (Self::Fastnum(a), Self::Fastnum(b)) => Self::Fastnum(a.hypot(b)),
+            (Self::F64(a), Self::F64(b)) => Self::F64(a.hypot(b)),
+            (Self::F32(a), Self::F32(b)) => Self::F32(a.hypot(b)),
+            _ => unreachable!(),
+        }
+    }
+}
 macro_rules! dec_c_impl {
     ($t:ty, $l:ty, $new:expr) => {
         #[allow(clippy::unnecessary_cast)]
@@ -548,7 +949,9 @@ macro_rules! dec_c_impl {
             }
             pub fn atan(self) -> Self {
                 let v = Self(-self.1, self.0);
-                ((1 + v).arg() - (1 - v).arg()) / 2.0
+                let a: $t = 1 + v;
+                let b: $t = 1 - v;
+                (a.arg() - b.arg()) / 2.0
             }
             pub fn atan2(self, other: Self) -> Self {
                 let v = (Self(-self.1, self.0) + other) / (self * self + other * other).sqrt();
@@ -580,7 +983,9 @@ macro_rules! dec_c_impl {
                 (v.sqrt() + self).ln()
             }
             pub fn atanh(self) -> Self {
-                ((1 + self).ln() - (1 - self).ln()) / 2.0
+                let a: $t = 1 + self;
+                let b: $t = 1 - self;
+                (a.ln() - b.ln()) / 2.0
             }
             pub fn sin_cos(self) -> (Self, Self) {
                 (self.sin(), self.cos())
@@ -1216,46 +1621,47 @@ impl_ops!(
     (F64, |x| x as f64, |a, b| a / b),
     (F32, |x| x as f32, |a, b| a / b)
 );
+impl_with_val!(
+    Complex,
+    $ty,
+    (Rug, rug::Complex::with_val),
+    (Fastnum, CDecimal::with_val),
+    (F64, |_, x| CF64(x as f64, 0.0)),
+    (F32, |_, x| CF32(x as f32, 0.0))
+);
+impl_with_val!(
+    Float,
+    $ty,
+    (Rug, rug::Float::with_val),
+    (Fastnum, Decimal::with_val),
+    (F64, |_, x| x as f64),
+    (F32, |_, x| x as f32)
+);
         )*
     };
 }
 impl_c_ops!(CDecimal, CDecimal, Decimal, |x| x);
-impl_types!(f64, f32, i32);
+impl_types!(f64, f32, i32, u64, u128);
 impl_new_val_deci!(Decimal);
 impl_new_val_cdeci!(CDecimal);
-impl_with_val!(
-    Complex,
-    f64,
-    (Rug, rug::Complex::with_val),
-    (Fastnum, CDecimal::with_val),
-    (F64, |_, x| CF64(x, 0.0)),
-    (F32, |_, x| CF32(x as f32, 0.0))
-);
-impl_with_val!(
-    Float,
-    f64,
-    (Rug, rug::Float::with_val),
-    (Fastnum, Decimal::with_val),
-    (F64, |_, x| x),
-    (F32, |_, x| x as f32)
-);
-impl_new_val!(
-    Complex,
-    (Rug, rug::Complex::with_val),
-    (Fastnum, CDecimal::with_val),
-    (F64, |_, x| CF64(x, 0.0)),
-    (F32, |_, x| CF32(x as f32, 0.0))
-);
-impl_new_val!(
-    Float,
-    (Rug, rug::Float::with_val),
-    (Fastnum, Decimal::with_val),
-    (F64, |_, x| x),
-    (F32, |_, x| x as f32)
-);
 impl_partial_ord!(Float, Rug, Fastnum, F64, F32);
 impl_partial_ord!(Decimal, D512, D256);
 dec_impl!(Decimal, D512, D256);
+float_impl!(Float, Rug, Fastnum, F64, F32);
+impl_new_val!(
+    Complex,
+    (Rug, rug::Complex::with_val),
+    (Fastnum, CDecimal::with_val),
+    (F64, |_, x| CF64(x, 0.0)),
+    (F32, |_, x| CF32(x as f32, 0.0))
+);
+impl_new_val!(
+    Float,
+    (Rug, rug::Float::with_val),
+    (Fastnum, Decimal::with_val),
+    (F64, |_, x| x),
+    (F32, |_, x| x as f32)
+);
 dec_c_impl!(CDecimal, Decimal, Decimal::with_val);
 dec_c_impl!(CF64, f64, |_, x| x as f64);
 dec_c_impl!(CF32, f32, |_, x| x as f32);
