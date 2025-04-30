@@ -2,7 +2,9 @@ use rug::ops::{CompleteRound, Pow as RugPow};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
-//TODO malachite num maybe
+//malachite num maybe
+//make real only an option
+//maybe box some things to avoid memory bads
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CDecimal(Decimal, Decimal);
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -21,7 +23,6 @@ pub enum Complex {
     F64(CF64),
     F32(CF32),
 }
-//make real only an option
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Float {
     Rug(rug::Float),
@@ -29,7 +30,6 @@ pub enum Float {
     F64(f64),
     F32(f32),
 }
-//maybe box some things to avoid memory bads
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Integer {
     Rug(rug::Integer),
@@ -588,11 +588,11 @@ macro_rules! dec_impl {
                     $(Self::$variant(a) => Self::$variant(a.atanh()),)*
                 }
             }
-            /*pub fn round(self) -> Self {
+            pub fn round(self) -> Self {
                 match self {
-                    $(Self::$variant(a) => Self::$variant(a.round()),)*
+                    $(Self::$variant(a) => Self::$variant(a.round(0)),)*
                 }
-            }*/
+            }
             pub fn floor(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.floor()),)*
@@ -603,16 +603,16 @@ macro_rules! dec_impl {
                     $(Self::$variant(a) => Self::$variant(a.ceil()),)*
                 }
             }
-            /*pub fn trunc(self) -> Self {
+            pub fn trunc(self) -> Self {
                 match self {
-                    $(Self::$variant(a) => Self::$variant(a.trunc()),)*
+                    $(Self::$variant(a) => Self::$variant(if a.is_sign_positive(){a.floor()}else{a.ceil()}),)*
                 }
             }
             pub fn fract(self) -> Self {
                 match self {
-                    $(Self::$variant(a) => Self::$variant(a.fract()),)*
+                    $(Self::$variant(a) => Self::$variant(a-if a.is_sign_positive(){a.floor()}else{a.ceil()}),)*
                 }
-            }*/
+            }
             pub fn sin_cos(self) -> (Self, Self) {
                 match self {
                     $(Self::$variant(a) => {
@@ -766,11 +766,11 @@ macro_rules! float_impl {
                     $(Self::$variant(a) => Self::$variant(a.atanh()),)*
                 }
             }
-            /*pub fn round(self) -> Self {
+            pub fn round(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.round()),)*
                 }
-            }*/
+            }
             pub fn floor(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.floor()),)*
@@ -781,7 +781,7 @@ macro_rules! float_impl {
                     $(Self::$variant(a) => Self::$variant(a.ceil()),)*
                 }
             }
-            /*pub fn trunc(self) -> Self {
+            pub fn trunc(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.trunc()),)*
                 }
@@ -790,7 +790,7 @@ macro_rules! float_impl {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.fract()),)*
                 }
-            }*/
+            }
             pub fn is_nan(self) -> bool {
                 match self {
                     $(Self::$variant(a) => a.is_nan(),)*
