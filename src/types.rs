@@ -84,6 +84,23 @@ pub trait NewDeciVal {
 pub trait Pow<T> {
     fn pow(self, val: T) -> Self;
 }
+pub trait Rt<T> {
+    fn root(self, val: T) -> Self;
+}
+pub trait SinhCosh {
+    fn sinh_cosh(self) -> (Self, Self)
+    where
+        Self: Sized;
+}
+macro_rules! impl_sinh_cosh {
+    ($($t:ty),*) => {
+        $(impl SinhCosh for $t {
+    fn sinh_cosh(self) -> (Self, Self) {
+        (self.sinh(), self.cosh())
+    }
+})*
+    };
+}
 macro_rules! impl_pow {
     ($ty:ty, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
         impl Pow<$other> for $ty {
@@ -97,64 +114,6 @@ macro_rules! impl_pow {
         }
     };
 }
-impl_pow!(
-    Complex,
-    f64,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x),
-    (F32, |x| x)
-);
-impl_pow!(
-    Decimal,
-    i32,
-    (D512, fastnum::D512::from),
-    (D256, fastnum::D256::from)
-);
-impl_pow!(
-    Decimal,
-    f32,
-    (D512, fastnum::D512::from),
-    (D256, fastnum::D256::from)
-);
-impl_pow!(
-    Decimal,
-    f64,
-    (D512, fastnum::D512::from),
-    (D256, fastnum::D256::from)
-);
-impl_pow!(
-    Complex,
-    f32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x),
-    (F32, |x| x)
-);
-impl_pow!(
-    Complex,
-    i32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x),
-    (F32, |x| x)
-);
-impl_pow!(
-    Float,
-    f32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x as f64),
-    (F32, |x| x)
-);
-impl_pow!(
-    Float,
-    i32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x),
-    (F32, |x| x)
-);
 macro_rules! impl_with_val_deci {
     ($ty:ty, $other:ty) => {
         impl WithValDeci<$other> for $ty {
@@ -181,10 +140,6 @@ macro_rules! impl_new_val_deci {
         }
     };
 }
-impl_with_val_deci!(Decimal, f64);
-impl_with_val_deci!(Decimal, f32);
-impl_with_val_deci!(Decimal, i32);
-impl_new_val_deci!(Decimal);
 macro_rules! impl_with_val_cdeci {
     ($ty:ty, $other:ty) => {
         impl WithValDeci<$other> for $ty {
@@ -203,10 +158,6 @@ macro_rules! impl_new_val_cdeci {
         }
     };
 }
-impl_with_val_cdeci!(CDecimal, f64);
-impl_with_val_cdeci!(CDecimal, f32);
-impl_with_val_cdeci!(CDecimal, i32);
-impl_new_val_cdeci!(CDecimal);
 macro_rules! impl_with_val {
     ($ty:ty, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
         impl WithVal<$other> for $ty {
@@ -233,36 +184,6 @@ macro_rules! impl_new_val {
         }
     };
 }
-impl_with_val!(
-    Complex,
-    f64,
-    (Rug, rug::Complex::with_val),
-    (Fastnum, CDecimal::with_val),
-    (F64, |_, x| CF64(x, 0.0)),
-    (F32, |_, x| CF32(x as f32, 0.0))
-);
-impl_with_val!(
-    Float,
-    f64,
-    (Rug, rug::Float::with_val),
-    (Fastnum, Decimal::with_val),
-    (F64, |_, x| x),
-    (F32, |_, x| x as f32)
-);
-impl_new_val!(
-    Complex,
-    (Rug, rug::Complex::with_val),
-    (Fastnum, CDecimal::with_val),
-    (F64, |_, x| CF64(x, 0.0)),
-    (F32, |_, x| CF32(x as f32, 0.0))
-);
-impl_new_val!(
-    Float,
-    (Rug, rug::Float::with_val),
-    (Fastnum, Decimal::with_val),
-    (F64, |_, x| x),
-    (F32, |_, x| x as f32)
-);
 impl Display for Complex {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -352,8 +273,6 @@ impl PartialOrd for $t {
 }
     };
 }
-impl_partial_ord!(Float, Rug, Fastnum, F64, F32);
-impl_partial_ord!(Decimal, D512, D256);
 macro_rules! dec_impl {
     ($t:ty,$($variant:ident),*) => {
         impl $t {
@@ -496,6 +415,14 @@ macro_rules! dec_impl {
                     },)*
                 }
             }
+            pub fn sinh_cosh(self) -> (Self, Self) {
+                match self {
+                    $(Self::$variant(a) => {
+                        let (s, c) = a.sinh_cosh();
+                        (Self::$variant(s), Self::$variant(c))
+                    },)*
+                }
+            }
             pub fn hypot(self, other: Self) -> Self {
                 match (self, other) {
                     $( (Self::$variant(a), Self::$variant(b)) => Self::$variant(a.hypot(b)), )*
@@ -530,7 +457,6 @@ macro_rules! dec_impl {
         }
     };
 }
-dec_impl!(Decimal, D512, D256);
 macro_rules! dec_c_impl {
     ($t:ty, $new:expr) => {
         impl $t {
@@ -541,10 +467,11 @@ macro_rules! dec_c_impl {
                 )
             }
             pub fn recip(self) -> Self {
-                todo!()
+                let abs = self.0 * self.0 + self.1 * self.1;
+                Self(self.0 / abs, -self.1 / abs)
             }
             pub fn sqrt(self) -> Self {
-                todo!()
+                self.pow(0.5)
             }
             pub fn exp(self) -> Self {
                 todo!()
@@ -559,16 +486,25 @@ macro_rules! dec_c_impl {
                 todo!()
             }
             pub fn cbrt(self) -> Self {
-                todo!()
+                self.root(3)
             }
             pub fn sin(self) -> Self {
-                todo!()
+                let (a, b) = self.0.sin_cos();
+                let (c, d) = self.1.sinh_cosh();
+                Self(a * d, b * c)
             }
             pub fn cos(self) -> Self {
-                todo!()
+                let (a, b) = self.0.sin_cos();
+                let (c, d) = self.1.sinh_cosh();
+                Self(b * d, a * c)
             }
-            pub fn tan(self) -> Self {
-                todo!()
+            pub fn tan(mut self) -> Self {
+                self.0 *= 2.0;
+                self.1 *= 2.0;
+                let (a, b) = self.0.sin_cos();
+                let (c, d) = self.1.sinh_cosh();
+                let r = (b + d).recip();
+                Self(a * r, c * r)
             }
             pub fn asin(self) -> Self {
                 todo!()
@@ -600,22 +536,25 @@ macro_rules! dec_c_impl {
             pub fn atanh(self) -> Self {
                 todo!()
             }
-            /*pub fn round(self) -> Self {
+            pub fn round(self) -> Self {
                 todo!()
-            }*/
+            }
             pub fn floor(self) -> Self {
                 todo!()
             }
             pub fn ceil(self) -> Self {
                 todo!()
             }
-            /*pub fn trunc(self) -> Self {
+            pub fn trunc(self) -> Self {
                 todo!()
             }
             pub fn fract(self) -> Self {
                 todo!()
-            }*/
+            }
             pub fn sin_cos(self) -> (Self, Self) {
+                todo!()
+            }
+            pub fn sinh_cosh(self) -> (Self, Self) {
                 todo!()
             }
             pub fn hypot(self, _other: Self) -> Self {
@@ -633,9 +572,6 @@ macro_rules! dec_c_impl {
         }
     };
 }
-dec_c_impl!(CDecimal, Decimal::new);
-dec_c_impl!(CF64, |_| 0.0);
-dec_c_impl!(CF32, |_| 0.0);
 impl Integer {
     pub fn is_probably_prime(&self, reps: u32) -> bool {
         match self {
@@ -662,7 +598,7 @@ impl Integer {
         }
     }
 }
-macro_rules! impl_pow {
+macro_rules! impl_c_pow {
     ($t:ty, $rhs:ty, $cast:expr) => {
         impl Pow<$rhs> for $t {
             fn pow(self, rhs: $rhs) -> Self {
@@ -670,6 +606,20 @@ macro_rules! impl_pow {
                 let t = self.1.atan2(self.0);
                 let abs = self.0 * self.0 + self.1 * self.1;
                 let r = abs.pow(rhs * 0.5) * rhs;
+                let (s, c) = t.sin_cos();
+                Self(r * c, r * s)
+            }
+        }
+    };
+}
+macro_rules! impl_c_rt {
+    ($t:ty, $rhs:ty, $cast:expr) => {
+        impl Rt<$rhs> for $t {
+            fn root(self, rhs: $rhs) -> Self {
+                let rhs = $cast(rhs);
+                let t = self.1.atan2(self.0);
+                let abs = self.0 * self.0 + self.1 * self.1;
+                let r = abs.pow(0.5 / rhs) / rhs;
                 let (s, c) = t.sin_cos();
                 Self(r * c, r * s)
             }
@@ -814,7 +764,7 @@ macro_rules! impl_self_c_ops {
     };
 }
 macro_rules! impl_ops {
-    ($ty:ty, $enum:ident, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
+    ($ty:ty, $enum:ident, $other:ty, $( ($variant:ident, $cast:expr, $div:expr) ),* ) => {
         impl std::ops::Add<$other> for $ty {
             type Output = Self;
             fn add(self, rhs: $other) -> Self::Output {
@@ -917,7 +867,7 @@ macro_rules! impl_ops {
             fn div(self, rhs: $ty) -> Self::Output {
                 match rhs {
                     $(
-                        $enum::$variant(a) => $enum::$variant(a.recip() * $cast(self)),
+                        $enum::$variant(a) => $enum::$variant($div($cast(self),a)),
                     )*
                 }
             }
@@ -1177,6 +1127,109 @@ macro_rules! impl_cneg {
         }
     };
 }
+macro_rules! impl_types {
+    ($($ty:ty),*) => {
+        $(
+impl_with_val_deci!(Decimal, $ty);
+impl_with_val_cdeci!(CDecimal, $ty);
+impl_pow!(
+    Decimal,
+    $ty,
+    (D512, fastnum::D512::from),
+    (D256, fastnum::D256::from)
+);
+impl_pow!(
+    Complex,
+    $ty,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x)
+);
+impl_pow!(
+    Float,
+    $ty,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f64),
+    (F32, |x| x as f32)
+);
+impl_c_ops!(CDecimal, CDecimal, $ty, |x| x);
+impl_c_ops!(CF64, CF64, $ty, |x| x as f64);
+impl_c_ops!(CF32, CF32, $ty, |x| x as f32);
+impl_ops!(
+    Decimal,
+    Decimal,
+    $ty,
+    (D512, |x| x, |a, b: fastnum::D512| b.recip() * a),
+    (D256, |x| x, |a, b: fastnum::D256| b.recip() * a)
+);
+impl_c_pow!(CDecimal, $ty, |x| x as f64);
+impl_c_pow!(CF64, $ty, |x| x as f64);
+impl_c_pow!(CF32, $ty, |x| x as f32);
+impl_c_rt!(CDecimal, $ty, |x| x as f64);
+impl_c_rt!(CF64, $ty, |x| x as f64);
+impl_c_rt!(CF32, $ty, |x| x as f32);
+impl_ops!(
+    Complex,
+    Complex,
+    $ty,
+    (Rug, |x| x, |a, b| a / b),
+    (Fastnum, |x| x, |a, b| a / b),
+    (F64, |x| x as f64, |a, b| a / b),
+    (F32, |x| x as f32, |a, b| a / b)
+);
+impl_ops!(
+    Float,
+    Float,
+    $ty,
+    (Rug, |x| x, |a, b| a / b),
+    (Fastnum, |x| x, |a, b| a / b),
+    (F64, |x| x as f64, |a, b| a / b),
+    (F32, |x| x as f32, |a, b| a / b)
+);
+        )*
+    };
+}
+impl_types!(f64, f32, i32, i8, i16, i64, i128, u8, u16, u32, u64, u128);
+impl_new_val_deci!(Decimal);
+impl_new_val_cdeci!(CDecimal);
+impl_with_val!(
+    Complex,
+    f64,
+    (Rug, rug::Complex::with_val),
+    (Fastnum, CDecimal::with_val),
+    (F64, |_, x| CF64(x, 0.0)),
+    (F32, |_, x| CF32(x as f32, 0.0))
+);
+impl_with_val!(
+    Float,
+    f64,
+    (Rug, rug::Float::with_val),
+    (Fastnum, Decimal::with_val),
+    (F64, |_, x| x),
+    (F32, |_, x| x as f32)
+);
+impl_new_val!(
+    Complex,
+    (Rug, rug::Complex::with_val),
+    (Fastnum, CDecimal::with_val),
+    (F64, |_, x| CF64(x, 0.0)),
+    (F32, |_, x| CF32(x as f32, 0.0))
+);
+impl_new_val!(
+    Float,
+    (Rug, rug::Float::with_val),
+    (Fastnum, Decimal::with_val),
+    (F64, |_, x| x),
+    (F32, |_, x| x as f32)
+);
+impl_partial_ord!(Float, Rug, Fastnum, F64, F32);
+impl_partial_ord!(Decimal, D512, D256);
+dec_impl!(Decimal, D512, D256);
+dec_c_impl!(CDecimal, Decimal::new);
+dec_c_impl!(CF64, |_| 0.0);
+dec_c_impl!(CF32, |_| 0.0);
 impl_cneg!(CDecimal);
 impl_cneg!(CF64);
 impl_cneg!(CF32);
@@ -1186,83 +1239,9 @@ impl_neg!(Float, Rug, Fastnum, F64, F32);
 impl_self_c_ops!(CDecimal);
 impl_self_c_ops!(CF64);
 impl_self_c_ops!(CF32);
-impl_c_ops!(CDecimal, CDecimal, f64, |x| x);
-impl_c_ops!(CDecimal, CDecimal, f32, |x| x);
-impl_c_ops!(CDecimal, CDecimal, i32, |x| x);
-impl_c_ops!(CF64, CF64, f64, |x| x);
-impl_c_ops!(CF64, CF64, f32, |x| x as f64);
-impl_c_ops!(CF64, CF64, i32, |x| x as f64);
-impl_c_ops!(CF32, CF32, f64, |x| x as f32);
-impl_c_ops!(CF32, CF32, f32, |x| x);
-impl_c_ops!(CF32, CF32, i32, |x| x as f32);
 impl_self_ops!(Decimal, D512, D256);
 impl_self_ops!(Complex, Rug, Fastnum, F64, F32);
 impl_self_ops!(Float, Rug, Fastnum, F64, F32);
 impl_self_ops!(Integer, Rug, Fastnum, F64, F32);
-impl_ops!(Decimal, Decimal, f64, (D512, |x| x), (D256, |x| x));
-impl_ops!(Decimal, Decimal, f32, (D512, |x| x), (D256, |x| x));
-impl_ops!(Decimal, Decimal, i32, (D512, |x| x), (D256, |x| x));
-impl_pow!(CDecimal, f32, |x| x);
-impl_pow!(CF64, f32, |x| x as f64);
-impl_pow!(CF32, f32, |x| x);
-impl_pow!(CDecimal, f64, |x| x);
-impl_pow!(CF64, f64, |x| x);
-impl_pow!(CF32, f64, |x| x as f32);
-impl_pow!(CDecimal, i32, |x| x as f64);
-impl_pow!(CF64, i32, |x| x as f64);
-impl_pow!(CF32, i32, |x| x as f32);
-impl_ops!(
-    Complex,
-    Complex,
-    f64,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x),
-    (F32, |x| x as f32)
-);
-impl_ops!(
-    Complex,
-    Complex,
-    f32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x as f64),
-    (F32, |x| x)
-);
-impl_ops!(
-    Complex,
-    Complex,
-    i32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x as f64),
-    (F32, |x| x as f32)
-);
-impl_ops!(
-    Float,
-    Float,
-    f64,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x),
-    (F32, |x| x as f32)
-);
-impl_ops!(
-    Float,
-    Float,
-    f32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x as f64),
-    (F32, |x| x)
-);
-impl_ops!(
-    Float,
-    Float,
-    i32,
-    (Rug, |x| x),
-    (Fastnum, |x| x),
-    (F64, |x| x as f64),
-    (F32, |x| x as f32)
-);
 impl_int_ops!(Integer, Integer, i32);
+impl_sinh_cosh!(f64, f32, fastnum::decimal::D512, fastnum::decimal::D256);
