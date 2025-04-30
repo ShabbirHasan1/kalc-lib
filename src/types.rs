@@ -43,16 +43,44 @@ pub enum Type {
     F64,
     F32,
 }
-
+pub trait Prec {
+    fn prec(self) -> u32;
+}
+impl Prec for Decimal {
+    fn prec(self) -> u32 {
+        match self {
+            Decimal::D512(_) => 512,
+            Decimal::D256(_) => 256,
+        }
+    }
+}
+impl Prec for CDecimal {
+    fn prec(self) -> u32 {
+        self.0.prec()
+    }
+}
+impl Prec for CF64 {
+    fn prec(self) -> u32 {
+        64
+    }
+}
+impl Prec for CF32 {
+    fn prec(self) -> u32 {
+        32
+    }
+}
 pub trait WithVal<T> {
     fn with_val(obj: Type, prec: u32, val: T) -> Self;
+}
+pub trait NewVal {
     fn new(obj: Type, prec: u32) -> Self;
 }
 pub trait WithValDeci<T> {
     fn with_val(prec: u32, val: T) -> Self;
+}
+pub trait NewDeciVal {
     fn new(prec: u32) -> Self;
 }
-
 pub trait Pow<T> {
     fn pow(self, val: T) -> Self;
 }
@@ -77,7 +105,6 @@ impl_pow!(
     (F64, |x| x),
     (F32, |x| x)
 );
-
 impl_pow!(
     Decimal,
     i32,
@@ -96,7 +123,6 @@ impl_pow!(
     (D512, fastnum::D512::from),
     (D256, fastnum::D256::from)
 );
-
 impl_pow!(
     Complex,
     f32,
@@ -105,7 +131,6 @@ impl_pow!(
     (F64, |x| x),
     (F32, |x| x)
 );
-
 impl_pow!(
     Complex,
     i32,
@@ -114,7 +139,6 @@ impl_pow!(
     (F64, |x| x),
     (F32, |x| x)
 );
-
 impl_pow!(
     Float,
     f32,
@@ -123,7 +147,6 @@ impl_pow!(
     (F64, |x| x as f64),
     (F32, |x| x)
 );
-
 impl_pow!(
     Float,
     i32,
@@ -132,7 +155,6 @@ impl_pow!(
     (F64, |x| x),
     (F32, |x| x)
 );
-
 macro_rules! impl_with_val_deci {
     ($ty:ty, $other:ty) => {
         impl WithValDeci<$other> for $ty {
@@ -143,6 +165,12 @@ macro_rules! impl_with_val_deci {
                     _ => unreachable!(),
                 }
             }
+        }
+    };
+}
+macro_rules! impl_new_val_deci {
+    ($ty:ty) => {
+        impl NewDeciVal for $ty {
             fn new(prec: u32) -> Self {
                 match prec.next_power_of_two() {
                     512 => Self::D512(fastnum::D512::from(0)),
@@ -153,18 +181,24 @@ macro_rules! impl_with_val_deci {
         }
     };
 }
-
 impl_with_val_deci!(Decimal, f64);
 impl_with_val_deci!(Decimal, f32);
 impl_with_val_deci!(Decimal, i32);
+impl_new_val_deci!(Decimal);
 macro_rules! impl_with_val_cdeci {
     ($ty:ty, $other:ty) => {
         impl WithValDeci<$other> for $ty {
             fn with_val(prec: u32, rhs: $other) -> Self {
                 CDecimal(Decimal::with_val(prec, rhs), Decimal::with_val(prec, 0))
             }
+        }
+    };
+}
+macro_rules! impl_new_val_cdeci {
+    ($ty:ty) => {
+        impl NewDeciVal for $ty {
             fn new(prec: u32) -> Self {
-                CDecimal(Decimal::with_val(prec, 0), Decimal::with_val(prec, 0))
+                CDecimal(Decimal::new(prec), Decimal::new(prec))
             }
         }
     };
@@ -172,7 +206,7 @@ macro_rules! impl_with_val_cdeci {
 impl_with_val_cdeci!(CDecimal, f64);
 impl_with_val_cdeci!(CDecimal, f32);
 impl_with_val_cdeci!(CDecimal, i32);
-
+impl_new_val_cdeci!(CDecimal);
 macro_rules! impl_with_val {
     ($ty:ty, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
         impl WithVal<$other> for $ty {
@@ -183,6 +217,12 @@ macro_rules! impl_with_val {
                     )*
                 }
             }
+    }
+    };
+}
+macro_rules! impl_new_val {
+    ($ty:ty, $( ($variant:ident, $cast:expr) ),* ) => {
+        impl NewVal for $ty {
             fn new(obj: Type, prec: u32) -> Self {
                 match obj {
                     $(
@@ -209,7 +249,20 @@ impl_with_val!(
     (F64, |_, x| x),
     (F32, |_, x| x as f32)
 );
-
+impl_new_val!(
+    Complex,
+    (Rug, rug::Complex::with_val),
+    (Fastnum, CDecimal::with_val),
+    (F64, |_, x| CF64(x, 0.0)),
+    (F32, |_, x| CF32(x as f32, 0.0))
+);
+impl_new_val!(
+    Float,
+    (Rug, rug::Float::with_val),
+    (Fastnum, Decimal::with_val),
+    (F64, |_, x| x),
+    (F32, |_, x| x as f32)
+);
 impl Display for Complex {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -297,7 +350,6 @@ impl PartialOrd for $t {
         }
     }
 }
-
     };
 }
 impl_partial_ord!(Float, Rug, Fastnum, F64, F32);
@@ -310,158 +362,132 @@ macro_rules! dec_impl {
                     $(Self::$variant(a) => Self::$variant(a.abs()),)*
                 }
             }
-
             pub fn recip(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.recip()),)*
                 }
             }
-
             pub fn sqrt(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.sqrt()),)*
                 }
             }
-
             pub fn exp(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.exp()),)*
                 }
             }
-
             pub fn ln(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.ln()),)*
                 }
             }
-
             pub fn log2(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.log2()),)*
                 }
             }
-
             pub fn log10(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.log10()),)*
                 }
             }
-
             pub fn cbrt(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.cbrt()),)*
                 }
             }
-
             pub fn sin(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.sin()),)*
                 }
             }
-
             pub fn cos(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.cos()),)*
                 }
             }
-
             pub fn tan(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.tan()),)*
                 }
             }
-
             pub fn asin(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.asin()),)*
                 }
             }
-
             pub fn acos(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.acos()),)*
                 }
             }
-
             pub fn atan(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.atan()),)*
                 }
             }
-
             pub fn atan2(self, other: Self) -> Self {
                 match (self, other) {
                     $( (Self::$variant(a), Self::$variant(b)) => Self::$variant(a.atan2(b)), )*
                     _ => unreachable!(),
                 }
             }
-
             pub fn sinh(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.sinh()),)*
                 }
             }
-
             pub fn cosh(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.cosh()),)*
                 }
             }
-
             pub fn tanh(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.tanh()),)*
                 }
             }
-
             pub fn asinh(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.asinh()),)*
                 }
             }
-
             pub fn acosh(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.acosh()),)*
                 }
             }
-
             pub fn atanh(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.atanh()),)*
                 }
             }
-
             /*pub fn round(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.round()),)*
                 }
             }*/
-
             pub fn floor(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.floor()),)*
                 }
             }
-
             pub fn ceil(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.ceil()),)*
                 }
             }
-
             /*pub fn trunc(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.trunc()),)*
                 }
             }
-
             pub fn fract(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.fract()),)*
                 }
             }*/
-
             pub fn sin_cos(self) -> (Self, Self) {
                 match self {
                     $(Self::$variant(a) => {
@@ -470,38 +496,32 @@ macro_rules! dec_impl {
                     },)*
                 }
             }
-
             pub fn hypot(self, other: Self) -> Self {
                 match (self, other) {
                     $( (Self::$variant(a), Self::$variant(b)) => Self::$variant(a.hypot(b)), )*
                     _ => unreachable!(),
                 }
             }
-
             pub fn is_nan(self) -> bool {
                 match self {
                     $(Self::$variant(a) => a.is_nan(),)*
                 }
             }
-
             pub fn is_infinite(self) -> bool {
                 match self {
                     $(Self::$variant(a) => a.is_infinite(),)*
                 }
             }
-
             pub fn is_finite(self) -> bool {
                 match self {
                     $(Self::$variant(a) => a.is_finite(),)*
                 }
             }
-
             pub fn is_sign_positive(self) -> bool {
                 match self {
                     $(Self::$variant(a) => a.is_sign_positive(),)*
                 }
             }
-
             pub fn is_sign_negative(self) -> bool {
                 match self {
                     $(Self::$variant(a) => a.is_sign_negative(),)*
@@ -511,6 +531,111 @@ macro_rules! dec_impl {
     };
 }
 dec_impl!(Decimal, D512, D256);
+macro_rules! dec_c_impl {
+    ($t:ty, $new:expr) => {
+        impl $t {
+            pub fn abs(self) -> Self {
+                Self(
+                    (self.0 * self.0 + self.1 * self.1).sqrt(),
+                    $new(self.prec()),
+                )
+            }
+            pub fn recip(self) -> Self {
+                todo!()
+            }
+            pub fn sqrt(self) -> Self {
+                todo!()
+            }
+            pub fn exp(self) -> Self {
+                todo!()
+            }
+            pub fn ln(self) -> Self {
+                todo!()
+            }
+            pub fn log2(self) -> Self {
+                todo!()
+            }
+            pub fn log10(self) -> Self {
+                todo!()
+            }
+            pub fn cbrt(self) -> Self {
+                todo!()
+            }
+            pub fn sin(self) -> Self {
+                todo!()
+            }
+            pub fn cos(self) -> Self {
+                todo!()
+            }
+            pub fn tan(self) -> Self {
+                todo!()
+            }
+            pub fn asin(self) -> Self {
+                todo!()
+            }
+            pub fn acos(self) -> Self {
+                todo!()
+            }
+            pub fn atan(self) -> Self {
+                todo!()
+            }
+            pub fn atan2(self, _other: Self) -> Self {
+                todo!()
+            }
+            pub fn sinh(self) -> Self {
+                todo!()
+            }
+            pub fn cosh(self) -> Self {
+                todo!()
+            }
+            pub fn tanh(self) -> Self {
+                todo!()
+            }
+            pub fn asinh(self) -> Self {
+                todo!()
+            }
+            pub fn acosh(self) -> Self {
+                todo!()
+            }
+            pub fn atanh(self) -> Self {
+                todo!()
+            }
+            /*pub fn round(self) -> Self {
+                todo!()
+            }*/
+            pub fn floor(self) -> Self {
+                todo!()
+            }
+            pub fn ceil(self) -> Self {
+                todo!()
+            }
+            /*pub fn trunc(self) -> Self {
+                todo!()
+            }
+            pub fn fract(self) -> Self {
+                todo!()
+            }*/
+            pub fn sin_cos(self) -> (Self, Self) {
+                todo!()
+            }
+            pub fn hypot(self, _other: Self) -> Self {
+                todo!()
+            }
+            pub fn is_nan(self) -> bool {
+                todo!()
+            }
+            pub fn is_infinite(self) -> bool {
+                todo!()
+            }
+            pub fn is_finite(self) -> bool {
+                todo!()
+            }
+        }
+    };
+}
+dec_c_impl!(CDecimal, Decimal::new);
+dec_c_impl!(CF64, |_| 0.0);
+dec_c_impl!(CF32, |_| 0.0);
 impl Integer {
     pub fn is_probably_prime(&self, reps: u32) -> bool {
         match self {
@@ -552,11 +677,17 @@ macro_rules! impl_pow {
     };
 }
 macro_rules! impl_c_ops {
-    ($t:ty, $rhs:ty, $cast:expr) => {
+    ($t:ty, $enum:ident, $rhs:ty, $cast:expr) => {
         impl std::ops::Add<$rhs> for $t {
             type Output = Self;
             fn add(self, rhs: $rhs) -> Self::Output {
                 Self(self.0 + $cast(rhs), self.1)
+            }
+        }
+        impl std::ops::Add<$t> for $rhs {
+            type Output = $t;
+            fn add(self, rhs: $t) -> Self::Output {
+                $enum($cast(self) + rhs.0, rhs.1)
             }
         }
         impl std::ops::AddAssign<$rhs> for $t {
@@ -570,6 +701,12 @@ macro_rules! impl_c_ops {
                 Self(self.0 - $cast(rhs), self.1)
             }
         }
+        impl std::ops::Sub<$t> for $rhs {
+            type Output = $t;
+            fn sub(self, rhs: $t) -> Self::Output {
+                $enum($cast(self) - rhs.0, -rhs.1)
+            }
+        }
         impl std::ops::SubAssign<$rhs> for $t {
             fn sub_assign(&mut self, rhs: $rhs) {
                 self.0 -= $cast(rhs);
@@ -578,7 +715,13 @@ macro_rules! impl_c_ops {
         impl std::ops::Mul<$rhs> for $t {
             type Output = Self;
             fn mul(self, rhs: $rhs) -> Self::Output {
-                Self(self.0 * $cast(rhs), self.1)
+                Self(self.0 * $cast(rhs), self.1 * $cast(rhs))
+            }
+        }
+        impl std::ops::Mul<$t> for $rhs {
+            type Output = $t;
+            fn mul(self, rhs: $t) -> Self::Output {
+                $enum($cast(self) * rhs.0, $cast(self) * rhs.1)
             }
         }
         impl std::ops::MulAssign<$rhs> for $t {
@@ -589,7 +732,14 @@ macro_rules! impl_c_ops {
         impl std::ops::Div<$rhs> for $t {
             type Output = Self;
             fn div(self, rhs: $rhs) -> Self::Output {
-                Self(self.0 / $cast(rhs), self.1)
+                Self(self.0 / $cast(rhs), self.1 / $cast(rhs))
+            }
+        }
+        impl std::ops::Div<$t> for $rhs {
+            type Output = $t;
+            fn div(self, rhs: $t) -> Self::Output {
+                let abs = rhs.0 * rhs.0 + rhs.1 * rhs.1;
+                $enum($cast(self) * rhs.0 / abs, $cast(self) * rhs.1 / abs)
             }
         }
         impl std::ops::DivAssign<$rhs> for $t {
@@ -664,13 +814,23 @@ macro_rules! impl_self_c_ops {
     };
 }
 macro_rules! impl_ops {
-    ($ty:ty, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
+    ($ty:ty, $enum:ident, $other:ty, $( ($variant:ident, $cast:expr) ),* ) => {
         impl std::ops::Add<$other> for $ty {
             type Output = Self;
             fn add(self, rhs: $other) -> Self::Output {
                 match self {
                     $(
                         Self::$variant(a) => Self::$variant(a + $cast(rhs)),
+                    )*
+                }
+            }
+        }
+        impl std::ops::Add<$ty> for $other {
+            type Output = $ty;
+            fn add(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $(
+                        $enum::$variant(a) => $enum::$variant(a+$cast(self)),
                     )*
                 }
             }
@@ -694,6 +854,16 @@ macro_rules! impl_ops {
                 }
             }
         }
+        impl std::ops::Sub<$ty> for $other {
+            type Output = $ty;
+            fn sub(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $(
+                        $enum::$variant(a) => $enum::$variant($cast(self) - a),
+                    )*
+                }
+            }
+        }
         impl std::ops::SubAssign<$other> for $ty {
             fn sub_assign(&mut self, rhs: $other) {
                 match self {
@@ -709,6 +879,16 @@ macro_rules! impl_ops {
                 match self {
                     $(
                         Self::$variant(a) => Self::$variant(a * $cast(rhs)),
+                    )*
+                }
+            }
+        }
+        impl std::ops::Mul<$ty> for $other {
+            type Output = $ty;
+            fn mul(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $(
+                        $enum::$variant(a) => $enum::$variant(a*$cast(self)),
                     )*
                 }
             }
@@ -732,6 +912,16 @@ macro_rules! impl_ops {
                 }
             }
         }
+        impl std::ops::Div<$ty> for $other {
+            type Output = $ty;
+            fn div(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $(
+                        $enum::$variant(a) => $enum::$variant(a.recip() * $cast(self)),
+                    )*
+                }
+            }
+        }
         impl std::ops::DivAssign<$other> for $ty {
             fn div_assign(&mut self, rhs: $other) {
                 match self {
@@ -744,7 +934,7 @@ macro_rules! impl_ops {
     };
 }
 macro_rules! impl_int_ops {
-    ($ty:ty, $other:ty) => {
+    ($ty:ty, $enum:ident, $other:ty) => {
         impl std::ops::Add<$other> for $ty {
             type Output = Self;
             fn add(self, rhs: $other) -> Self::Output {
@@ -753,6 +943,17 @@ macro_rules! impl_int_ops {
                     Self::Fastnum(a) => Self::Fastnum(a + fastnum::I512::from(rhs)),
                     Self::F64(a) => Self::F64(a + rhs as i128),
                     Self::F32(a) => Self::F32(a + rhs as i128),
+                }
+            }
+        }
+        impl std::ops::Add<$ty> for $other {
+            type Output = $ty;
+            fn add(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $enum::Rug(a) => $enum::Rug(self + a),
+                    $enum::Fastnum(a) => $enum::Fastnum(fastnum::I512::from(self) + a),
+                    $enum::F64(a) => $enum::F64(self as i128 + a),
+                    $enum::F32(a) => $enum::F32(self as i128 + a),
                 }
             }
         }
@@ -777,6 +978,17 @@ macro_rules! impl_int_ops {
                 }
             }
         }
+        impl std::ops::Sub<$ty> for $other {
+            type Output = $ty;
+            fn sub(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $enum::Rug(a) => $enum::Rug(self - a),
+                    $enum::Fastnum(a) => $enum::Fastnum(fastnum::I512::from(self) - a),
+                    $enum::F64(a) => $enum::F64(self as i128 - a),
+                    $enum::F32(a) => $enum::F32(self as i128 - a),
+                }
+            }
+        }
         impl std::ops::SubAssign<$other> for $ty {
             fn sub_assign(&mut self, rhs: $other) {
                 match self {
@@ -798,6 +1010,17 @@ macro_rules! impl_int_ops {
                 }
             }
         }
+        impl std::ops::Mul<$ty> for $other {
+            type Output = $ty;
+            fn mul(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $enum::Rug(a) => $enum::Rug(self * a),
+                    $enum::Fastnum(a) => $enum::Fastnum(fastnum::I512::from(self) * a),
+                    $enum::F64(a) => $enum::F64(self as i128 * a),
+                    $enum::F32(a) => $enum::F32(self as i128 * a),
+                }
+            }
+        }
         impl std::ops::MulAssign<$other> for $ty {
             fn mul_assign(&mut self, rhs: $other) {
                 match self {
@@ -816,6 +1039,17 @@ macro_rules! impl_int_ops {
                     Self::Fastnum(a) => Self::Fastnum(a / fastnum::I512::from(rhs)),
                     Self::F64(a) => Self::F64(a / rhs as i128),
                     Self::F32(a) => Self::F32(a / rhs as i128),
+                }
+            }
+        }
+        impl std::ops::Div<$ty> for $other {
+            type Output = $ty;
+            fn div(self, rhs: $ty) -> Self::Output {
+                match rhs {
+                    $enum::Rug(a) => $enum::Rug(self / a),
+                    $enum::Fastnum(a) => $enum::Fastnum(fastnum::I512::from(self) / a),
+                    $enum::F64(a) => $enum::F64(self as i128 / a),
+                    $enum::F32(a) => $enum::F32(self as i128 / a),
                 }
             }
         }
@@ -844,7 +1078,6 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-
         impl std::ops::AddAssign for $ty {
             fn add_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
@@ -855,7 +1088,6 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-
         impl std::ops::Sub for $ty {
             type Output = Self;
             fn sub(self, rhs: Self) -> Self::Output {
@@ -867,7 +1099,6 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-
         impl std::ops::SubAssign for $ty {
             fn sub_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
@@ -878,7 +1109,6 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-
         impl std::ops::Mul for $ty {
             type Output = Self;
             fn mul(self, rhs: Self) -> Self::Output {
@@ -890,7 +1120,6 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-
         impl std::ops::MulAssign for $ty {
             fn mul_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
@@ -901,7 +1130,6 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-
         impl std::ops::Div for $ty {
             type Output = Self;
             fn div(self, rhs: Self) -> Self::Output {
@@ -913,7 +1141,6 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-
         impl std::ops::DivAssign for $ty {
             fn div_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
@@ -926,25 +1153,55 @@ macro_rules! impl_self_ops {
         }
     }
 }
+macro_rules! impl_neg {
+    ($ty:ty, $( $variant:ident ),* ) => {
+        impl std::ops::Neg for $ty {
+            type Output = Self;
+            fn neg(self) -> Self::Output {
+                match self {
+                    $(
+                    Self::$variant(a) => Self::$variant(-a),
+                    )*
+                }
+            }
+        }
+    };
+}
+macro_rules! impl_cneg {
+    ($ty:ty) => {
+        impl std::ops::Neg for $ty {
+            type Output = Self;
+            fn neg(self) -> Self::Output {
+                Self(-self.0, -self.1)
+            }
+        }
+    };
+}
+impl_cneg!(CDecimal);
+impl_cneg!(CF64);
+impl_cneg!(CF32);
+impl_neg!(Decimal, D512, D256);
+impl_neg!(Complex, Rug, Fastnum, F64, F32);
+impl_neg!(Float, Rug, Fastnum, F64, F32);
 impl_self_c_ops!(CDecimal);
 impl_self_c_ops!(CF64);
 impl_self_c_ops!(CF32);
-impl_c_ops!(CDecimal, f64, |x| x);
-impl_c_ops!(CDecimal, f32, |x| x);
-impl_c_ops!(CDecimal, i32, |x| x);
-impl_c_ops!(CF64, f64, |x| x);
-impl_c_ops!(CF64, f32, |x| x as f64);
-impl_c_ops!(CF64, i32, |x| x as f64);
-impl_c_ops!(CF32, f64, |x| x as f32);
-impl_c_ops!(CF32, f32, |x| x);
-impl_c_ops!(CF32, i32, |x| x as f32);
+impl_c_ops!(CDecimal, CDecimal, f64, |x| x);
+impl_c_ops!(CDecimal, CDecimal, f32, |x| x);
+impl_c_ops!(CDecimal, CDecimal, i32, |x| x);
+impl_c_ops!(CF64, CF64, f64, |x| x);
+impl_c_ops!(CF64, CF64, f32, |x| x as f64);
+impl_c_ops!(CF64, CF64, i32, |x| x as f64);
+impl_c_ops!(CF32, CF32, f64, |x| x as f32);
+impl_c_ops!(CF32, CF32, f32, |x| x);
+impl_c_ops!(CF32, CF32, i32, |x| x as f32);
 impl_self_ops!(Decimal, D512, D256);
 impl_self_ops!(Complex, Rug, Fastnum, F64, F32);
 impl_self_ops!(Float, Rug, Fastnum, F64, F32);
 impl_self_ops!(Integer, Rug, Fastnum, F64, F32);
-impl_ops!(Decimal, f64, (D512, |x| x), (D256, |x| x));
-impl_ops!(Decimal, f32, (D512, |x| x), (D256, |x| x));
-impl_ops!(Decimal, i32, (D512, |x| x), (D256, |x| x));
+impl_ops!(Decimal, Decimal, f64, (D512, |x| x), (D256, |x| x));
+impl_ops!(Decimal, Decimal, f32, (D512, |x| x), (D256, |x| x));
+impl_ops!(Decimal, Decimal, i32, (D512, |x| x), (D256, |x| x));
 impl_pow!(CDecimal, f32, |x| x);
 impl_pow!(CF64, f32, |x| x as f64);
 impl_pow!(CF32, f32, |x| x);
@@ -956,6 +1213,7 @@ impl_pow!(CF64, i32, |x| x as f64);
 impl_pow!(CF32, i32, |x| x as f32);
 impl_ops!(
     Complex,
+    Complex,
     f64,
     (Rug, |x| x),
     (Fastnum, |x| x),
@@ -963,6 +1221,7 @@ impl_ops!(
     (F32, |x| x as f32)
 );
 impl_ops!(
+    Complex,
     Complex,
     f32,
     (Rug, |x| x),
@@ -972,6 +1231,7 @@ impl_ops!(
 );
 impl_ops!(
     Complex,
+    Complex,
     i32,
     (Rug, |x| x),
     (Fastnum, |x| x),
@@ -979,6 +1239,7 @@ impl_ops!(
     (F32, |x| x as f32)
 );
 impl_ops!(
+    Float,
     Float,
     f64,
     (Rug, |x| x),
@@ -988,6 +1249,7 @@ impl_ops!(
 );
 impl_ops!(
     Float,
+    Float,
     f32,
     (Rug, |x| x),
     (Fastnum, |x| x),
@@ -996,10 +1258,11 @@ impl_ops!(
 );
 impl_ops!(
     Float,
+    Float,
     i32,
     (Rug, |x| x),
     (Fastnum, |x| x),
     (F64, |x| x as f64),
     (F32, |x| x as f32)
 );
-impl_int_ops!(Integer, i32);
+impl_int_ops!(Integer, Integer, i32);
