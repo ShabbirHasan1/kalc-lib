@@ -24,6 +24,7 @@ use std::{
     io::{BufRead, BufReader, Stdout, Write},
     process,
 };
+use crate::complex::NumStr;
 pub fn arg_opts(
     options: &mut Options,
     colors: &mut Colors,
@@ -304,7 +305,7 @@ pub fn set_commands(
                                 None,
                             ));
                             do_math(i.0, *options, i.1)
-                                .unwrap_or(Num(n.clone()))
+                                .unwrap_or(NumStr::new(n.clone()))
                                 .num()
                                 .unwrap_or(n.clone())
                         })
@@ -623,7 +624,7 @@ pub fn set_commands(
                                     } else {
                                         vec![
                                             do_math(parsed.0, *options, parsed.1.clone())
-                                                .unwrap_or(Num(Number::from(
+                                                .unwrap_or(NumStr::new(Number::from(
                                                     Complex::new(options.prec),
                                                     None,
                                                 ))),
@@ -1070,7 +1071,7 @@ pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> Strin
         } else {
             match &v.parsed[0] {
                 Num(n) => {
-                    let n = custom_units(n.clone(), *options, colors);
+                    let n = custom_units(*n.clone(), *options, colors);
                     let n = get_output(*options, colors, &n);
                     out += format!(
                         "{}={}{}{}{}\x1b[G\n",

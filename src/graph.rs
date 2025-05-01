@@ -567,7 +567,7 @@ pub fn get_list_2d(
     let mut timer = (Instant::now(), Instant::now());
     for i in 0..=func.2.samples_2d {
         let n = func.2.xr.0 + i as f64 * den_range;
-        let num = Num(Number::from(Complex::with_val(func.2.prec, n), None));
+        let num = NumStr::new(Number::from(Complex::with_val(func.2.prec, n), None));
         match do_math(
             place_varxy(func.0.clone(), num.clone()),
             func.2,
@@ -965,13 +965,13 @@ pub fn get_list_3d(
     let mut timer = (Instant::now(), Instant::now());
     for i in 0..=func.2.samples_3d.1 {
         let n = func.2.yr.0 + i as f64 * den_y_range;
-        let num = Num(Number::from(Complex::with_val(func.2.prec, n), None));
+        let num = NumStr::new(Number::from(Complex::with_val(func.2.prec, n), None));
         modified = place_var(func.0.clone(), "y", num.clone());
         modifiedvars = place_funcvar(func.1.clone(), "y", num);
         simplify(&mut modified, &mut modifiedvars, func.2);
         for g in 0..=func.2.samples_3d.0 {
             let f = func.2.xr.0 + g as f64 * den_x_range;
-            let num = Num(Number::from(Complex::with_val(func.2.prec, f), None));
+            let num = NumStr::new(Number::from(Complex::with_val(func.2.prec, f), None));
             match do_math(
                 place_var(modified.clone(), "x", num.clone()),
                 func.2,

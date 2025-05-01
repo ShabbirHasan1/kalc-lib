@@ -758,7 +758,7 @@ pub fn print_concurrent(
     let mut long = false;
     match num {
         Num(n) => {
-            let n = custom_units(n, options, &colors);
+            let n = custom_units(*n, options, &colors);
             let mut output = get_output(options, &colors, &n);
             let (mut frac_a, frac_b) = if options.frac.num {
                 let n = n.number;
@@ -1443,7 +1443,7 @@ pub fn print_concurrent(
 pub fn print_answer(num: NumStr, options: Options, colors: &Colors) {
     match num {
         Num(n) => {
-            let n = custom_units(n, options, colors);
+            let n = custom_units(*n, options, colors);
             let a = get_output(options, colors, &n);
             print!(
                 "{}{}{}{}",

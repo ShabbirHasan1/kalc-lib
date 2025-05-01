@@ -189,7 +189,7 @@ pub fn input_var(
                 }
                 _ => {}
             }
-            output.push(Num(Number::from(
+            output.push(NumStr::new(Number::from(
                 match Complex::parse_radix(pow.as_bytes(), options.base.0) {
                     Ok(n) => n.complete(prec),
                     _ => return Err("exponent error"),
@@ -240,7 +240,7 @@ pub fn input_var(
                         || chars[i] == '!'
                         || (chars.len() > i + 1 && chars[i] == '/' && chars[i + 1] == '/'))
                 {
-                    output.push(Num(Number::from(n1.clone(), None)));
+                    output.push(NumStr::new(Number::from(n1.clone(), None)));
                     output.push(InternalMultiplication);
                 } else {
                     num.insert(0, '-');
@@ -251,7 +251,7 @@ pub fn input_var(
                 num.insert(0, '-');
                 i += 1;
             }
-            output.push(Num(Number::from(
+            output.push(NumStr::new(Number::from(
                 match Complex::parse_radix(num.clone(), options.base.0) {
                     Ok(n) => n.complete(prec),
                     Err(_) => return Err("probably radix error"),
@@ -326,83 +326,83 @@ pub fn input_var(
             match c {
                 '√' => output.push(Func("sqrt".to_string())),
                 '∛' => output.push(Func("cbrt".to_string())),
-                '¼' => output.push(Num(Number::from(
+                '¼' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 0.25),
                     None,
                 ))),
-                '½' => output.push(Num(Number::from(
+                '½' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 0.5),
                     None,
                 ))),
-                '¾' => output.push(Num(Number::from(
+                '¾' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 0.75),
                     None,
                 ))),
-                '⅒' => output.push(Num(Number::from(
+                '⅒' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 1) / 10,
                     None,
                 ))),
-                '⅕' => output.push(Num(Number::from(
+                '⅕' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 1) / 5,
                     None,
                 ))),
-                '⅖' => output.push(Num(Number::from(
+                '⅖' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 2) / 5,
                     None,
                 ))),
-                '⅗' => output.push(Num(Number::from(
+                '⅗' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 3) / 5,
                     None,
                 ))),
-                '⅘' => output.push(Num(Number::from(
+                '⅘' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 4) / 5,
                     None,
                 ))),
-                '⅐' => output.push(Num(Number::from(
+                '⅐' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 7).recip(),
                     None,
                 ))),
-                '⅑' => output.push(Num(Number::from(
+                '⅑' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 9).recip(),
                     None,
                 ))),
-                '⅓' => output.push(Num(Number::from(
+                '⅓' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 3).recip(),
                     None,
                 ))),
-                '⅔' => output.push(Num(Number::from(
+                '⅔' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 1.5).recip(),
                     None,
                 ))),
-                '⅙' => output.push(Num(Number::from(
+                '⅙' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 6).recip(),
                     None,
                 ))),
-                '⅚' => output.push(Num(Number::from(
+                '⅚' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 5) / 6,
                     None,
                 ))),
-                '⅛' => output.push(Num(Number::from(
+                '⅛' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 0.125),
                     None,
                 ))),
-                '⅜' => output.push(Num(Number::from(
+                '⅜' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 3) / 8,
                     None,
                 ))),
-                '⅝' => output.push(Num(Number::from(
+                '⅝' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 5) / 8,
                     None,
                 ))),
-                '⅞' => output.push(Num(Number::from(
+                '⅞' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, 7) / 8,
                     None,
                 ))),
                 '⅟' => {
-                    output.push(Num(Number::from(Complex::with_val(options.prec, 1), None)));
+                    output.push(NumStr::new(Number::from(Complex::with_val(options.prec, 1), None)));
                     output.push(Division)
                 }
-                '↉' => output.push(Num(Number::from(Complex::new(options.prec), None))),
+                '↉' => output.push(NumStr::new(Number::from(Complex::new(options.prec), None))),
                 '⁰' | '₀' => pow.push('0'),
                 '⁹' | '₉' => pow.push('9'),
                 '⁸' | '₈' => pow.push('8'),
@@ -469,7 +469,7 @@ pub fn input_var(
                             Comma | LeftBracket | LeftCurlyBracket
                         )
                     {
-                        output.push(Num(Number::from(Complex::new(options.prec), None)))
+                        output.push(NumStr::new(Number::from(Complex::new(options.prec), None)))
                     }
                     output.push(PlusMinus)
                 }
@@ -495,7 +495,7 @@ pub fn input_var(
                         i += 1;
                     } else if chars[i + 1] == '-' {
                         place_multiplier(&mut output, sumrec, &sumvar);
-                        output.push(Num(Number::from(n1.clone(), None)));
+                        output.push(NumStr::new(Number::from(n1.clone(), None)));
                         output.push(Division);
                         i += 1;
                     } else {
@@ -525,7 +525,7 @@ pub fn input_var(
                                 Comma | LeftBracket | LeftCurlyBracket
                             )
                         {
-                            output.push(Num(Number::from(Complex::new(options.prec), None)))
+                            output.push(NumStr::new(Number::from(Complex::new(options.prec), None)))
                         }
                         i += 1;
                         output.push(PlusMinus)
@@ -543,7 +543,7 @@ pub fn input_var(
                             Comma | LeftBracket | LeftCurlyBracket
                         )
                     {
-                        output.push(Num(Number::from(Complex::new(options.prec), None)))
+                        output.push(NumStr::new(Number::from(Complex::new(options.prec), None)))
                     }
                     i += 1;
                     output.push(PlusMinus)
@@ -584,7 +584,7 @@ pub fn input_var(
                         || (i > 1 && chars[i - 1] == '/' && chars[i - 2] == '/')
                     {
                         output.push(LeftBracket);
-                        output.push(Num(Number::from(n1.clone(), None)));
+                        output.push(NumStr::new(Number::from(n1.clone(), None)));
                         output.push(InternalMultiplication);
                         pwr.0 = true;
                         pwr.1 = *bracket;
@@ -606,7 +606,7 @@ pub fn input_var(
                         if i + 1 != chars.len()
                             && matches!(chars[i + 1], '(' | '{' | '[' | '|' | '-' | '!')
                         {
-                            output.push(Num(Number::from(n1.clone(), None)));
+                            output.push(NumStr::new(Number::from(n1.clone(), None)));
                             output.push(InternalMultiplication);
                         } else {
                             neg = true;
@@ -759,13 +759,13 @@ pub fn input_var(
                     if !solves.is_empty() && solves[0].0 == *bracket {
                         if solves[0].1 == 2 {
                             output.push(Comma);
-                            output.push(Num(Number::from(
+                            output.push(NumStr::new(Number::from(
                                 Complex::with_val(options.prec, (Nan, 1)),
                                 None,
                             )));
                         } else if solves[0].1 == 1 {
                             output.push(Comma);
-                            output.push(Num(Number::from(
+                            output.push(NumStr::new(Number::from(
                                 Complex::with_val(options.prec, Nan),
                                 None,
                             )));
@@ -791,13 +791,13 @@ pub fn input_var(
                         }
                         if solvesp[0].1 == 2 {
                             output.push(Comma);
-                            output.push(Num(Number::from(
+                            output.push(NumStr::new(Number::from(
                                 Complex::with_val(options.prec, (Nan, 1)),
                                 None,
                             )));
                         } else if solvesp[0].1 == 1 {
                             output.push(Comma);
-                            output.push(Num(Number::from(
+                            output.push(NumStr::new(Number::from(
                                 Complex::with_val(options.prec, Nan),
                                 None,
                             )));
@@ -809,7 +809,7 @@ pub fn input_var(
                     output.push(RightBracket);
                     if !exp.0.is_empty() && exp.1 == *bracket {
                         output.push(Exponent);
-                        output.push(Num(Number::from(
+                        output.push(NumStr::new(Number::from(
                             match Complex::parse_radix(exp.0.as_bytes(), options.base.0) {
                                 Ok(n) => n.complete(prec),
                                 _ => return Err("exponent error"),
@@ -1002,7 +1002,7 @@ pub fn input_var(
                         if j != -1 {
                             output.insert(
                                 j as usize,
-                                Num(Number::from(Complex::with_val(options.prec, 1), None)),
+                                NumStr::new(Number::from(Complex::with_val(options.prec, 1), None)),
                             );
                             output.insert(j as usize, LeftBracket);
                             output.insert(j as usize, Multiplication);
@@ -1013,10 +1013,10 @@ pub fn input_var(
                             | Some(RightBracket)
                             | Some(RightCurlyBracket) => {}
                             _ => output
-                                .push(Num(Number::from(Complex::with_val(options.prec, 1), None))),
+                                .push(NumStr::new(Number::from(Complex::with_val(options.prec, 1), None))),
                         }
                         output.push(Multiplication);
-                        output.push(Num(Number::from(
+                        output.push(NumStr::new(Number::from(
                             Complex::with_val(options.prec, 1) / 100,
                             None,
                         )));
@@ -1027,7 +1027,7 @@ pub fn input_var(
                         output.push(Modulo)
                     }
                 }
-                '∞' => output.push(Num(Number::from(
+                '∞' => output.push(NumStr::new(Number::from(
                     Complex::with_val(options.prec, Infinity),
                     None,
                 ))),
@@ -1309,7 +1309,7 @@ pub fn input_var(
         {
             place_multiplier(&mut output, sumrec, &sumvar);
             if neg {
-                output.push(Num(Number::from(n1.clone(), None)));
+                output.push(NumStr::new(Number::from(n1.clone(), None)));
                 output.push(InternalMultiplication);
                 neg = false;
             }
@@ -1353,7 +1353,7 @@ pub fn input_var(
         {
             place_multiplier(&mut output, sumrec, &sumvar);
             if neg {
-                output.push(Num(Number::from(n1.clone(), None)));
+                output.push(NumStr::new(Number::from(n1.clone(), None)));
                 output.push(InternalMultiplication);
                 neg = false;
             }
@@ -1364,19 +1364,19 @@ pub fn input_var(
             ) {
                 match word.to_ascii_lowercase().as_str() {
                     "nan" | "NaN" => {
-                        output.push(Num(Number::from(
+                        output.push(NumStr::new(Number::from(
                             Complex::with_val(options.prec, Nan),
                             None,
                         )));
                     }
                     "true" => {
-                        output.push(Num(Number::from(Complex::with_val(options.prec, 1), None)));
+                        output.push(NumStr::new(Number::from(Complex::with_val(options.prec, 1), None)));
                     }
                     "false" => {
-                        output.push(Num(Number::from(Complex::new(options.prec), None)));
+                        output.push(NumStr::new(Number::from(Complex::new(options.prec), None)));
                     }
                     "inf" => {
-                        output.push(Num(Number::from(
+                        output.push(NumStr::new(Number::from(
                             Complex::with_val(options.prec, Infinity),
                             None,
                         )));
@@ -1418,7 +1418,7 @@ pub fn input_var(
             if word.eq_ignore_ascii_case("not") {
                 place_multiplier(&mut output, sumrec, &sumvar);
                 if neg {
-                    output.push(Num(Number::from(n1.clone(), None)));
+                    output.push(NumStr::new(Number::from(n1.clone(), None)));
                     output.push(InternalMultiplication);
                     neg = false;
                 }
@@ -1450,7 +1450,7 @@ pub fn input_var(
         {
             place_multiplier(&mut output, sumrec, &sumvar);
             if neg {
-                output.push(Num(Number::from(n1.clone(), None)));
+                output.push(NumStr::new(Number::from(n1.clone(), None)));
                 output.push(InternalMultiplication);
                 neg = false;
             }
@@ -1464,7 +1464,7 @@ pub fn input_var(
                 output.push(InternalMultiplication)
             }
             let (num, add) = to_unit(unit, mul, options);
-            output.push(Num(num));
+            output.push(NumStr::new(num));
             if let Some(num) = add {
                 if i > 2
                     && ((chars[i - 2] == 't' && chars[i - 1] == 'o')
@@ -1472,10 +1472,10 @@ pub fn input_var(
                 {
                     if chars[i - 3] == 'K' {
                         output.insert(output.len().saturating_sub(2), Minus);
-                        output.insert(output.len().saturating_sub(2), Num(num));
+                        output.insert(output.len().saturating_sub(2), NumStr::new(num));
                     } else {
                         output.insert(output.len().saturating_sub(3), Minus);
-                        output.insert(output.len().saturating_sub(3), Num(num));
+                        output.insert(output.len().saturating_sub(3), NumStr::new(num));
                     }
                 } else {
                     output.insert(
@@ -1491,7 +1491,7 @@ pub fn input_var(
                         LeftBracket,
                     );
                     output.push(Plus);
-                    output.push(Num(num));
+                    output.push(NumStr::new(num));
                     output.push(RightBracket);
                 }
             }
@@ -1629,7 +1629,7 @@ pub fn input_var(
                             {
                                 place_multiplier(&mut output, sumrec, &sumvar);
                                 if neg {
-                                    output.push(Num(Number::from(n1.clone(), None)));
+                                    output.push(NumStr::new(Number::from(n1.clone(), None)));
                                     output.push(InternalMultiplication);
                                     neg = false;
                                 }
@@ -1693,7 +1693,7 @@ pub fn input_var(
                                         varf.iter().collect::<String>(),
                                         options.base.0,
                                     ) {
-                                        vec![Num(Number::from(n.complete(prec), None))]
+                                        vec![NumStr::new(Number::from(n.complete(prec), None))]
                                     } else {
                                         let parsed;
                                         let exit;
@@ -1945,7 +1945,7 @@ pub fn input_var(
                                 if area != 0 || slope != 0 {
                                     if area != 0 && var.name.contains(&',') {
                                         output.push(Comma);
-                                        output.push(Num(Number::from(
+                                        output.push(NumStr::new(Number::from(
                                             Complex::new(options.prec),
                                             None,
                                         )))
@@ -1958,7 +1958,7 @@ pub fn input_var(
                                     }
                                     if area + slope != 1 {
                                         output.push(Comma);
-                                        output.push(Num(Number::from(
+                                        output.push(NumStr::new(Number::from(
                                             Complex::with_val(options.prec, area + slope),
                                             None,
                                         )))
@@ -1981,7 +1981,7 @@ pub fn input_var(
                                 }
                                 if !exp.0.is_empty() && exp.1 == *bracket {
                                     output.push(Exponent);
-                                    output.push(Num(Number::from(
+                                    output.push(NumStr::new(Number::from(
                                         match Complex::parse_radix(exp.0.as_bytes(), options.base.0)
                                         {
                                             Ok(n) => n.complete(prec),
@@ -1996,7 +1996,7 @@ pub fn input_var(
                             } else {
                                 place_multiplier(&mut output, sumrec, &sumvar);
                                 if neg {
-                                    output.push(Num(Number::from(n1.clone(), None)));
+                                    output.push(NumStr::new(Number::from(n1.clone(), None)));
                                     output.push(InternalMultiplication);
                                     neg = false;
                                 }
@@ -2023,7 +2023,7 @@ pub fn input_var(
                                     temp.iter().collect::<String>(),
                                     options.base.0,
                                 ) {
-                                    vec![Num(Number::from(n.complete(prec), None))]
+                                    vec![NumStr::new(Number::from(n.complete(prec), None))]
                                 } else {
                                     let parsed;
                                     let exit;
@@ -2282,7 +2282,7 @@ pub fn input_var(
                                 if area != 0 || slope != 0 {
                                     if area != 0 {
                                         output.push(Comma);
-                                        output.push(Num(Number::from(
+                                        output.push(NumStr::new(Number::from(
                                             Complex::new(options.prec),
                                             None,
                                         )))
@@ -2291,7 +2291,7 @@ pub fn input_var(
                                     output.extend(tempf);
                                     if area + slope != 1 {
                                         output.push(Comma);
-                                        output.push(Num(Number::from(
+                                        output.push(NumStr::new(Number::from(
                                             Complex::with_val(options.prec, area + slope),
                                             None,
                                         )))
@@ -2314,7 +2314,7 @@ pub fn input_var(
                                 }
                                 if !exp.0.is_empty() && exp.1 == *bracket {
                                     output.push(Exponent);
-                                    output.push(Num(Number::from(
+                                    output.push(NumStr::new(Number::from(
                                         match Complex::parse_radix(exp.0.as_bytes(), options.base.0)
                                         {
                                             Ok(n) => n.complete(prec),
@@ -2373,7 +2373,7 @@ pub fn input_var(
                             };
                             place_multiplier(&mut output, sumrec, &sumvar);
                             if neg {
-                                output.push(Num(Number::from(n1.clone(), None)));
+                                output.push(NumStr::new(Number::from(n1.clone(), None)));
                                 output.push(InternalMultiplication);
                                 neg = false;
                             }
@@ -2434,7 +2434,7 @@ pub fn input_var(
                 })
             {
                 if neg {
-                    output.push(Num(Number::from(n1.clone(), None)));
+                    output.push(NumStr::new(Number::from(n1.clone(), None)));
                     output.push(InternalMultiplication);
                     neg = false;
                 }
@@ -2456,7 +2456,7 @@ pub fn input_var(
                             }
                         }
                         place_multiplier(&mut output, sumrec, &sumvar);
-                        output.push(Num(Number::from(
+                        output.push(NumStr::new(Number::from(
                             Complex::with_val(options.prec, options.base.0),
                             None,
                         )));
@@ -2506,7 +2506,7 @@ pub fn input_var(
                     }
                     'i' => {
                         place_multiplier(&mut output, sumrec, &sumvar);
-                        output.push(Num(Number::from(
+                        output.push(NumStr::new(Number::from(
                             Complex::with_val(options.prec, (0, 1)),
                             None,
                         )));
@@ -2540,7 +2540,7 @@ pub fn input_var(
                         output.push(Plus);
                         output.push(Func('y'.to_string()));
                         output.push(Multiplication);
-                        output.push(Num(Number::from(
+                        output.push(NumStr::new(Number::from(
                             Complex::with_val(options.prec, (0, 1)),
                             None,
                         )));
@@ -2568,7 +2568,7 @@ pub fn input_var(
                     _ => {
                         if !collectvars.is_empty() {
                             if neg {
-                                output.push(Num(Number::from(n1.clone(), None)));
+                                output.push(NumStr::new(Number::from(n1.clone(), None)));
                                 output.push(InternalMultiplication);
                                 neg = false;
                             }
@@ -2606,7 +2606,7 @@ pub fn input_var(
                 }
             } else if !collectvars.is_empty() || solvesn != 0 {
                 if neg {
-                    output.push(Num(Number::from(n1.clone(), None)));
+                    output.push(NumStr::new(Number::from(n1.clone(), None)));
                     output.push(InternalMultiplication);
                     neg = false;
                 }
@@ -2691,13 +2691,13 @@ pub fn input_var(
     for s in solves {
         if s.1 == 2 {
             output.push(Comma);
-            output.push(Num(Number::from(
+            output.push(NumStr::new(Number::from(
                 Complex::with_val(options.prec, (Nan, 1)),
                 None,
             )));
         } else if s.1 == 1 {
             output.push(Comma);
-            output.push(Num(Number::from(
+            output.push(NumStr::new(Number::from(
                 Complex::with_val(options.prec, Nan),
                 None,
             )));
@@ -2710,13 +2710,13 @@ pub fn input_var(
         }
         if s.1 == 2 {
             output.push(Comma);
-            output.push(Num(Number::from(
+            output.push(NumStr::new(Number::from(
                 Complex::with_val(options.prec, (Nan, 1)),
                 None,
             )));
         } else if s.1 == 1 {
             output.push(Comma);
-            output.push(Num(Number::from(
+            output.push(NumStr::new(Number::from(
                 Complex::with_val(options.prec, Nan),
                 None,
             )));
@@ -2739,7 +2739,7 @@ pub fn input_var(
             }
             _ => {}
         }
-        output.push(Num(Number::from(
+        output.push(NumStr::new(Number::from(
             match Complex::parse_radix(pow.as_bytes(), options.base.0) {
                 Ok(n) => n.complete(prec),
                 _ => return Err("exponent error"),
@@ -2752,7 +2752,7 @@ pub fn input_var(
     }
     if !exp.0.is_empty() {
         output.push(Exponent);
-        output.push(Num(Number::from(
+        output.push(NumStr::new(Number::from(
             match Complex::parse_radix(exp.0.as_bytes(), options.base.0) {
                 Ok(n) => n.complete(prec),
                 _ => return Err("exponent error"),
@@ -2761,7 +2761,7 @@ pub fn input_var(
         )));
     }
     if neg {
-        output.push(Num(Number::from(n1, None)));
+        output.push(NumStr::new(Number::from(n1, None)));
     }
     for _ in abs {
         output.push(RightBracket);
@@ -2825,7 +2825,7 @@ pub fn input_var(
         if nth != 1 {
             output.insert(
                 n + 6 + last - end,
-                Num(Number::from(Complex::with_val(options.prec, nth), None)),
+                NumStr::new(Number::from(Complex::with_val(options.prec, nth), None)),
             );
             output.insert(n + 6 + last - end, Comma);
         }
@@ -2834,7 +2834,7 @@ pub fn input_var(
         if !slope && !start_to_end {
             output.insert(
                 n + 6 + last - end,
-                Num(Number::from(Complex::new(options.prec), None)),
+                NumStr::new(Number::from(Complex::new(options.prec), None)),
             );
             output.insert(n + 6 + last - end, Comma);
         }

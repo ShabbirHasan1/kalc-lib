@@ -789,7 +789,7 @@ pub fn parsed_to_string(
     for i in input {
         out.push_str(&match i {
             Num(n) => {
-                let n = custom_units(n, *options, colors);
+                let n = custom_units(*n, *options, colors);
                 let n = get_output(*options, colors, &n);
                 format!(
                     "{}{}{}{}",

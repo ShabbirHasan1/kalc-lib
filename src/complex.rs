@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum NumStr {
-    Num(Number),
+    Num(Box<Number>),
     Func(String),
     Vector(Vec<Number>),
     Matrix(Vec<Vec<Number>>),
@@ -60,6 +60,11 @@ pub enum NumStr {
     Implies,
     Nor,
     Converse,
+}
+impl NumStr {
+    pub fn new(n: Number) -> Self {
+        Num(Box::new(n))
+    }
 }
 impl Number {
     pub fn from(number: Complex, units: Option<Units>) -> Number {
@@ -131,7 +136,7 @@ impl NumStr {
             )
         }
         Ok(match (self, b) {
-            (Num(a), Num(b)) => Num(m(a, b)),
+            (Num(a), Num(b)) => NumStr::new(m(a, b)),
             (Num(b), Vector(a)) | (Vector(a), Num(b)) => {
                 Vector(a.iter().map(|a| m(a, b)).collect())
             }
@@ -269,7 +274,7 @@ impl NumStr {
             )
         }
         Ok(match (self, b) {
-            (Num(a), Num(b)) => Num(p(a, b)),
+            (Num(a), Num(b)) => NumStr::new(p(a, b)),
             (Num(a), Vector(b)) => Vector(b.iter().map(|b| p(a, b)).collect()),
             (Vector(a), Num(b)) => Vector(a.iter().map(|a| p(a, b)).collect()),
             (Vector(a), Vector(b)) if a.len() == b.len() => {
@@ -356,7 +361,7 @@ impl NumStr {
         F: Fn(&Number, &Number) -> Number,
     {
         Ok(match (self, b) {
-            (Num(a), Num(b)) => Num(func(a, b)),
+            (Num(a), Num(b)) => NumStr::new(func(a, b)),
             (Num(a), Vector(b)) => Vector(b.iter().map(|b| func(a, b)).collect()),
             (Vector(a), Num(b)) => Vector(a.iter().map(|a| func(a, b)).collect()),
             (Num(a), Matrix(b)) => Matrix(
@@ -411,7 +416,7 @@ impl NumStr {
     }
     pub fn num(&self) -> Result<Number, &'static str> {
         match self {
-            Num(n) => Ok(n.clone()),
+            Num(n) => Ok(*n.clone()),
             _ => Err("failed to get number"),
         }
     }
@@ -499,7 +504,7 @@ pub fn not(a: &NumStr) -> Result<NumStr, &'static str> {
     match a {
         Num(a) => {
             let a = &a.number;
-            Ok(Num(Number::from(
+            Ok(NumStr::new(Number::from(
                 Complex::with_val(a.prec(), (a.imag().is_zero() && a.real() != &1) as u8),
                 None,
             )))
@@ -1227,9 +1232,9 @@ pub fn mvec(
                 options,
                 func_vars.clone(),
                 var,
-                Num(Number::from(Complex::with_val(options.prec, z), None)),
+                NumStr::new(Number::from(Complex::with_val(options.prec, z), None)),
             )? {
-                Num(n) => vec.push(n),
+                Num(n) => vec.push(*n),
                 Vector(v) if mvec => vec.extend(v),
                 Vector(v) => mat.push(v),
                 Matrix(m) if !mvec => mat.extend(m),
@@ -1243,9 +1248,9 @@ pub fn mvec(
                 options,
                 func_vars.clone(),
                 var,
-                Num(Number::from(Complex::with_val(options.prec, z), None)),
+                NumStr::new(Number::from(Complex::with_val(options.prec, z), None)),
             )? {
-                Num(n) => vec.push(n),
+                Num(n) => vec.push(*n),
                 Vector(v) if mvec => vec.extend(v),
                 Vector(v) => mat.push(v),
                 Matrix(m) if !mvec => mat.extend(m),
@@ -1283,17 +1288,17 @@ pub fn sum(
             .to_isize()
             .unwrap_or_default();
         let k = if end.is_sign_positive() { 1 } else { -1 };
-        let mut last = Num(Number::from(Complex::with_val(options.prec, Nan), None));
+        let mut last = NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None));
         let mut value = do_math_with_var(
             function.clone(),
             options,
             func_vars.clone(),
             var,
-            Num(Number::from(Complex::with_val(options.prec, n), None)),
+            NumStr::new(Number::from(Complex::with_val(options.prec, n), None)),
         )?;
         while last != value {
             if j > 10000 {
-                return Ok(Num(Number::from(
+                return Ok(NumStr::new(Number::from(
                     Complex::with_val(options.prec, Nan),
                     None,
                 )));
@@ -1306,7 +1311,7 @@ pub fn sum(
                 options,
                 func_vars.clone(),
                 var,
-                Num(Number::from(Complex::with_val(options.prec, n), None)),
+                NumStr::new(Number::from(Complex::with_val(options.prec, n), None)),
             )?;
             if product {
                 value = last.mul(&math)?;
@@ -1333,7 +1338,7 @@ pub fn sum(
             options,
             func_vars.clone(),
             var,
-            Num(Number::from(Complex::with_val(options.prec, start), None)),
+            NumStr::new(Number::from(Complex::with_val(options.prec, start), None)),
         )?;
         for z in start + 1..=end {
             let math = do_math_with_var(
@@ -1341,7 +1346,7 @@ pub fn sum(
                 options,
                 func_vars.clone(),
                 var,
-                Num(Number::from(Complex::with_val(options.prec, z), None)),
+                NumStr::new(Number::from(Complex::with_val(options.prec, z), None)),
             )?;
             if product {
                 value = value.mul(&math)?;
@@ -1479,7 +1484,7 @@ pub fn cofactor(a: &[Vec<Number>]) -> Result<Vec<Vec<Number>>, &'static str> {
 pub fn inverse(a: &[Vec<Number>]) -> Result<Vec<Vec<Number>>, &'static str> {
     if (0..a.len()).all(|j| a.len() == a[j].len()) {
         Matrix(transpose(&cofactor(a)?))
-            .func(&Num(determinant(a)?), div)?
+            .func(&NumStr::new(determinant(a)?), div)?
             .mat()
     } else {
         Err("not square")
@@ -1558,7 +1563,7 @@ pub fn sort_mat(mut a: Vec<Vec<Number>>, prec: u32) -> Vec<Vec<Number>> {
 pub fn eigenvalues(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static str> {
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         match mat.len() {
-            1 => Ok(Num(mat[0][0].clone())),
+            1 => Ok(NumStr::new(mat[0][0].clone())),
             2 => {
                 let pr = mat[0][0].number.prec().0;
                 let mut mat = Matrix(mat.into());
@@ -1736,7 +1741,7 @@ pub fn eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static 
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         let one = Number::from(Complex::with_val(mat[0][0].number.prec(), 1), None);
         match mat.len() {
-            1 => Ok(Num(one)),
+            1 => Ok(NumStr::new(one)),
             2..5 => {
                 let p = mat[0][0].number.prec().0;
                 let mut l = eigenvalues(mat, real)?.vec()?;
@@ -1760,7 +1765,7 @@ pub fn eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static 
                     .iter()
                     .filter_map(|l| {
                         Matrix(identity(mat.len(), l.number.prec().0))
-                            .mul(&Num(l.clone()))
+                            .mul(&NumStr::new(l.clone()))
                             .map(|n| {
                                 Matrix(mat.to_vec())
                                     .func(&n, sub)
@@ -1873,12 +1878,12 @@ fn gen_ev(mat: &[Vec<Number>], real: bool) -> Result<Vec<Vec<Vec<Number>>>, &'st
     Ok(l.iter()
         .filter_map(|l| {
             Matrix(identity(mat.len(), l.number.prec().0))
-                .mul(&Num(l.clone()))
+                .mul(&NumStr::new(l.clone()))
                 .map(|n| {
                     Matrix(mat.to_vec())
                         .func(&n, sub)
                         .map(|m| {
-                            m.pow(&Num(Number::from(Complex::with_val(p, mat.len()), None)))
+                            m.pow(&NumStr::new(Number::from(Complex::with_val(p, mat.len()), None)))
                                 .map(|m| {
                                     let ker = kernel(m.mat().unwrap()).unwrap();
                                     Some(ker)
@@ -1895,7 +1900,7 @@ pub fn generalized_eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumSt
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         let one = Number::from(Complex::with_val(mat[0][0].number.prec(), 1), None);
         match mat.len() {
-            1 => Ok(Num(one)),
+            1 => Ok(NumStr::new(one)),
             2..5 => Ok(Matrix(
                 gen_ev(mat, real)?
                     .iter()
@@ -2729,7 +2734,7 @@ pub fn surface_area(
         let unitsy = end.units;
         let deltay: Complex = (endy.clone() - starty.clone()) / (points - 1);
         let res = {
-            let n = Num(Number::from(startx.clone(), unitsx));
+            let n = NumStr::new(Number::from(startx.clone(), unitsx));
             let func = place_var(func.clone(), &varx, n.clone());
             let func_vars = place_funcvar(func_vars.clone(), &varx, n);
             do_math_with_var(
@@ -2737,7 +2742,7 @@ pub fn surface_area(
                 options,
                 func_vars.clone(),
                 &vary,
-                Num(Number::from(starty.clone(), unitsy)),
+                NumStr::new(Number::from(starty.clone(), unitsy)),
             )?
         };
         match res {
@@ -2751,7 +2756,7 @@ pub fn surface_area(
                     } else if nx != 0 {
                         startx += deltax.clone();
                     }
-                    let n = Num(Number::from(startx.clone(), unitsx));
+                    let n = NumStr::new(Number::from(startx.clone(), unitsx));
                     let mut func = place_var(func.clone(), &varx, n.clone());
                     let mut func_vars = place_funcvar(func_vars.clone(), &varx, n);
                     simplify(&mut func, &mut func_vars, options);
@@ -2771,7 +2776,7 @@ pub fn surface_area(
                                 options,
                                 func_vars.clone(),
                                 &vary,
-                                Num(Number::from(starty.clone(), unitsy)),
+                                NumStr::new(Number::from(starty.clone(), unitsy)),
                             )?
                             .num()?
                             .number,
@@ -2816,7 +2821,7 @@ pub fn surface_area(
                     } else if nx != 0 {
                         startx += deltax.clone();
                     }
-                    let n = Num(Number::from(startx.clone(), unitsx));
+                    let n = NumStr::new(Number::from(startx.clone(), unitsx));
                     let mut func = place_var(func.clone(), &varx, n.clone());
                     let mut func_vars = place_funcvar(func_vars.clone(), &varx, n);
                     simplify(&mut func, &mut func_vars, options);
@@ -2835,7 +2840,7 @@ pub fn surface_area(
                             options,
                             func_vars.clone(),
                             &vary,
-                            Num(Number::from(starty.clone(), unitsy)),
+                            NumStr::new(Number::from(starty.clone(), unitsy)),
                         )?
                         .vec()?;
                         row.push(v.iter().map(|a| a.number.clone()).collect());
@@ -2883,7 +2888,7 @@ pub fn surface_area(
             _ => Err("bad input"),
         }
     } else {
-        let n = Num(Number::from(startx.clone(), unitsx));
+        let n = NumStr::new(Number::from(startx.clone(), unitsx));
         let temp_func = place_var(func.clone(), &varx, n.clone());
         let temp_func_vars = place_funcvar(func_vars.clone(), &varx, n.clone());
         let starty = do_math_with_var(
@@ -2911,7 +2916,7 @@ pub fn surface_area(
             options,
             temp_func_vars.clone(),
             &vary,
-            Num(Number::from(starty.clone(), unitsy)),
+            NumStr::new(Number::from(starty.clone(), unitsy)),
         )? {
             Num(n) => {
                 let mut data: Vec<Vec<[Complex; 2]>> = vec![Vec::new(); points];
@@ -2923,7 +2928,7 @@ pub fn surface_area(
                     } else if nx != 0 {
                         startx += deltax.clone();
                     }
-                    let n = Num(Number::from(startx.clone(), unitsx));
+                    let n = NumStr::new(Number::from(startx.clone(), unitsx));
                     let mut func = place_var(func.clone(), &varx, n.clone());
                     let mut func_vars = place_funcvar(func_vars.clone(), &varx, n.clone());
                     simplify(&mut func, &mut func_vars, options);
@@ -2965,7 +2970,7 @@ pub fn surface_area(
                                 options,
                                 func_vars.clone(),
                                 &vary,
-                                Num(Number::from(starty.clone(), unitsy)),
+                                NumStr::new(Number::from(starty.clone(), unitsy)),
                             )?
                             .num()?
                             .number,
@@ -3019,7 +3024,7 @@ pub fn surface_area(
                     } else if nx != 0 {
                         startx += deltax.clone();
                     }
-                    let n = Num(Number::from(startx.clone(), unitsx));
+                    let n = NumStr::new(Number::from(startx.clone(), unitsx));
                     let mut func = place_var(func.clone(), &varx, n.clone());
                     let mut func_vars = place_funcvar(func_vars.clone(), &varx, n.clone());
                     simplify(&mut func, &mut func_vars, options);
@@ -3059,7 +3064,7 @@ pub fn surface_area(
                             options,
                             func_vars.clone(),
                             &vary,
-                            Num(Number::from(starty.clone(), unitsy)),
+                            NumStr::new(Number::from(starty.clone(), unitsy)),
                         )?
                         .vec()?;
                         row.push(v.iter().map(|a| a.number.clone()).collect());
@@ -3126,7 +3131,7 @@ pub fn length(
         options,
         func_vars.clone(),
         &var.clone(),
-        Num(Number::from(start.clone(), units)),
+        NumStr::new(Number::from(start.clone(), units)),
     )?;
     let length_units = match x0.clone() {
         Num(a) => a.units,
@@ -3151,7 +3156,7 @@ pub fn length(
             options,
             func_vars.clone(),
             &var.clone(),
-            Num(Number::from(start.clone(), units)),
+            NumStr::new(Number::from(start.clone(), units)),
         )?;
         match (x0, x1) {
             (Num(xi), Num(xf)) => {
@@ -3244,11 +3249,11 @@ pub fn area(
         options,
         func_vars.clone(),
         &var,
-        Num(Number::from(start.clone(), units)),
+        NumStr::new(Number::from(start.clone(), units)),
     )?;
     if start == end {
         return match x0 {
-            Num(_) => Ok(Num(Number::from(Complex::new(options.prec), None))),
+            Num(_) => Ok(NumStr::new(Number::from(Complex::new(options.prec), None))),
             Vector(_) => Ok(Vector(Vec::new())),
             _ => Err(
                 "not supported area data, if parametric have the 2nd arg start and end with the { } brackets",
@@ -3292,7 +3297,7 @@ pub fn area(
                         options,
                         func_vars.clone(),
                         &var,
-                        Num(Number::from(start.clone(), units)),
+                        NumStr::new(Number::from(start.clone(), units)),
                     )?;
                     has = true
                 }
@@ -3303,7 +3308,7 @@ pub fn area(
                     options,
                     func_vars.clone(),
                     &var,
-                    Num(Number::from(start.clone(), units)),
+                    NumStr::new(Number::from(start.clone(), units)),
                 )?;
                 check_bounds(
                     func, func_vars, options, var, delta, units, x0, start, right, false,
@@ -3328,7 +3333,7 @@ pub fn area(
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(end.clone(), units)),
+            NumStr::new(Number::from(end.clone(), units)),
         )?;
         check_bounds(
             func.clone(),
@@ -3352,7 +3357,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(start.clone() * 2 - 1.141, units)),
+                            NumStr::new(Number::from(start.clone() * 2 - 1.141, units)),
                         )?
                         .num()?;
                         if a.number.real().clone().abs() < Float::with_val(options.prec, 1) >> 17 {
@@ -3361,7 +3366,7 @@ pub fn area(
                                 options,
                                 func_vars.clone(),
                                 &var,
-                                Num(Number::from(
+                                NumStr::new(Number::from(
                                     -(Complex::with_val(options.prec, 4) << (options.prec / 16)),
                                     units,
                                 )),
@@ -3385,7 +3390,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(end.clone() * 2 + 1.141, units)),
+                            NumStr::new(Number::from(end.clone() * 2 + 1.141, units)),
                         )?
                         .num()?;
                         if a.number.real().clone().abs() < Float::with_val(options.prec, 1) >> 17 {
@@ -3394,7 +3399,7 @@ pub fn area(
                                 options,
                                 func_vars.clone(),
                                 &var,
-                                Num(Number::from(
+                                NumStr::new(Number::from(
                                     Complex::with_val(options.prec, 4) << (options.prec / 16),
                                     units,
                                 )),
@@ -3409,8 +3414,8 @@ pub fn area(
                     }
                 }
             }
-            let two = Num(Number::from(Complex::with_val(options.prec, 2), None));
-            let one = Num(Number::from(Complex::with_val(options.prec, 1), None));
+            let two = NumStr::new(Number::from(Complex::with_val(options.prec, 2), None));
+            let one = NumStr::new(Number::from(Complex::with_val(options.prec, 1), None));
             fn change_var(
                 func: &mut [NumStr],
                 func_vars: &mut Vec<(String, Vec<NumStr>)>,
@@ -3506,7 +3511,7 @@ pub fn area(
                         &mut func_vars,
                         var.clone(),
                         vec![
-                            Num(Number::from(start, None)),
+                            NumStr::new(Number::from(start, None)),
                             Plus,
                             Func(var.clone()),
                             Division,
@@ -3563,7 +3568,7 @@ pub fn area(
                         &mut func_vars,
                         var.clone(),
                         vec![
-                            Num(Number::from(end, None)),
+                            NumStr::new(Number::from(end, None)),
                             Minus,
                             LeftBracket,
                             one.clone(),
@@ -3623,7 +3628,7 @@ pub fn area(
                 options,
                 func_vars.clone(),
                 &var,
-                Num(Number::from(start.clone() + div.clone(), units)),
+                NumStr::new(Number::from(start.clone() + div.clone(), units)),
             )?
             .num()?
             .number
@@ -3632,7 +3637,7 @@ pub fn area(
                     options,
                     func_vars.clone(),
                     &var,
-                    Num(Number::from(start.clone(), units)),
+                    NumStr::new(Number::from(start.clone(), units)),
                 )?
                 .num()?
                 .number)
@@ -3651,35 +3656,35 @@ pub fn area(
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(point.clone() - 4 * h.clone(), units)),
+            NumStr::new(Number::from(point.clone() - 4 * h.clone(), units)),
         )?;
         let x1 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(point.clone() - 3 * h.clone(), units)),
+            NumStr::new(Number::from(point.clone() - 3 * h.clone(), units)),
         )?;
         let x2 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(point.clone() - 2 * h.clone(), units)),
+            NumStr::new(Number::from(point.clone() - 2 * h.clone(), units)),
         )?;
         let x3 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(point.clone() - h.clone(), units)),
+            NumStr::new(Number::from(point.clone() - h.clone(), units)),
         )?;
         let x4 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(point.clone(), units)),
+            NumStr::new(Number::from(point.clone(), units)),
         )?;
         match (x0, x1, x2, x3, x4) {
             (Num(nx0), Num(nx1), Num(nx2), Num(nx3), Num(nx4)) if funcs.is_empty() => {
@@ -3726,7 +3731,7 @@ pub fn area(
                         options,
                         func_vars.clone(),
                         &var,
-                        Num(Number::from(
+                        NumStr::new(Number::from(
                             point.clone() - 3 * h.clone() + div.clone(),
                             units,
                         )),
@@ -3738,7 +3743,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone() - 3 * h.clone(), units)),
+                            NumStr::new(Number::from(point.clone() - 3 * h.clone(), units)),
                         )?
                         .num()?
                         .number)
@@ -3748,7 +3753,7 @@ pub fn area(
                         options,
                         func_vars.clone(),
                         &var,
-                        Num(Number::from(
+                        NumStr::new(Number::from(
                             point.clone() - 2 * h.clone() + div.clone(),
                             units,
                         )),
@@ -3760,7 +3765,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone() - 2 * h.clone(), units)),
+                            NumStr::new(Number::from(point.clone() - 2 * h.clone(), units)),
                         )?
                         .num()?
                         .number)
@@ -3770,7 +3775,7 @@ pub fn area(
                         options,
                         func_vars.clone(),
                         &var,
-                        Num(Number::from(point.clone() - h.clone() + div.clone(), units)),
+                        NumStr::new(Number::from(point.clone() - h.clone() + div.clone(), units)),
                     )?
                     .num()?
                     .number
@@ -3779,7 +3784,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone() - h.clone(), units)),
+                            NumStr::new(Number::from(point.clone() - h.clone(), units)),
                         )?
                         .num()?
                         .number)
@@ -3789,7 +3794,7 @@ pub fn area(
                         options,
                         func_vars.clone(),
                         &var,
-                        Num(Number::from(point.clone() + div.clone(), units)),
+                        NumStr::new(Number::from(point.clone() + div.clone(), units)),
                     )?
                     .num()?
                     .number
@@ -3798,7 +3803,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone(), units)),
+                            NumStr::new(Number::from(point.clone(), units)),
                         )?
                         .num()?
                         .number)
@@ -3917,7 +3922,7 @@ pub fn area(
     }
     let g = gamma(nth.clone());
     if areavec.is_empty() {
-        Ok(Num(Number::from(
+        Ok(NumStr::new(Number::from(
             if negate { -area / g } else { area / g },
             match (units, yunits) {
                 (Some(a), Some(b)) => Some(a.mul(&b)),
@@ -3953,14 +3958,14 @@ pub fn iter(
     all: bool,
 ) -> Result<NumStr, &'static str> {
     if n.is_infinite() {
-        let mut last = Num(Number::from(Complex::with_val(options.prec, Nan), None));
+        let mut last = NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None));
         let mut j = 0;
         if all {
             if let Num(num) = x.clone() {
-                let mut vec = vec![num];
+                let mut vec = vec![*num];
                 loop {
                     if j > 10000 {
-                        return Ok(Num(Number::from(
+                        return Ok(NumStr::new(Number::from(
                             Complex::with_val(options.prec, Nan),
                             None,
                         )));
@@ -3978,7 +3983,7 @@ pub fn iter(
                 let mut vec = vec![v];
                 loop {
                     if j > 10000 {
-                        return Ok(Num(Number::from(
+                        return Ok(NumStr::new(Number::from(
                             Complex::with_val(options.prec, Nan),
                             None,
                         )));
@@ -3998,7 +4003,7 @@ pub fn iter(
         } else {
             while last != x {
                 if j > 10000 {
-                    return Ok(Num(Number::from(
+                    return Ok(NumStr::new(Number::from(
                         Complex::with_val(options.prec, Nan),
                         None,
                     )));
@@ -4017,7 +4022,7 @@ pub fn iter(
             .unwrap_or_default();
         if all {
             if let Num(num) = x.clone() {
-                let mut vec = vec![num];
+                let mut vec = vec![*num];
                 for _ in 0..n {
                     x = do_math_with_var(func.clone(), options, func_vars.clone(), &var, x)?;
                     vec.push(x.num()?);
@@ -4092,7 +4097,7 @@ pub fn solve(
                     func.push(LeftBracket);
                     func.push(Func(var.clone()));
                     func.push(Minus);
-                    func.push(Num(v.clone()));
+                    func.push(NumStr::new(v.clone()));
                     func.push(RightBracket);
                     func.push(RightBracket);
                 } else {
@@ -4115,16 +4120,16 @@ pub fn solve(
                     func.insert(func.len() - 1, LeftBracket);
                     func.insert(func.len() - 1, Func(var.clone()));
                     func.insert(func.len() - 1, Minus);
-                    func.insert(func.len() - 1, Num(v.clone()));
+                    func.insert(func.len() - 1, NumStr::new(v.clone()));
                     func.insert(func.len() - 1, RightBracket);
                 }
                 values.push(v);
             }
         }
         Ok(if values.is_empty() {
-            Num(Number::from(Complex::with_val(options.prec, Nan), None))
+            NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
         } else if values.len() == 1 {
-            Num(values[0].clone())
+            NumStr::new(values[0].clone())
         } else {
             Vector(values)
         })
@@ -4141,7 +4146,7 @@ pub fn solve(
                 options,
                 func_vars.clone(),
                 &var.clone(),
-                Num(n.clone()),
+                NumStr::new(n.clone()),
             )?;
             x -= y.num()?.number
                 / slopesided(
@@ -4167,7 +4172,7 @@ pub fn solve(
             options,
             func_vars.clone(),
             &var.clone(),
-            Num(n.clone()),
+            NumStr::new(n.clone()),
         )?;
         let k = slopesided(
             func,
@@ -4188,9 +4193,9 @@ pub fn solve(
         if (last - x.clone()).abs().real().clone().log2() < op as i32 / -16 && k.real().is_finite()
         {
             x.set_prec(op);
-            Ok(Num(Number::from(x, units)))
+            Ok(NumStr::new(Number::from(x, units)))
         } else {
-            Ok(Num(Number::from(
+            Ok(NumStr::new(Number::from(
                 Complex::with_val(options.prec, Nan),
                 None,
             )))
@@ -4219,14 +4224,14 @@ pub fn extrema(
             options,
             func_vars.clone(),
             &var.clone(),
-            Num(n.clone()),
+            NumStr::new(n.clone()),
         )?;
         let yh = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var.clone(),
-            Num(Number::from(
+            NumStr::new(Number::from(
                 x.clone() + Float::with_val(options.prec, 0.5).pow(prec),
                 None,
             )),
@@ -4269,14 +4274,14 @@ pub fn extrema(
         options,
         func_vars.clone(),
         &var.clone(),
-        Num(n.clone()),
+        NumStr::new(n.clone()),
     )?;
     let yh = do_math_with_var(
         func.clone(),
         options,
         func_vars.clone(),
         &var.clone(),
-        Num(Number::from(
+        NumStr::new(Number::from(
             x.clone() + Float::with_val(options.prec, 0.5).pow(prec),
             None,
         )),
@@ -4316,7 +4321,7 @@ pub fn extrema(
         let n = Number::from(x, units);
         let mut v = Vector(vec![
             n.clone(),
-            do_math_with_var(func, options, func_vars, &var, Num(n.clone()))?.num()?,
+            do_math_with_var(func, options, func_vars, &var, NumStr::new(n.clone()))?.num()?,
             Number::from(
                 Complex::with_val(
                     options.prec,
@@ -4334,7 +4339,7 @@ pub fn extrema(
         v.set_prec(op);
         Ok(v)
     } else {
-        Ok(Num(Number::from(
+        Ok(NumStr::new(Number::from(
             Complex::with_val(options.prec, Nan),
             None,
         )))
@@ -4370,14 +4375,14 @@ pub fn taylor(
         options,
         func_vars.clone(),
         &var,
-        Num(a.clone()),
+        NumStr::new(a.clone()),
     )?;
     let mut val2 = do_math_with_var(
         func.clone(),
         options,
         func_vars.clone(),
         &var,
-        Num(Number::from(
+        NumStr::new(Number::from(
             an.clone() + Float::with_val(options.prec, 0.5).pow(prec),
             None,
         )),
@@ -4394,7 +4399,7 @@ pub fn taylor(
                     options,
                     func_vars.clone(),
                     &var,
-                    Num(Number::from(
+                    NumStr::new(Number::from(
                         an.clone() + Float::with_val(options.prec, 0.5).pow(prec),
                         None,
                     )),
@@ -4414,7 +4419,7 @@ pub fn taylor(
                 Some(prec),
             )?;
             let v = d.func(
-                &Num(Number::from(
+                &NumStr::new(Number::from(
                     fact(n) * (x.clone() - an.clone()).pow(-(n as i32)),
                     None,
                 )),
@@ -4438,7 +4443,7 @@ pub fn taylor(
             }
             Num(a) => {
                 let empty = Number::from(Complex::new(options.prec), None);
-                poly.push(a);
+                poly.push(*a);
                 for _ in 1..=nth {
                     poly.push(empty.clone())
                 }
@@ -4454,7 +4459,7 @@ pub fn taylor(
                     options,
                     func_vars.clone(),
                     &var,
-                    Num(Number::from(
+                    NumStr::new(Number::from(
                         an.clone() + Float::with_val(options.prec, 0.5).pow(prec),
                         None,
                     )),
@@ -4535,7 +4540,7 @@ pub fn slope(
 ) -> Result<NumStr, &'static str> {
     let oop = options.prec;
     if nth == 0 {
-        do_math_with_var(func.clone(), options, func_vars.clone(), &var, Num(point))
+        do_math_with_var(func.clone(), options, func_vars.clone(), &var, NumStr::new(point))
     } else if options.prec <= 256 {
         options.prec = 256;
         point.number.set_prec(options.prec);
@@ -4554,7 +4559,7 @@ pub fn slope(
             options,
             func_vars.clone(),
             &var,
-            Num(point.clone()),
+            NumStr::new(point.clone()),
         )?;
         let left = slopesided(
             func.clone(),
@@ -4605,11 +4610,11 @@ pub fn slope(
                     && left.imag().is_sign_positive() == right.imag().is_sign_positive())
                     || (left.clone() - right.clone()).abs().real().clone().log2() < op as i32 / -16
                 {
-                    let mut n = Num(Number::from((left + right) / 2, units));
+                    let mut n = NumStr::new(Number::from((left + right) / 2, units));
                     n.set_prec(oop);
                     Ok(n)
                 } else {
-                    Ok(Num(Number::from(
+                    Ok(NumStr::new(Number::from(
                         Complex::with_val(options.prec, Nan),
                         None,
                     )))
@@ -4671,7 +4676,7 @@ pub fn slopesided(
     prec: Option<u32>,
 ) -> Result<NumStr, &'static str> {
     if nth == 0 {
-        return do_math_with_var(func.clone(), options, func_vars.clone(), &var, Num(point));
+        return do_math_with_var(func.clone(), options, func_vars.clone(), &var, NumStr::new(point));
     }
     let mut oop = 0;
     let units = point.units;
@@ -4700,7 +4705,7 @@ pub fn slopesided(
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(point.clone(), units)),
+            NumStr::new(Number::from(point.clone(), units)),
         )?
     };
     match n {
@@ -4725,7 +4730,7 @@ pub fn slopesided(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone() + h.clone() * (nth - k), units)),
+                            NumStr::new(Number::from(point.clone() + h.clone() * (nth - k), units)),
                         )?
                         .num()?
                         .number;
@@ -4736,14 +4741,14 @@ pub fn slopesided(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone() + h.clone() * (nth - k), units)),
+                            NumStr::new(Number::from(point.clone() + h.clone() * (nth - k), units)),
                         )?
                         .num()?
                         .number;
                 }
             }
             if right || nth % 2 == 0 {
-                let mut n = Num(Number::from(
+                let mut n = NumStr::new(Number::from(
                     sum * Float::with_val(options.prec, 2).pow(nth * prec),
                     match (yunits, units) {
                         (Some(a), Some(b)) => Some(a.div(&b)),
@@ -4757,7 +4762,7 @@ pub fn slopesided(
                 }
                 Ok(n)
             } else {
-                let mut n = Num(Number::from(
+                let mut n = NumStr::new(Number::from(
                     -sum * Float::with_val(options.prec, 2).pow(nth * prec),
                     match (yunits, units) {
                         (Some(a), Some(b)) => Some(a.div(&b)),
@@ -4786,7 +4791,7 @@ pub fn slopesided(
                     options,
                     func_vars.clone(),
                     &var,
-                    Num(Number::from(point.clone() + h.clone() * (nth - k), units)),
+                    NumStr::new(Number::from(point.clone() + h.clone() * (nth - k), units)),
                 )?
                 .vec()?;
                 if k % 2 == 0 {
@@ -4836,7 +4841,7 @@ pub fn slopesided(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone() + h.clone() * (nth - k), units)),
+                            NumStr::new(Number::from(point.clone() + h.clone() * (nth - k), units)),
                         )?
                         .num()?
                         .number;
@@ -4847,14 +4852,14 @@ pub fn slopesided(
                             options,
                             func_vars.clone(),
                             &var,
-                            Num(Number::from(point.clone() + h.clone() * (nth - k), units)),
+                            NumStr::new(Number::from(point.clone() + h.clone() * (nth - k), units)),
                         )?
                         .num()?
                         .number;
                 }
             }
             if right || nth % 2 == 0 {
-                let mut n = Num(Number::from(
+                let mut n = NumStr::new(Number::from(
                     sum[0].number.clone() * Float::with_val(options.prec, 2).pow(nth * prec),
                     match (yunits, units) {
                         (Some(a), Some(b)) => Some(a.div(&b)),
@@ -4868,7 +4873,7 @@ pub fn slopesided(
                 }
                 Ok(n)
             } else {
-                let mut n = Num(Number::from(
+                let mut n = NumStr::new(Number::from(
                     -sum[0].number.clone() * Float::with_val(options.prec, 2).pow(nth * prec),
                     match (yunits, units) {
                         (Some(a), Some(b)) => Some(a.div(&b)),
@@ -4897,7 +4902,7 @@ pub fn slopesided(
                     options,
                     func_vars.clone(),
                     &var,
-                    Num(Number::from(point.clone() + h.clone() * (nth - k), units)),
+                    NumStr::new(Number::from(point.clone() + h.clone() * (nth - k), units)),
                 )?
                 .vec()?;
                 if k % 2 == 0 {
@@ -4911,7 +4916,7 @@ pub fn slopesided(
                 }
             }
             if sum.len() == 2 {
-                let mut n = Num(Number::from(
+                let mut n = NumStr::new(Number::from(
                     sum[1].number.clone() / sum[0].number.clone(),
                     match (yunits, units) {
                         (Some(a), Some(b)) => Some(a.div(&b)),
@@ -4988,14 +4993,14 @@ pub fn limit(
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(h1, xunits)),
+            NumStr::new(Number::from(h1, xunits)),
         )?;
         let n2 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            Num(Number::from(h2, xunits)),
+            NumStr::new(Number::from(h2, xunits)),
         )?;
         match (n1, n2) {
             (Num(n1), Num(n2)) => {
@@ -5005,13 +5010,13 @@ pub fn limit(
                 let mut n = if (n1.clone() - n2.clone()).abs().real().clone().log2()
                     < options.prec as i32 / -16
                 {
-                    Num(Number::from(n2, units))
+                    NumStr::new(Number::from(n2, units))
                 } else if n1.real().is_sign_positive() != n2.real().is_sign_positive()
                     || n1.imag().is_sign_positive() != n2.imag().is_sign_positive()
                 {
-                    Num(Number::from(Complex::with_val(options.prec, Nan), None))
+                    NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
                 } else if n2.real().is_infinite() || n2.imag().is_infinite() {
-                    Num(Number::from(
+                    NumStr::new(Number::from(
                         match (n2.real().is_infinite(), n2.imag().is_infinite()) {
                             (true, true) => {
                                 match (n1.real().is_sign_positive(), n1.imag().is_sign_positive()) {
@@ -5103,7 +5108,7 @@ pub fn limit(
                         options,
                         func_vars.clone(),
                         &var,
-                        Num(Number::from(
+                        NumStr::new(Number::from(
                             if positive {
                                 Complex::with_val(options.prec, 2)
                                     .pow((options.prec / 2) as f64 + 13.0 / 0.7)
@@ -5125,7 +5130,7 @@ pub fn limit(
                     let n1i = n1.imag().clone().abs();
                     let n2i = n2.imag().clone().abs();
                     let n3i = n3.imag().clone().abs();
-                    Num(Number::from(
+                    NumStr::new(Number::from(
                         if !sign {
                             Complex::with_val(options.prec, Nan)
                         } else {
@@ -5332,7 +5337,7 @@ pub fn limit(
                                     options,
                                     func_vars.clone(),
                                     &var,
-                                    Num(Number::from(
+                                    NumStr::new(Number::from(
                                         if positive {
                                             Complex::with_val(options.prec, 2)
                                                 .pow((options.prec / 2) as f64 + 13.0 / 0.7)
@@ -5502,11 +5507,11 @@ pub fn limit(
                             || (left.clone() - right.clone()).abs().real().clone().log2()
                                 < options.prec as i32 / -16
                         {
-                            let mut n = Num(Number::from((left + right) / 2, units));
+                            let mut n = NumStr::new(Number::from((left + right) / 2, units));
                             n.set_prec(oop);
                             Ok(n)
                         } else {
-                            Ok(Num(Number::from(
+                            Ok(NumStr::new(Number::from(
                                 Complex::with_val(options.prec, Nan),
                                 None,
                             )))
@@ -5573,7 +5578,7 @@ fn limsided(
         options,
         func_vars.clone(),
         &var,
-        Num(Number::from(
+        NumStr::new(Number::from(
             point.clone() + if right { h1 } else { -h1 },
             xunits,
         )),
@@ -5583,7 +5588,7 @@ fn limsided(
         options,
         func_vars.clone(),
         &var,
-        Num(Number::from(
+        NumStr::new(Number::from(
             point.clone() + if right { h2 } else { -h2 },
             xunits,
         )),
@@ -5593,7 +5598,7 @@ fn limsided(
             let units = n1.units;
             let n1 = n1.number;
             let n2 = n2.number;
-            Ok(Num(Number::from(
+            Ok(NumStr::new(Number::from(
                 if (n2.clone() - n1.clone()).abs().real().clone().log2() < options.prec as i32 / -16
                 {
                     n1
@@ -5605,7 +5610,7 @@ fn limsided(
                         options,
                         func_vars.clone(),
                         &var,
-                        Num(Number::from(
+                        NumStr::new(Number::from(
                             point.clone() + if right { h3 } else { -h3 },
                             xunits,
                         )),
@@ -5734,7 +5739,7 @@ fn limsided(
                                 options,
                                 func_vars.clone(),
                                 &var,
-                                Num(Number::from(point.clone() - h3.clone(), xunits)),
+                                NumStr::new(Number::from(point.clone() - h3.clone(), xunits)),
                             )?
                             .vec()?;
                         }

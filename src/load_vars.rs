@@ -1,11 +1,11 @@
 use crate::{
-    complex::NumStr::Num,
     math::do_math,
     options::set_commands,
     parse::input_var,
     units::{Colors, Number, Options, Variable},
 };
 use rug::{Float, float::Constant::Pi};
+use crate::complex::NumStr;
 pub fn get_file_vars(
     options: Options,
     vars: &mut Vec<Variable>,
@@ -84,7 +84,7 @@ fn get_preset_vars(
                     0,
                     Variable {
                         name: vec!['p', 'h', 'i'],
-                        parsed: vec![Num(Number::from(phi.clone().into(), None))],
+                        parsed: vec![NumStr::new(Number::from(phi.clone().into(), None))],
                         unparsed: String::new(),
                         funcvars: Vec::new(),
                     },
@@ -94,7 +94,7 @@ fn get_preset_vars(
                 blacklist.push("φ".to_string());
                 vars.push(Variable {
                     name: vec!['φ'],
-                    parsed: vec![Num(Number::from(phi.into(), None))],
+                    parsed: vec![NumStr::new(Number::from(phi.into(), None))],
                     unparsed: String::new(),
                     funcvars: Vec::new(),
                 });
@@ -114,7 +114,7 @@ fn get_preset_vars(
                     vars.iter().position(|c| c.name.len() != 3).unwrap_or(0),
                     Variable {
                         name: vec!['p', 'i'],
-                        parsed: vec![Num(Number::from(pi.clone().into(), None))],
+                        parsed: vec![NumStr::new(Number::from(pi.clone().into(), None))],
                         unparsed: String::new(),
                         funcvars: Vec::new(),
                     },
@@ -124,7 +124,7 @@ fn get_preset_vars(
                 blacklist.push("π".to_string());
                 vars.push(Variable {
                     name: vec!['π'],
-                    parsed: vec![Num(Number::from(pi.clone().into(), None))],
+                    parsed: vec![NumStr::new(Number::from(pi.clone().into(), None))],
                     unparsed: String::new(),
                     funcvars: Vec::new(),
                 });
@@ -137,7 +137,7 @@ fn get_preset_vars(
                         0,
                         Variable {
                             name: vec!['t', 'a', 'u'],
-                            parsed: vec![Num(Number::from(tau.clone().into(), None))],
+                            parsed: vec![NumStr::new(Number::from(tau.clone().into(), None))],
                             unparsed: String::new(),
                             funcvars: Vec::new(),
                         },
@@ -147,7 +147,7 @@ fn get_preset_vars(
                     blacklist.push("τ".to_string());
                     vars.push(Variable {
                         name: vec!['τ'],
-                        parsed: vec![Num(Number::from(tau.into(), None))],
+                        parsed: vec![NumStr::new(Number::from(tau.into(), None))],
                         unparsed: String::new(),
                         funcvars: Vec::new(),
                     });
@@ -160,7 +160,7 @@ fn get_preset_vars(
         let e = Float::with_val(options.prec, 1).exp();
         vars.push(Variable {
             name: vec!['e'],
-            parsed: vec![Num(Number::from(e.into(), None))],
+            parsed: vec![NumStr::new(Number::from(e.into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         });
@@ -180,7 +180,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
                     0,
                     Variable {
                         name: vec!['p', 'h', 'i'],
-                        parsed: vec![Num(Number::from(phi.clone().into(), None))],
+                        parsed: vec![NumStr::new(Number::from(phi.clone().into(), None))],
                         unparsed: String::new(),
                         funcvars: Vec::new(),
                     },
@@ -189,7 +189,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
             if phi2 {
                 vars.push(Variable {
                     name: vec!['φ'],
-                    parsed: vec![Num(Number::from(phi.into(), None))],
+                    parsed: vec![NumStr::new(Number::from(phi.into(), None))],
                     unparsed: String::new(),
                     funcvars: Vec::new(),
                 });
@@ -208,7 +208,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
                     vars.iter().position(|c| c.name.len() != 3).unwrap_or(0),
                     Variable {
                         name: vec!['p', 'i'],
-                        parsed: vec![Num(Number::from(pi.clone().into(), None))],
+                        parsed: vec![NumStr::new(Number::from(pi.clone().into(), None))],
                         unparsed: String::new(),
                         funcvars: Vec::new(),
                     },
@@ -217,7 +217,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
             if pi2 {
                 vars.push(Variable {
                     name: vec!['π'],
-                    parsed: vec![Num(Number::from(pi.clone().into(), None))],
+                    parsed: vec![NumStr::new(Number::from(pi.clone().into(), None))],
                     unparsed: String::new(),
                     funcvars: Vec::new(),
                 });
@@ -229,7 +229,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
                         0,
                         Variable {
                             name: vec!['t', 'a', 'u'],
-                            parsed: vec![Num(Number::from(tau.clone().into(), None))],
+                            parsed: vec![NumStr::new(Number::from(tau.clone().into(), None))],
                             unparsed: String::new(),
                             funcvars: Vec::new(),
                         },
@@ -238,7 +238,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
                 if tau2 {
                     vars.push(Variable {
                         name: vec!['τ'],
-                        parsed: vec![Num(Number::from(tau.into(), None))],
+                        parsed: vec![NumStr::new(Number::from(tau.into(), None))],
                         unparsed: String::new(),
                         funcvars: Vec::new(),
                     });
@@ -250,7 +250,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
         let e = Float::with_val(options.prec, 1).exp();
         vars.push(Variable {
             name: vec!['e'],
-            parsed: vec![Num(Number::from(e.into(), None))],
+            parsed: vec![NumStr::new(Number::from(e.into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         });
@@ -264,43 +264,43 @@ pub fn get_vars(options: Options) -> Vec<Variable> {
     vec![
         Variable {
             name: vec!['p', 'h', 'i'],
-            parsed: vec![Num(Number::from(phi.clone().into(), None))],
+            parsed: vec![NumStr::new(Number::from(phi.clone().into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         },
         Variable {
             name: vec!['t', 'a', 'u'],
-            parsed: vec![Num(Number::from(tau.clone().into(), None))],
+            parsed: vec![NumStr::new(Number::from(tau.clone().into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         },
         Variable {
             name: vec!['p', 'i'],
-            parsed: vec![Num(Number::from(pi.clone().into(), None))],
+            parsed: vec![NumStr::new(Number::from(pi.clone().into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         },
         Variable {
             name: vec!['e'],
-            parsed: vec![Num(Number::from(e.into(), None))],
+            parsed: vec![NumStr::new(Number::from(e.into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         },
         Variable {
             name: vec!['φ'],
-            parsed: vec![Num(Number::from(phi.into(), None))],
+            parsed: vec![NumStr::new(Number::from(phi.into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         },
         Variable {
             name: vec!['π'],
-            parsed: vec![Num(Number::from(pi.into(), None))],
+            parsed: vec![NumStr::new(Number::from(pi.into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         },
         Variable {
             name: vec!['τ'],
-            parsed: vec![Num(Number::from(tau.into(), None))],
+            parsed: vec![NumStr::new(Number::from(tau.into(), None))],
             unparsed: String::new(),
             funcvars: Vec::new(),
         },
