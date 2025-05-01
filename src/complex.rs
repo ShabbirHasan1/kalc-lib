@@ -1225,6 +1225,7 @@ pub fn mvec(
 ) -> Result<NumStr, &'static str> {
     let mut vec = Vec::new();
     let mut mat = Vec::new();
+    let mut test = true;
     let mut body = |z: isize| -> Result<(), &'static str> {
         match do_math_with_var(
             function.clone(),
@@ -1234,25 +1235,29 @@ pub fn mvec(
             NumStr::new(Number::from(Complex::with_val(options.prec, z), None)),
         )? {
             Num(n) => {
-                if vec.is_empty() {
+                if test && vec.is_empty() {
+                    test = false;
                     vec = Vec::with_capacity((end - start + 1) as usize)
                 }
                 vec.push(*n)
             }
             Vector(v) if mvec => {
-                if vec.is_empty() {
+                if test && vec.is_empty() {
+                    test = false;
                     vec = Vec::with_capacity((end - start + 1) as usize * v.len())
                 }
                 vec.extend(v)
             }
             Vector(v) => {
-                if mat.is_empty() {
+                if test && mat.is_empty() {
+                    test = false;
                     mat = Vec::with_capacity((end - start + 1) as usize)
                 }
                 mat.push(v)
             }
             Matrix(m) if !mvec => {
-                if mat.is_empty() {
+                if test && mat.is_empty() {
+                    test = false;
                     mat = Vec::with_capacity((end - start + 1) as usize * m.len())
                 }
                 mat.extend(m)
