@@ -13,5 +13,6 @@ pub mod print;
 mod tests;
 pub mod types;
 pub mod units;
+mod macros;
 //gui
 //https://docs.rs/fastnum/latest/fastnum/index.html
