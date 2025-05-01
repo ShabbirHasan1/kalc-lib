@@ -1,5 +1,8 @@
-use super::{ CF64, CF32, CDecimal, Prec, ParseU, Type, Float, Special, SpecialU, Decimal, NewVal, WithValDeci };
-use crate::macros::impls::{ impl_new_val, impl_neg, impl_self_ops };
+use super::{
+    CDecimal, CF32, CF64, Decimal, Float, NewVal, ParseU, Prec, Special, SpecialU, Type,
+    WithValDeci,
+};
+use crate::macros::impls::{impl_neg, impl_new_val, impl_self_ops};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 

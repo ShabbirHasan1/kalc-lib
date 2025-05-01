@@ -1,11 +1,10 @@
+use super::{Pow, Prec, Rt, SinhCosh, Special};
+use crate::macros::impls::{dec_c_impl, impl_cneg, impl_self_c_ops};
 use serde::{Deserialize, Serialize};
-use crate::macros::impls::{ dec_c_impl, impl_cneg, impl_self_c_ops };
-use super::{ Prec, Pow, Rt, SinhCosh, Special };
-use std::fmt::{ Display, Formatter };
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CF64(pub f64, pub f64);
-
 
 impl Prec for CF64 {
     fn prec(&self) -> u32 {

@@ -1,14 +1,14 @@
 mod cdecimal;
-mod cf64;
 mod cf32;
+mod cf64;
 mod complex;
 mod decimal;
 mod float;
 mod integer;
 
 pub use cdecimal::CDecimal;
-pub use cf64::CF64;
 pub use cf32::CF32;
+pub use cf64::CF64;
 pub use complex::Complex;
 pub use decimal::Decimal;
 pub use float::Float;
@@ -18,7 +18,6 @@ use rug::ops::Pow as RugPow;
 
 ///TODO malachite num maybe
 ///TODO make real only an option
-///TODO maybe box some things to avoid memory bads
 
 #[derive(PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Type {

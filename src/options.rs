@@ -1,3 +1,4 @@
+use crate::complex::NumStr;
 use crate::{
     complex::NumStr::{Matrix, Num, Vector},
     help::{help, help_for},
@@ -24,7 +25,6 @@ use std::{
     io::{BufRead, BufReader, Stdout, Write},
     process,
 };
-use crate::complex::NumStr;
 pub fn arg_opts(
     options: &mut Options,
     colors: &mut Colors,

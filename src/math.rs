@@ -758,7 +758,10 @@ pub fn do_math(
                             function[i] = if let Some(n) = ans {
                                 n
                             } else {
-                                NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
+                                NumStr::new(Number::from(
+                                    Complex::with_val(options.prec, Nan),
+                                    None,
+                                ))
                             };
                             function.drain(i + 1..=*place.last().unwrap());
                         }
@@ -974,7 +977,7 @@ pub fn do_math(
                             }
                             "sort" => Matrix(sort_mat(a, options.prec)),
                             "max" => {
-                                let mut vec = Vec::new();
+                                let mut vec = Vec::with_capacity(a.len());
                                 for j in a {
                                     let mut max = j[0].clone();
                                     for i in j {
@@ -987,7 +990,7 @@ pub fn do_math(
                                 Vector(vec)
                             }
                             "min" => {
-                                let mut vec = Vec::new();
+                                let mut vec = Vec::with_capacity(a.len());
                                 for j in a {
                                     let mut min = j[0].clone();
                                     for i in j {
@@ -1005,9 +1008,10 @@ pub fn do_math(
                             "adjugate" | "adj" => Matrix(transpose(&cofactor(&a)?)),
                             "inverse" | "inv" => Matrix(inverse(&a)?),
                             "transpose" | "trans" => Matrix(transpose(&a)),
-                            "len" => {
-                                NumStr::new(Number::from(Complex::with_val(options.prec, a.len()), None))
-                            }
+                            "len" => NumStr::new(Number::from(
+                                Complex::with_val(options.prec, a.len()),
+                                None,
+                            )),
                             "wid" | "width" => NumStr::new(Number::from(
                                 Complex::with_val(options.prec, a[0].len()),
                                 None,
@@ -1054,7 +1058,7 @@ pub fn do_math(
                                             let getcol = n1 == -1;
                                             let n1 = n1.to_usize().unwrap_or_default();
                                             if getcol {
-                                                let mut mat = Vec::new();
+                                                let mut mat = Vec::with_capacity(c.len());
                                                 for n in c {
                                                     let n = n
                                                         .number
@@ -1076,7 +1080,7 @@ pub fn do_math(
                                                 }
                                                 Matrix(transpose(&mat))
                                             } else {
-                                                let mut vec = Vec::new();
+                                                let mut vec = Vec::with_capacity(c.len());
                                                 for n in c {
                                                     let n2 = n
                                                         .number
@@ -1104,7 +1108,7 @@ pub fn do_math(
                                                 .unwrap_or_default()
                                                 .to_usize()
                                                 .unwrap_or_default();
-                                            let mut vec = Vec::new();
+                                            let mut vec = Vec::with_capacity(b.len());
                                             for n in b {
                                                 let n1 = n
                                                     .number
@@ -1123,9 +1127,9 @@ pub fn do_math(
                                             Vector(vec)
                                         }
                                         (Vector(b), Vector(c)) => {
-                                            let mut mat = Vec::new();
+                                            let mut mat = Vec::with_capacity(b.len());
                                             for g in b {
-                                                let mut vec = Vec::new();
+                                                let mut vec = Vec::with_capacity(c.len());
                                                 let n1 = g
                                                     .number
                                                     .clone()
@@ -1173,7 +1177,7 @@ pub fn do_math(
                                             }
                                         }
                                         Vector(b) => {
-                                            let mut vec = Vec::new();
+                                            let mut vec = Vec::with_capacity(b.len());
                                             for i in b {
                                                 let n = i
                                                     .number
@@ -1220,7 +1224,7 @@ pub fn do_math(
                                 a[0][0].units,
                             )),
                             "mode" => {
-                                let mut most = (Vec::new(), 0);
+                                let mut most = (Vec::with_capacity(a.len()), 0);
                                 for i in a.iter().flatten() {
                                     let mut count = 0;
                                     for j in a.iter().flatten() {
@@ -1229,7 +1233,9 @@ pub fn do_math(
                                         }
                                     }
                                     if count > most.1 {
-                                        most = (vec![i.clone()], count);
+                                        most.0.clear();
+                                        most.0.push(i.clone());
+                                        most.1 = count;
                                     }
                                     if count == most.1 && !most.0.iter().any(|j| i == j) {
                                         most.0.push(i.clone())
@@ -1448,7 +1454,10 @@ pub fn do_math(
                                         }
                                     }
                                 }
-                                NumStr::new(Number::from(Complex::with_val(options.prec, sum), None))
+                                NumStr::new(Number::from(
+                                    Complex::with_val(options.prec, sum),
+                                    None,
+                                ))
                             }
                             "dice" => {
                                 let mut faces = Vec::new();
@@ -1625,7 +1634,10 @@ pub fn do_math(
                                         i += 1;
                                     }
                                 }
-                                NumStr::new(Number::from(Complex::with_val(options.prec, sum), None))
+                                NumStr::new(Number::from(
+                                    Complex::with_val(options.prec, sum),
+                                    None,
+                                ))
                             }
                             "dice" => {
                                 let faces = a
@@ -1937,7 +1949,10 @@ pub fn do_math(
                                         a[0].units,
                                     ))
                                 } else {
-                                    NumStr::new(Number::from(a[a.len() / 2].number.clone(), a[0].units))
+                                    NumStr::new(Number::from(
+                                        a[a.len() / 2].number.clone(),
+                                        a[0].units,
+                                    ))
                                 }
                             }
                             "mode" => {
@@ -1981,9 +1996,10 @@ pub fn do_math(
                                 NumStr::new(min)
                             }
                             "reverse" => Vector(a.iter().rev().cloned().collect()),
-                            "len" => {
-                                NumStr::new(Number::from(Complex::with_val(options.prec, a.len()), None))
-                            }
+                            "len" => NumStr::new(Number::from(
+                                Complex::with_val(options.prec, a.len()),
+                                None,
+                            )),
                             "norm" => {
                                 let units = a[0].units;
                                 let mut n = Complex::new(options.prec);
@@ -2309,7 +2325,10 @@ pub fn do_math(
                                     }
                                 }
                                 if fail {
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, Nan),
+                                        None,
+                                    ))
                                 } else {
                                     Matrix(mat)
                                 }
@@ -2753,7 +2772,10 @@ pub fn do_math(
                                     ))
                                 } else {
                                     let two = Float::with_val(options.prec, 2);
-                                    NumStr::new(Number::from(erf(-a / two.clone().sqrt()) / two, None))
+                                    NumStr::new(Number::from(
+                                        erf(-a / two.clone().sqrt()) / two,
+                                        None,
+                                    ))
                                 }
                             }
                             "lognorm_cdf" => {
@@ -2771,7 +2793,10 @@ pub fn do_math(
                                     ))
                                 } else {
                                     let two = Float::with_val(options.prec, 2);
-                                    NumStr::new(Number::from(erf(-a / two.clone().sqrt()) / two, None))
+                                    NumStr::new(Number::from(
+                                        erf(-a / two.clone().sqrt()) / two,
+                                        None,
+                                    ))
                                 }
                             }
                             "lognorm_pdf" => {
@@ -2782,7 +2807,10 @@ pub fn do_math(
                                     let n: Complex = sqr(x.clone().ln() - mu);
                                     let n: Complex = -n / (2 * sqr(sigma.clone()));
                                     let tau: Complex = 2 * Complex::with_val(options.prec, Pi);
-                                    NumStr::new(Number::from(n.exp() / (sigma * tau.sqrt() * x), None))
+                                    NumStr::new(Number::from(
+                                        n.exp() / (sigma * tau.sqrt() * x),
+                                        None,
+                                    ))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -2886,7 +2914,10 @@ pub fn do_math(
                                             / binomial(pop.clone(), draws.clone());
                                         k -= 1
                                     }
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, sum), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, sum),
+                                        None,
+                                    ))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -2929,7 +2960,10 @@ pub fn do_math(
                                         pop -= 1;
                                         draws -= 1
                                     }
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, sum), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, sum),
+                                        None,
+                                    ))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -2951,7 +2985,10 @@ pub fn do_math(
                                         ) / binomial(pop.clone(), success.clone());
                                         k -= 1
                                     }
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, sum), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, sum),
+                                        None,
+                                    ))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -2995,7 +3032,10 @@ pub fn do_math(
                                         }
                                         pop -= 1;
                                     }
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, sum), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, sum),
+                                        None,
+                                    ))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -3397,7 +3437,10 @@ pub fn do_math(
                                         ))
                                     }
                                 } else {
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, Nan),
+                                        None,
+                                    ))
                                 }
                             }
                             "factors" | "factor" => {
@@ -3427,7 +3470,10 @@ pub fn do_math(
                                         ))
                                     }
                                 } else {
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, Nan),
+                                        None,
+                                    ))
                                 }
                             }
                             "unity" => {
@@ -3442,7 +3488,10 @@ pub fn do_math(
                                     unity(Complex::new(options.prec), arg.num()?.number)
                                 };
                                 if vec.is_empty() {
-                                    NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
+                                    NumStr::new(Number::from(
+                                        Complex::with_val(options.prec, Nan),
+                                        None,
+                                    ))
                                 } else {
                                     Vector(vec)
                                 }
@@ -3713,7 +3762,13 @@ fn do_functions(
         match (a.clone(), function[k + 1].clone()) {
             (Num(a), Num(b)) => {
                 function.remove(k + 1);
-                return Ok(NumStr::new(functions(*a, Some(*b), to_deg.clone(), s, options)?));
+                return Ok(NumStr::new(functions(
+                    *a,
+                    Some(*b),
+                    to_deg.clone(),
+                    s,
+                    options,
+                )?));
             }
             (Vector(a), Vector(b)) => {
                 function.remove(k + 1);
@@ -3851,7 +3906,13 @@ fn do_functions(
             }
             Ok(Vector(vec))
         }
-        Num(a) => Ok(NumStr::new(functions(*a, None, to_deg.clone(), s, options)?)),
+        Num(a) => Ok(NumStr::new(functions(
+            *a,
+            None,
+            to_deg.clone(),
+            s,
+            options,
+        )?)),
         _ => Err("str err1"),
     }
 }

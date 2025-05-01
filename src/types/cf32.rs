@@ -1,7 +1,7 @@
+use super::{Pow, Prec, Rt, SinhCosh, Special};
+use crate::macros::impls::{dec_c_impl, impl_cneg, impl_self_c_ops};
 use serde::{Deserialize, Serialize};
-use super::{ Prec, Pow, Rt, SinhCosh, Special };
-use crate::macros::impls::{ impl_cneg, dec_c_impl, impl_self_c_ops };
-use std::fmt::{ Display, Formatter };
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CF32(pub f32, pub f32);

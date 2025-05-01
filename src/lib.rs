@@ -4,6 +4,7 @@ pub mod functions;
 pub mod graph;
 pub mod help;
 pub mod load_vars;
+mod macros;
 pub mod math;
 pub mod misc;
 pub mod options;
@@ -13,6 +14,5 @@ pub mod print;
 mod tests;
 pub mod types;
 pub mod units;
-mod macros;
 //gui
 //https://docs.rs/fastnum/latest/fastnum/index.html

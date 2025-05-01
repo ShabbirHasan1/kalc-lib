@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use std::fmt::{ Display, Formatter };
-use crate::macros::impls::{ impl_self_ops, impl_int_ops };
 use super::Type;
+use crate::macros::impls::{impl_int_ops, impl_self_ops};
+use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Integer {

@@ -1,11 +1,11 @@
-use serde::{Deserialize, Serialize};
-use crate::macros::impls::{ impl_new_val, float_impl, impl_partial_ord, impl_neg, impl_self_ops };
-use std::{
-    fmt::{ Display, Formatter },
-    cmp::{ Ordering, PartialOrd },
-};
+use super::{Decimal, NewVal, Parse, ParseU, Prec, SinhCosh, Special, SpecialU, Type, WithValDeci};
+use crate::macros::impls::{float_impl, impl_neg, impl_new_val, impl_partial_ord, impl_self_ops};
 use rug::ops::CompleteRound;
-use super::{ Decimal, Parse, ParseU, Prec, Type, Special, SpecialU, SinhCosh, WithValDeci, NewVal };
+use serde::{Deserialize, Serialize};
+use std::{
+    cmp::{Ordering, PartialOrd},
+    fmt::{Display, Formatter},
+};
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Float {

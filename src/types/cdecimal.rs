@@ -1,8 +1,9 @@
-use serde::{ Deserialize, Serialize };
-use super::{ Decimal, Prec, NewDeciVal, WithValDeci, Pow, Rt, Special };
-use crate::macros::impls::{impl_c_ops, impl_new_val_cdeci, dec_c_impl, impl_cneg, impl_self_c_ops };
-use std::fmt::{ Display, Formatter };
-
+use super::{Decimal, NewDeciVal, Pow, Prec, Rt, Special, WithValDeci};
+use crate::macros::impls::{
+    dec_c_impl, impl_c_ops, impl_cneg, impl_new_val_cdeci, impl_self_c_ops,
+};
+use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CDecimal(pub Decimal, pub Decimal);

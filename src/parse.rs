@@ -399,7 +399,10 @@ pub fn input_var(
                     None,
                 ))),
                 '⅟' => {
-                    output.push(NumStr::new(Number::from(Complex::with_val(options.prec, 1), None)));
+                    output.push(NumStr::new(Number::from(
+                        Complex::with_val(options.prec, 1),
+                        None,
+                    )));
                     output.push(Division)
                 }
                 '↉' => output.push(NumStr::new(Number::from(Complex::new(options.prec), None))),
@@ -1012,8 +1015,10 @@ pub fn input_var(
                             | Some(Func(_))
                             | Some(RightBracket)
                             | Some(RightCurlyBracket) => {}
-                            _ => output
-                                .push(NumStr::new(Number::from(Complex::with_val(options.prec, 1), None))),
+                            _ => output.push(NumStr::new(Number::from(
+                                Complex::with_val(options.prec, 1),
+                                None,
+                            ))),
                         }
                         output.push(Multiplication);
                         output.push(NumStr::new(Number::from(
@@ -1370,7 +1375,10 @@ pub fn input_var(
                         )));
                     }
                     "true" => {
-                        output.push(NumStr::new(Number::from(Complex::with_val(options.prec, 1), None)));
+                        output.push(NumStr::new(Number::from(
+                            Complex::with_val(options.prec, 1),
+                            None,
+                        )));
                     }
                     "false" => {
                         output.push(NumStr::new(Number::from(Complex::new(options.prec), None)));

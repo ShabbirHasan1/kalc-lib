@@ -1222,4 +1222,9 @@ macro_rules! impl_types {
     };
 }
 
-pub(crate) use { impl_new_val_deci, impl_pow, impl_sinh_cosh, impl_with_val_deci, impl_with_val_cdeci, impl_new_val_cdeci, impl_with_val, impl_new_val, impl_partial_ord, dec_impl, float_impl, dec_c_impl, impl_c_pow, impl_c_rt, impl_c_ops, impl_self_c_ops, impl_ops, impl_int_ops, impl_self_ops, impl_neg, impl_cneg, impl_types };
+pub(crate) use {
+    dec_c_impl, dec_impl, float_impl, impl_c_ops, impl_c_pow, impl_c_rt, impl_cneg, impl_int_ops,
+    impl_neg, impl_new_val, impl_new_val_cdeci, impl_new_val_deci, impl_ops, impl_partial_ord,
+    impl_pow, impl_self_c_ops, impl_self_ops, impl_sinh_cosh, impl_types, impl_with_val,
+    impl_with_val_cdeci, impl_with_val_deci,
+};

@@ -289,9 +289,9 @@ impl NumStr {
                 let b = b.number.clone();
                 if b.imag().is_zero() && b.real().clone().fract().is_zero() {
                     if b.real().is_zero() {
-                        let mut mat = Vec::new();
+                        let mut mat = Vec::with_capacity(a.len());
                         for i in 0..a.len() {
-                            let mut vec = Vec::new();
+                            let mut vec = Vec::with_capacity(a.len());
                             for j in 0..a.len() {
                                 vec.push(if i == j {
                                     Number::from(Complex::with_val(a[0][0].number.prec(), 1), None)
@@ -510,7 +510,7 @@ pub fn not(a: &NumStr) -> Result<NumStr, &'static str> {
             )))
         }
         Vector(v) => {
-            let mut o = Vec::new();
+            let mut o = Vec::with_capacity(v.len());
             for a in v {
                 o.push(Number::from(
                     Complex::with_val(a.number.prec(), a.number.is_zero() && a.number.real() != &1),
@@ -520,9 +520,9 @@ pub fn not(a: &NumStr) -> Result<NumStr, &'static str> {
             Ok(Vector(o))
         }
         Matrix(m) => {
-            let mut k = Vec::new();
+            let mut k = Vec::with_capacity(m.len());
             for v in m {
-                let mut o = Vec::new();
+                let mut o = Vec::with_capacity(v.len());
                 for a in v {
                     o.push(Number::from(
                         Complex::with_val(
@@ -1225,37 +1225,49 @@ pub fn mvec(
 ) -> Result<NumStr, &'static str> {
     let mut vec = Vec::new();
     let mut mat = Vec::new();
+    let mut body = |z: isize| -> Result<(), &'static str> {
+        match do_math_with_var(
+            function.clone(),
+            options,
+            func_vars.clone(),
+            var,
+            NumStr::new(Number::from(Complex::with_val(options.prec, z), None)),
+        )? {
+            Num(n) => {
+                if vec.is_empty() {
+                    vec = Vec::with_capacity((end - start + 1) as usize)
+                }
+                vec.push(*n)
+            }
+            Vector(v) if mvec => {
+                if vec.is_empty() {
+                    vec = Vec::with_capacity((end - start + 1) as usize * v.len())
+                }
+                vec.extend(v)
+            }
+            Vector(v) => {
+                if mat.is_empty() {
+                    mat = Vec::with_capacity((end - start + 1) as usize)
+                }
+                mat.push(v)
+            }
+            Matrix(m) if !mvec => {
+                if mat.is_empty() {
+                    mat = Vec::with_capacity((end - start + 1) as usize * m.len())
+                }
+                mat.extend(m)
+            }
+            _ => return Err("cant create 3d matrix"),
+        }
+        Ok(())
+    };
     if start < end {
         for z in start..=end {
-            match do_math_with_var(
-                function.clone(),
-                options,
-                func_vars.clone(),
-                var,
-                NumStr::new(Number::from(Complex::with_val(options.prec, z), None)),
-            )? {
-                Num(n) => vec.push(*n),
-                Vector(v) if mvec => vec.extend(v),
-                Vector(v) => mat.push(v),
-                Matrix(m) if !mvec => mat.extend(m),
-                _ => return Err("cant create 3d matrix"),
-            }
+            body(z)?
         }
     } else {
         for z in (end..=start).rev() {
-            match do_math_with_var(
-                function.clone(),
-                options,
-                func_vars.clone(),
-                var,
-                NumStr::new(Number::from(Complex::with_val(options.prec, z), None)),
-            )? {
-                Num(n) => vec.push(*n),
-                Vector(v) if mvec => vec.extend(v),
-                Vector(v) => mat.push(v),
-                Matrix(m) if !mvec => mat.extend(m),
-                _ => return Err("cant create 3d matrix"),
-            }
+            body(z)?
         }
     }
     if mat.is_empty() {
@@ -1883,12 +1895,15 @@ fn gen_ev(mat: &[Vec<Number>], real: bool) -> Result<Vec<Vec<Vec<Number>>>, &'st
                     Matrix(mat.to_vec())
                         .func(&n, sub)
                         .map(|m| {
-                            m.pow(&NumStr::new(Number::from(Complex::with_val(p, mat.len()), None)))
-                                .map(|m| {
-                                    let ker = kernel(m.mat().unwrap()).unwrap();
-                                    Some(ker)
-                                })
-                                .unwrap_or(None)
+                            m.pow(&NumStr::new(Number::from(
+                                Complex::with_val(p, mat.len()),
+                                None,
+                            )))
+                            .map(|m| {
+                                let ker = kernel(m.mat().unwrap()).unwrap();
+                                Some(ker)
+                            })
+                            .unwrap_or(None)
                         })
                         .unwrap_or(None)
                 })
@@ -4540,7 +4555,13 @@ pub fn slope(
 ) -> Result<NumStr, &'static str> {
     let oop = options.prec;
     if nth == 0 {
-        do_math_with_var(func.clone(), options, func_vars.clone(), &var, NumStr::new(point))
+        do_math_with_var(
+            func.clone(),
+            options,
+            func_vars.clone(),
+            &var,
+            NumStr::new(point),
+        )
     } else if options.prec <= 256 {
         options.prec = 256;
         point.number.set_prec(options.prec);
@@ -4676,7 +4697,13 @@ pub fn slopesided(
     prec: Option<u32>,
 ) -> Result<NumStr, &'static str> {
     if nth == 0 {
-        return do_math_with_var(func.clone(), options, func_vars.clone(), &var, NumStr::new(point));
+        return do_math_with_var(
+            func.clone(),
+            options,
+            func_vars.clone(),
+            &var,
+            NumStr::new(point),
+        );
     }
     let mut oop = 0;
     let units = point.units;

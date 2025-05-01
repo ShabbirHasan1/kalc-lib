@@ -1,3 +1,4 @@
+use crate::complex::NumStr;
 use crate::{
     math::do_math,
     options::set_commands,
@@ -5,7 +6,6 @@ use crate::{
     units::{Colors, Number, Options, Variable},
 };
 use rug::{Float, float::Constant::Pi};
-use crate::complex::NumStr;
 pub fn get_file_vars(
     options: Options,
     vars: &mut Vec<Variable>,

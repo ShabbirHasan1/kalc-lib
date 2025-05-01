@@ -1,7 +1,9 @@
+use super::{NewDeciVal, Parse, Prec, SinhCosh, Special};
+use crate::macros::impls::{
+    dec_impl, impl_neg, impl_new_val_deci, impl_partial_ord, impl_self_ops,
+};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use super::{ Parse, Prec, Special, NewDeciVal, SinhCosh }; 
-use crate::macros::impls::{ impl_new_val_deci, dec_impl, impl_partial_ord, impl_neg, impl_self_ops };
 use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
