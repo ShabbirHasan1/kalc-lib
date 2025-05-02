@@ -133,6 +133,9 @@ impl Auto {
             *self = state.into()
         }
     }
+    pub fn as_bool(&self) -> bool {
+        *self == Self::True
+    }
 }
 
 #[derive(Default, Copy, Clone, PartialEq)]
