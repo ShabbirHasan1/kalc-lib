@@ -116,6 +116,25 @@ pub enum Auto {
     False,
     Auto,
 }
+
+impl From<bool> for Auto {
+    fn from(value: bool) -> Self {
+        if value {
+            Self::True
+        } else {
+            Self::False
+        }
+    }
+}
+
+impl Auto {
+    pub fn auto_set(&mut self, state: bool) {
+        if *self == Self::Auto {
+            *self = state.into()
+        }
+    }
+}
+
 #[derive(Default, Copy, Clone, PartialEq)]
 pub struct HowGraphing {
     pub graph: bool,
