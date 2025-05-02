@@ -50,9 +50,10 @@ pub struct Number {
 pub struct Data {
     pub vars: Vec<Variable>,
     pub options: Options,
+    pub colors: Colors,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Colors {
     pub text: String,
     pub prompt: String,
@@ -119,11 +120,7 @@ pub enum Auto {
 
 impl From<bool> for Auto {
     fn from(value: bool) -> Self {
-        if value {
-            Self::True
-        } else {
-            Self::False
-        }
+        if value { Self::True } else { Self::False }
     }
 }
 

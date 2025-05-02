@@ -15,4 +15,3 @@ mod tests;
 pub mod types;
 pub mod units;
 //gui
-//https://docs.rs/fastnum/latest/fastnum/index.html
