@@ -100,7 +100,7 @@ macro_rules! impl_new_val {
 }
 
 macro_rules! impl_partial_ord {
-    ($t:ty,$($variant:ident),*) => {
+    ($t:ty,$(($variant:ident, $cast:expr)),*) => {
         impl PartialOrd for $t {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 match (self, other) {
@@ -130,6 +130,33 @@ macro_rules! impl_partial_ord {
                 match (self, other) {
                     $((Self::$variant(a), Self::$variant(b)) => a.ge(b),)*
                     _=>unreachable!()
+                }
+            }
+        }
+                impl PartialOrd<f64> for $t {
+            fn partial_cmp(&self, other: &f64) -> Option<Ordering> {
+                match self {
+                    $(Self::$variant(a) =>$cast(a).partial_cmp(other),)*
+                }
+            }
+            fn lt(&self, other: &f64) -> bool {
+                match self {
+                    $(Self::$variant(a) =>$cast(a).lt(other),)*
+                }
+            }
+            fn le(&self, other: &f64) -> bool {
+                match self {
+                    $(Self::$variant(a) =>$cast(a).le(other),)*
+                }
+            }
+            fn gt(&self, other: &f64) -> bool {
+                match self {
+                    $(Self::$variant(a) =>$cast(a).gt(other),)*
+                }
+            }
+            fn ge(&self, other: &f64) -> bool {
+                match self {
+                    $(Self::$variant(a) =>$cast(a).ge(other),)*
                 }
             }
         }
@@ -1222,9 +1249,156 @@ macro_rules! impl_types {
     };
 }
 
+macro_rules! impl_complex {
+    ($ty: ty, $($var:ident),*) => {
+        impl $ty{
+                        pub fn abs(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.abs()),
+                    )*
+                }
+            }
+            pub fn recip(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.recip()),
+                    )*
+                }
+            }
+            pub fn sqrt(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.sqrt()),
+                    )*
+                }
+            }
+            pub fn exp(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.exp()),
+                    )*
+                }
+            }
+            pub fn arg(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.arg()),
+                    )*
+                }
+            }
+            pub fn ln(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.ln()),
+                    )*
+                }
+            }
+            pub fn log10(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.log10()),
+                    )*
+                }
+            }
+            pub fn conj(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.conj()),
+                    )*
+                }
+            }
+            pub fn sin(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.sin()),
+                    )*
+                }
+            }
+            pub fn cos(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.cos()),
+                    )*
+                }
+            }
+            pub fn tan(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.tan()),
+                    )*
+                }
+            }
+            pub fn asin(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.asin()),
+                    )*
+                }
+            }
+            pub fn acos(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.acos()),
+                    )*
+                }
+            }
+            pub fn atan(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.atan()),
+                    )*
+                }
+            }
+            pub fn sinh(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.sinh()),
+                    )*
+                }
+            }
+            pub fn cosh(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.cosh()),
+                    )*
+                }
+            }
+            pub fn tanh(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.tanh()),
+                    )*
+                }
+            }
+            pub fn asinh(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.asinh()),
+                    )*
+                }
+            }
+            pub fn acosh(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.acosh()),
+                    )*
+                }
+            }
+            pub fn atanh(self) -> Self {
+                match self {
+                    $(
+                    Self::$var(a) => Self::$var(a.atanh()),
+                    )*
+                }
+            }
+}
+    };
+}
+
 pub(crate) use {
-    dec_c_impl, dec_impl, float_impl, impl_c_ops, impl_c_pow, impl_c_rt, impl_cneg, impl_int_ops,
-    impl_neg, impl_new_val, impl_new_val_cdeci, impl_new_val_deci, impl_ops, impl_partial_ord,
-    impl_pow, impl_self_c_ops, impl_self_ops, impl_sinh_cosh, impl_types, impl_with_val,
-    impl_with_val_cdeci, impl_with_val_deci,
+    dec_c_impl, dec_impl, float_impl, impl_c_ops, impl_c_pow, impl_c_rt, impl_cneg, impl_complex,
+    impl_int_ops, impl_neg, impl_new_val, impl_new_val_cdeci, impl_new_val_deci, impl_ops,
+    impl_partial_ord, impl_pow, impl_self_c_ops, impl_self_ops, impl_sinh_cosh, impl_types,
+    impl_with_val, impl_with_val_cdeci, impl_with_val_deci,
 };

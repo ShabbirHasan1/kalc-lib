@@ -16,16 +16,15 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
         String::new()
     };
     let val = value.abs();
-    for i in 0..=5 {
-        let orig = match i {
-            0 => val.clone(),
-            1 => val.clone().pow(2),
-            2 => val.clone().pow(3),
-            3 => val.clone() / pi.clone(),
-            4 => val.clone() / e.clone(),
-            5 => val.clone() * e.clone(),
-            _ => break,
-        };
+    let vals = [
+        val.clone(),
+        val.clone().pow(2),
+        val.clone().pow(3),
+        val.clone() / pi.clone(),
+        val.clone() / e.clone(),
+        val.clone() * e.clone(),
+    ];
+    for (i, orig) in vals.into_iter().enumerate() {
         if ((i == 1 || i == 2) && orig.clone().fract() < 1e-32) || orig.clone().fract().is_zero() {
             return if i == 0 || ((i == 1 || i == 2) && orig < 1e-32) {
                 String::new()

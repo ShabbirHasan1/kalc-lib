@@ -10,6 +10,7 @@ impl Prec for CF32 {
     fn prec(&self) -> u32 {
         32
     }
+    fn set_prec(&mut self, _: u32) {}
 }
 
 impl From<f32> for CF32 {

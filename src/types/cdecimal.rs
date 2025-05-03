@@ -12,6 +12,10 @@ impl Prec for CDecimal {
     fn prec(&self) -> u32 {
         self.0.prec()
     }
+    fn set_prec(&mut self, new_prec: u32) {
+        self.0.set_prec(new_prec);
+        self.1.set_prec(new_prec);
+    }
 }
 
 impl From<Decimal> for CDecimal {

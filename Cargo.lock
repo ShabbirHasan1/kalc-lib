@@ -166,9 +166,9 @@ dependencies = [
 
 [[package]]
 name = "fastnum"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f88ae163dd5db2ad1516b875afdb4996b5fa54256a65fde17d75db8de3476e0"
+checksum = "1e2905cee099fda250165ef7f9a604018a3715dba23ce98d618e0f8e105a8507"
 dependencies = [
  "autocfg",
  "bnum",

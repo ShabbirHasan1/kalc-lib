@@ -31,6 +31,14 @@ impl Integer {
             Self::F32(_) => false,
         }
     }
+    pub fn next_prime(self) -> Self {
+        match self {
+            Self::Rug(a) => Self::Rug(a.next_prime()),
+            Self::Fastnum(a) => Self::Fastnum(a),
+            Self::F64(a) => Self::F64(a),
+            Self::F32(a) => Self::F32(a),
+        }
+    }
     pub fn from(obj: Type, val: u32) -> Self {
         match obj {
             Type::Rug => Self::Rug(rug::Integer::from(val)),
@@ -45,6 +53,22 @@ impl Integer {
             Type::Fastnum => Self::Fastnum(fastnum::I512::from(0)),
             Type::F64 => Self::F64(0),
             Type::F32 => Self::F32(0),
+        }
+    }
+    pub fn to_i128(self) -> i128 {
+        match self {
+            Self::Rug(a) => a.to_i128().unwrap_or_default(),
+            Self::Fastnum(a) => a.to_string().parse().unwrap_or_default(),
+            Self::F64(a) => a,
+            Self::F32(a) => a,
+        }
+    }
+    pub fn to_string_radix(self, base: i32) -> String {
+        match self {
+            Self::Rug(a) => a.to_string_radix(base),
+            Self::Fastnum(a) => a.to_str_radix(base as u32),
+            Self::F64(a) => a.to_string(),
+            Self::F32(a) => a.to_string(),
         }
     }
 }

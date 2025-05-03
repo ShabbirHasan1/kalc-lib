@@ -2,7 +2,7 @@ use super::{
     CDecimal, CF32, CF64, Decimal, Float, NewVal, ParseU, Prec, Special, SpecialU, Type,
     WithValDeci,
 };
-use crate::macros::impls::{impl_neg, impl_new_val, impl_self_ops};
+use crate::macros::impls::{impl_complex, impl_neg, impl_new_val, impl_self_ops};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
@@ -23,6 +23,14 @@ impl Prec for Complex {
             Self::F32(a) => a.prec(),
         }
     }
+    fn set_prec(&mut self, new_prec: u32) {
+        match self {
+            Self::Rug(a) => a.set_prec(new_prec),
+            Self::Fastnum(a) => a.set_prec(new_prec),
+            Self::F64(_) => {}
+            Self::F32(_) => {}
+        }
+    }
 }
 
 impl ParseU<&str> for Complex {
@@ -32,6 +40,14 @@ impl ParseU<&str> for Complex {
             Type::Fastnum => Float::parse(t, prec, s).map(|a| a.into()),
             Type::F64 => Float::parse(t, prec, s).map(|a| a.into()),
             Type::F32 => Float::parse(t, prec, s).map(|a| a.into()),
+        }
+    }
+    fn parse_radix(t: Type, prec: u32, s: &str, base: i32) -> Option<Self> {
+        match t {
+            Type::Rug => Float::parse_radix(t, prec, s, base).map(|a| a.into()),
+            Type::Fastnum => Float::parse_radix(t, prec, s, base).map(|a| a.into()),
+            Type::F64 => Float::parse_radix(t, prec, s, base).map(|a| a.into()),
+            Type::F32 => Float::parse_radix(t, prec, s, base).map(|a| a.into()),
         }
     }
 }
@@ -84,6 +100,72 @@ impl Display for Complex {
         }
     }
 }
+impl Complex {
+    pub fn real(&self) -> Float {
+        match self {
+            Self::Rug(a) => Float::Rug(a.real().clone()),
+            Self::Fastnum(a) => Float::Fastnum(a.0),
+            Self::F64(a) => Float::F64(a.0),
+            Self::F32(a) => Float::F32(a.0),
+        }
+    }
+    pub fn imag(&self) -> Float {
+        match self {
+            Self::Rug(a) => Float::Rug(a.imag().clone()),
+            Self::Fastnum(a) => Float::Fastnum(a.1),
+            Self::F64(a) => Float::F64(a.1),
+            Self::F32(a) => Float::F32(a.1),
+        }
+    }
+    pub fn real_imag(self) -> (Float, Float) {
+        match self {
+            Self::Rug(a) => {
+                let (a, b) = a.into_real_imag();
+                (Float::Rug(a), Float::Rug(b))
+            }
+            Self::Fastnum(a) => (Float::Fastnum(a.0), Float::Fastnum(a.1)),
+            Self::F64(a) => (Float::F64(a.0), Float::F64(a.1)),
+            Self::F32(a) => (Float::F32(a.0), Float::F32(a.1)),
+        }
+    }
+    pub fn is_zero(&self) -> bool {
+        match self {
+            Self::Rug(a) => a.is_zero(),
+            Self::Fastnum(a) => a.0.is_zero() && a.1.is_zero(),
+            Self::F64(a) => a.0 == 0.0 && a.1 == 0.0,
+            Self::F32(a) => a.0 == 0.0 && a.1 == 0.0,
+        }
+    }
+    pub fn ftype(&self) -> Type {
+        match self {
+            Self::Rug(_) => Type::Rug,
+            Self::Fastnum(_) => Type::Fastnum,
+            Self::F64(_) => Type::F64,
+            Self::F32(_) => Type::F32,
+        }
+    }
+    pub fn sin_cos(self) -> (Self, Self) {
+        match self {
+            Self::Rug(a) => {
+                let p = a.prec();
+                let (s, c) = a.sin_cos(rug::Complex::new(p));
+                (Self::Rug(s), Self::Rug(c))
+            }
+            Self::Fastnum(a) => {
+                let (s, c) = a.sin_cos();
+                (Self::Fastnum(s), Self::Fastnum(c))
+            }
+            Self::F64(a) => {
+                let (s, c) = a.sin_cos();
+                (Self::F64(s), Self::F64(c))
+            }
+            Self::F32(a) => {
+                let (s, c) = a.sin_cos();
+                (Self::F32(s), Self::F32(c))
+            }
+        }
+    }
+}
 
 impl_new_val!(
     Complex,
@@ -93,5 +175,6 @@ impl_new_val!(
     (F32, |_, x| CF32(x as f32, 0.0))
 );
 
+impl_complex!(Complex, Rug, Fastnum, F64, F32);
 impl_neg!(Complex, Rug, Fastnum, F64, F32);
 impl_self_ops!(Complex, Rug, Fastnum, F64, F32);

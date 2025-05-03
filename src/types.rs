@@ -29,6 +29,7 @@ pub enum Type {
 
 pub trait Prec {
     fn prec(&self) -> u32;
+    fn set_prec(&mut self, new_prec: u32);
 }
 pub trait DivFloor {
     fn div_floor(self, rhs: f64) -> Self;
@@ -42,9 +43,15 @@ pub trait Parse<T> {
     fn parse(prec: u32, s: T) -> Option<Self>
     where
         Self: Sized;
+    fn parse_radix(prec: u32, s: T, base: i32) -> Option<Self>
+    where
+        Self: Sized;
 }
 pub trait ParseU<T> {
     fn parse(t: Type, prec: u32, s: T) -> Option<Self>
+    where
+        Self: Sized;
+    fn parse_radix(t: Type, prec: u32, s: T, base: i32) -> Option<Self>
     where
         Self: Sized;
 }
@@ -104,7 +111,6 @@ impl Special for f32 {
         f32::INFINITY
     }
 }
-
 use crate::macros::impls::*;
 impl_types!(f64, f32, i32, u64, u128);
 impl_sinh_cosh!(f64, f32, fastnum::decimal::D512, fastnum::decimal::D256);

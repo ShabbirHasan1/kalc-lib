@@ -10,6 +10,7 @@ impl Prec for CF64 {
     fn prec(&self) -> u32 {
         64
     }
+    fn set_prec(&mut self, _: u32) {}
 }
 
 impl From<f64> for CF64 {

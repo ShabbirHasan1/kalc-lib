@@ -1,8 +1,7 @@
 use crate::complex::NumStr;
 use crate::{
     complex::NumStr::{
-        Comma, Division, Exponent, Func, LeftBracket, Minus, Multiplication, Num, Plus,
-        RightBracket,
+        Comma, Division, Exponent, Func, LeftBracket, Minus, Multiplication, Plus, RightBracket,
     },
     load_vars::get_vars,
     math::do_math,
