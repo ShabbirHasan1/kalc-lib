@@ -2954,15 +2954,43 @@ pub fn input_var(
     if isgraphing && (graph.x || graph.y) && !print {
         simplify(&mut output, &mut funcvars, options)
     }
-    while let Some(Func(s)) = output.last() {
-        if matches!(
-            s.as_str(),
-            "*" | "^" | "^^" | "/" | "//" | "+" | "-" | "±" | "×"
-        ) || functions.contains(s.as_str())
-        {
-            output.pop();
-        } else {
-            break;
+    while let Some(e) = output.last() {
+        match e {
+            Plus
+            | Minus
+            | PlusMinus
+            | Multiplication
+            | Division
+            | InternalMultiplication
+            | Tetration
+            | Root
+            | Exponent
+            | Equal
+            | NotEqual
+            | Greater
+            | GreaterEqual
+            | Lesser
+            | LesserEqual
+            | Modulo
+            | Range
+            | Conversion
+            | NearEqual
+            | ShiftLeft
+            | ShiftRight
+            | And
+            | Or
+            | Not
+            | Xor
+            | Nand
+            | Implies
+            | Nor
+            | Converse => {
+                output.pop();
+            }
+            Func(s) if functions.contains(s.as_str()) => {
+                output.pop();
+            }
+            _ => break,
         }
     }
     if undf {
