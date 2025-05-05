@@ -4398,11 +4398,19 @@ fn functions(
                 }
                 "fact" | "factorial" => gamma(a.clone() + 1),
                 "subfact" | "subfactorial" => {
-                    if !a.imag().is_zero()
-                        || a.real().is_sign_negative()
-                        || !a.real().clone().fract().is_zero()
-                    {
-                        subfactorial(a)
+                    let near = a.real().clone().fract().is_zero();
+                    let neg = a.real().is_sign_negative();
+                    let neari = a.imag().is_zero();
+                    if !neari || neg || !near {
+                        if neg && near && neari {
+                            let a = a + Complex::with_val(
+                                options.prec,
+                                (0, Float::with_val(options.prec, 0.5).pow(options.prec / 8)),
+                            );
+                            subfactorial(a)
+                        } else {
+                            subfactorial(a)
+                        }
                     } else if a.real().is_zero() {
                         Complex::with_val(options.prec, 1)
                     } else {
