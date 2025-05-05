@@ -27,6 +27,12 @@ pub enum Type {
     F32,
 }
 
+pub enum Special {
+    Pi,
+    Nan,
+    Infinity,
+}
+
 pub trait Prec {
     fn prec(&self) -> u32;
     fn set_prec(&mut self, new_prec: u32);
@@ -78,18 +84,18 @@ pub trait SinhCosh {
     where
         Self: Sized;
 }
-pub trait Special {
+pub trait SpecialValuesDeci {
     fn pi(prec: u32) -> Self;
     fn nan(prec: u32) -> Self;
     fn inf(prec: u32) -> Self;
 }
-pub trait SpecialU {
+pub trait SpecialValues {
     fn pi(t: Type, prec: u32) -> Self;
     fn nan(t: Type, prec: u32) -> Self;
     fn inf(t: Type, prec: u32) -> Self;
 }
 
-impl Special for f64 {
+impl SpecialValuesDeci for f64 {
     fn pi(_: u32) -> Self {
         std::f64::consts::PI
     }
@@ -100,7 +106,7 @@ impl Special for f64 {
         f64::INFINITY
     }
 }
-impl Special for f32 {
+impl SpecialValuesDeci for f32 {
     fn pi(_: u32) -> Self {
         std::f32::consts::PI
     }

@@ -1,6 +1,6 @@
 use super::{
-    CDecimal, CF32, CF64, Decimal, Float, NewVal, ParseU, Prec, Special, SpecialU, Type,
-    WithValDeci,
+    CDecimal, CF32, CF64, Decimal, Float, NewVal, ParseU, Prec, SpecialValues, SpecialValuesDeci,
+    Type, WithValDeci,
 };
 use crate::macros::impls::{impl_complex, impl_neg, impl_new_val, impl_self_ops};
 use serde::{Deserialize, Serialize};
@@ -52,7 +52,7 @@ impl ParseU<&str> for Complex {
     }
 }
 
-impl SpecialU for Complex {
+impl SpecialValues for Complex {
     fn pi(t: Type, prec: u32) -> Self {
         match t {
             Type::Rug => Self::Rug(rug::Complex::with_val(prec, rug::float::Constant::Pi)),

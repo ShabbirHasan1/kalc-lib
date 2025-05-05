@@ -1,5 +1,6 @@
 use super::{
-    Decimal, Integer, NewVal, Parse, ParseU, Prec, SinhCosh, Special, SpecialU, Type, WithValDeci,
+    Decimal, Integer, NewVal, Parse, ParseU, Prec, SinhCosh, Special, SpecialValues,
+    SpecialValuesDeci, Type, WithVal, WithValDeci,
 };
 use crate::macros::impls::{float_impl, impl_neg, impl_new_val, impl_partial_ord, impl_self_ops};
 use rug::ops::CompleteRound;
@@ -92,7 +93,7 @@ impl ParseU<&str> for Float {
     }
 }
 
-impl SpecialU for Float {
+impl SpecialValues for Float {
     fn pi(t: Type, prec: u32) -> Self {
         match t {
             Type::Rug => Self::Rug(rug::Float::with_val(prec, rug::float::Constant::Pi)),
@@ -115,6 +116,16 @@ impl SpecialU for Float {
             Type::Fastnum => Self::Fastnum(Decimal::inf(prec)),
             Type::F64 => Self::F64(f64::inf(prec)),
             Type::F32 => Self::F32(f32::inf(prec)),
+        }
+    }
+}
+
+impl WithVal<Special> for Float {
+    fn with_val(obj: Type, prec: u32, val: Special) -> Self {
+        match val {
+            Special::Pi => Float::pi(obj, prec),
+            Special::Nan => Float::nan(obj, prec),
+            Special::Infinity => Float::inf(obj, prec),
         }
     }
 }

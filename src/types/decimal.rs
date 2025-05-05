@@ -1,4 +1,4 @@
-use super::{NewDeciVal, Parse, Prec, SinhCosh, Special};
+use super::{NewDeciVal, Parse, Prec, SinhCosh, SpecialValuesDeci};
 use crate::macros::impls::{
     dec_impl, impl_neg, impl_new_val_deci, impl_partial_ord, impl_self_ops,
 };
@@ -79,7 +79,7 @@ impl Parse<&str> for Decimal {
     }
 }
 
-impl Special for Decimal {
+impl SpecialValuesDeci for Decimal {
     fn pi(prec: u32) -> Self {
         match prec.next_power_of_two() {
             512 => Self::D512(fastnum::D512::PI),

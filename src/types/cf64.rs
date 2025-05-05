@@ -1,4 +1,4 @@
-use super::{Pow, Prec, Rt, SinhCosh, Special};
+use super::{Pow, Prec, Rt, SinhCosh, SpecialValuesDeci};
 use crate::macros::impls::{dec_c_impl, impl_cneg, impl_self_c_ops};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};

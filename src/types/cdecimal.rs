@@ -1,4 +1,4 @@
-use super::{Decimal, NewDeciVal, Pow, Prec, Rt, Special, WithValDeci};
+use super::{Decimal, NewDeciVal, Pow, Prec, Rt, SpecialValuesDeci, WithValDeci};
 use crate::macros::impls::{
     dec_c_impl, impl_c_ops, impl_cneg, impl_new_val_cdeci, impl_self_c_ops,
 };
