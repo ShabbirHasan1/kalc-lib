@@ -222,6 +222,16 @@ impl PartialEq<f64> for Float {
         }
     }
 }
+impl PartialEq<i32> for Float {
+    fn eq(&self, other: &i32) -> bool {
+        match self {
+            Float::Rug(a) => a == other,
+            Float::Fastnum(a) => a == other,
+            Float::F64(a) => *a == *other as f64,
+            Float::F32(a) => *a == *other as f32,
+        }
+    }
+}
 
 impl_new_val!(
     Float,

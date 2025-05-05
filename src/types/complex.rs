@@ -167,6 +167,27 @@ impl Complex {
     }
 }
 
+impl PartialEq<f64> for Complex {
+    fn eq(&self, other: &f64) -> bool {
+        match self {
+            Self::Rug(a) => a == other,
+            Self::Fastnum(a) => a.0 == *other,
+            Self::F64(a) => a.0 == *other,
+            Self::F32(a) => a.0 == *other as f32,
+        }
+    }
+}
+impl PartialEq<i32> for Complex {
+    fn eq(&self, other: &i32) -> bool {
+        match self {
+            Self::Rug(a) => a == other,
+            Self::Fastnum(a) => a.0 == *other,
+            Self::F64(a) => a.0 == *other as f64,
+            Self::F32(a) => a.0 == *other as f32,
+        }
+    }
+}
+
 impl_new_val!(
     Complex,
     (Rug, rug::Complex::with_val),

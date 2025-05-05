@@ -119,6 +119,14 @@ impl PartialEq<f64> for Decimal {
         }
     }
 }
+impl PartialEq<i32> for Decimal {
+    fn eq(&self, other: &i32) -> bool {
+        match self {
+            Decimal::D512(a) => a.to_f64() == *other as f64,
+            Decimal::D256(b) => b.to_f64() == *other as f64,
+        }
+    }
+}
 impl_new_val_deci!(Decimal);
 impl_partial_ord!(
     Decimal,
