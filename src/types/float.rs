@@ -37,6 +37,9 @@ impl Prec for Float {
     }
 }
 impl Float {
+    pub fn cmp0(&self) -> Option<Ordering> {
+        self.partial_cmp(&Float::new(self.ftype(), self.prec()))
+    }
     pub fn is_zero(&self) -> bool {
         match self {
             Self::Rug(a) => a.is_zero(),
