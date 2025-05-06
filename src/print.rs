@@ -645,9 +645,8 @@ pub fn print_concurrent(
                     }
                 })
                 .sum();
-            let len = no_col.len();
             let out = out.replace('\n', "\x1b[G\n");
-            if len > width {
+            if no_col.split(|&c| c == '\n').any(|s| s.len() > width) {
                 print!(
                     "\x1b[J\x1b[G\ntoo long, append '=' to see parsed input\x1b[G\x1b[A\x1b[K{}{}{}",
                     prompt(options, &colors),
