@@ -123,3 +123,69 @@ R - filled rhombus",
     }
     .to_string()
 }
+pub fn man() -> String {
+    let lines = MSG.lines();
+    let p = lines.clone().position(|l| l == "# usage").unwrap() + 3;
+    let e = lines.clone().skip(p).position(|l| l == "```").unwrap() - 1;
+    let s = lines
+        .skip(p)
+        .take(e)
+        .map(|l| l.to_string())
+        .collect::<Vec<String>>()
+        .join("\n");
+    generate_man_page("kalc", "1", "2025-05-09", "kalc 1.5.0", &s)
+}
+fn generate_man_page(name: &str, section: &str, date: &str, version: &str, input: &str) -> String {
+    let mut synopsis = String::new();
+    let mut options = Vec::new();
+    let mut desc = Vec::new();
+    let mut in_opts = false;
+    for line in input.lines() {
+        if let Some(rest) = line.strip_prefix("Usage:") {
+            synopsis = rest.trim().to_string();
+        } else if line.trim_start().starts_with("FLAGS:") {
+            in_opts = true;
+            let rest = line.trim_start()["FLAGS:".len()..].trim();
+            if let Some((flag, rem)) = rest.split_once(char::is_whitespace) {
+                options.push((flag.to_string(), rem.trim().to_string()));
+            }
+        } else if in_opts && (line.starts_with("--") || line.starts_with('-')) {
+            if let Some((flag, rem)) = line.split_once(char::is_whitespace) {
+                options.push((flag.to_string(), rem.trim().to_string()));
+            }
+        } else {
+            in_opts = false;
+            desc.push(line);
+        }
+    }
+    let mut m = String::new();
+    m.push_str(&format!(
+        ".TH {name} {section} \"{date}\" \"{version}\" \"User Manual\"\n",
+        name = name.to_uppercase(),
+        section = section,
+        date = date,
+        version = version
+    ));
+    m.push_str(".SH SYNOPSIS\n");
+    m.push_str(&synopsis);
+    m.push_str("\n\n.SH DESCRIPTION\n");
+    for line in desc {
+        if line.trim().is_empty() {
+            m.push_str(".PP\n");
+        } else if line.ends_with(':') {
+            m.push_str(&format!(".SH {line}"));
+            m.push('\n');
+        } else {
+            m.push_str(line);
+            m.push('\n');
+            m.push_str(".br");
+            m.push('\n');
+        }
+    }
+    m.push_str("\n.SH OPTIONS\n");
+    for (flag, help) in options {
+        m.push_str(".TP\n");
+        m.push_str(&format!("\\fB{flag}\\fR\n{help}\n"));
+    }
+    m
+}

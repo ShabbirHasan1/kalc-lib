@@ -1,4 +1,5 @@
 use crate::complex::NumStr;
+use crate::help::man;
 use crate::{
     complex::NumStr::{Matrix, Num, Vector},
     help::{help, help_for},
@@ -58,7 +59,7 @@ pub fn arg_opts(
                 process::exit(0)
             }
             "--man" => {
-                println!("{}", include_str!("../kalc.1"));
+                println!("{}", man());
                 process::exit(0)
             }
             "--default" => {
