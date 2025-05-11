@@ -511,7 +511,7 @@ pub fn input_var(
                         || (!output.is_empty() && *output.last().unwrap() == RightBracket)
                         || matches!(
                             chars[i - 1],
-                            '}' | ']' | ')' | '@' | '°' | '$' | '¢' | '%'
+                            '}' | ']' | ')' | '@' | '°' | '$' | '¢' | '%' | '\'' | '`'
                         ))
                     && chars[i - 1]
                         != if options.notation == SmallEngineering {
@@ -603,7 +603,7 @@ pub fn input_var(
                                 || (!output.is_empty() && *output.last().unwrap() == RightBracket)
                                 || matches!(
                                     chars[i - 1],
-                                    '}' | ']' | ')' | '@' | '°' | '$' | '¢' | '%'
+                                    '}' | ']' | ')' | '@' | '°' | '$' | '¢' | '%' | '\'' | '`'
                                 )))
                     {
                         if i + 1 != chars.len()
@@ -873,6 +873,7 @@ pub fn input_var(
                         i += 1;
                     } else if i != 0
                         && (chars[i - 1].is_alphanumeric()
+                            || matches!(chars[i - 1], '\'' | '`')
                             || (!output.is_empty()
                                 && matches!(
                                     output.last().unwrap(),
