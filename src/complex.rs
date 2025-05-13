@@ -289,9 +289,9 @@ impl NumStr {
                 let b = b.number.clone();
                 if b.imag().is_zero() && b.real().clone().fract().is_zero() {
                     if b.real().is_zero() {
-                        let mut mat = Vec::with_capacity(a.len());
+                        let mut mat = Vec::with_capacity(a.len().max(1));
                         for i in 0..a.len() {
-                            let mut vec = Vec::with_capacity(a.len());
+                            let mut vec = Vec::with_capacity(a.len().max(1));
                             for j in 0..a.len() {
                                 vec.push(if i == j {
                                     Number::from(Complex::with_val(a[0][0].number.prec(), 1), None)
@@ -510,7 +510,7 @@ pub fn not(a: &NumStr) -> Result<NumStr, &'static str> {
             )))
         }
         Vector(v) => {
-            let mut o = Vec::with_capacity(v.len());
+            let mut o = Vec::with_capacity(v.len().max(1));
             for a in v {
                 o.push(Number::from(
                     Complex::with_val(a.number.prec(), a.number.is_zero() && a.number.real() != &1),
@@ -520,9 +520,9 @@ pub fn not(a: &NumStr) -> Result<NumStr, &'static str> {
             Ok(Vector(o))
         }
         Matrix(m) => {
-            let mut k = Vec::with_capacity(m.len());
+            let mut k = Vec::with_capacity(m.len().max(1));
             for v in m {
-                let mut o = Vec::with_capacity(v.len());
+                let mut o = Vec::with_capacity(v.len().max(1));
                 for a in v {
                     o.push(Number::from(
                         Complex::with_val(
@@ -1237,28 +1237,28 @@ pub fn mvec(
             Num(n) => {
                 if test && vec.is_empty() {
                     test = false;
-                    vec = Vec::with_capacity((end - start + 1) as usize)
+                    vec = Vec::with_capacity((end - start + 1).max(1) as usize)
                 }
                 vec.push(*n)
             }
             Vector(v) if mvec => {
                 if test && vec.is_empty() {
                     test = false;
-                    vec = Vec::with_capacity((end - start + 1) as usize * v.len())
+                    vec = Vec::with_capacity((end - start + 1).max(1) as usize * v.len())
                 }
                 vec.extend(v)
             }
             Vector(v) => {
                 if test && mat.is_empty() {
                     test = false;
-                    mat = Vec::with_capacity((end - start + 1) as usize)
+                    mat = Vec::with_capacity((end - start + 1).max(1) as usize)
                 }
                 mat.push(v)
             }
             Matrix(m) if !mvec => {
                 if test && mat.is_empty() {
                     test = false;
-                    mat = Vec::with_capacity((end - start + 1) as usize * m.len())
+                    mat = Vec::with_capacity((end - start + 1).max(1) as usize * m.len().max(1))
                 }
                 mat.extend(m)
             }
@@ -1398,9 +1398,9 @@ pub fn trace(a: &[Vec<Number>]) -> Number {
     Number::from(n, a[0][0].units)
 }
 pub fn identity(a: usize, prec: u32) -> Vec<Vec<Number>> {
-    let mut mat = Vec::with_capacity(a);
+    let mut mat = Vec::with_capacity(a.max(1));
     for i in 0..a {
-        let mut vec = Vec::with_capacity(a);
+        let mut vec = Vec::with_capacity(a.max(1));
         for j in 0..a {
             if i == j {
                 vec.push(Number::from(Complex::with_val(prec, 1), None));
@@ -4647,7 +4647,7 @@ pub fn slope(
                 }
             }
             (Vector(left), Vector(right)) => {
-                let mut vec = Vec::with_capacity(left.len());
+                let mut vec = Vec::with_capacity(left.len().max(1));
                 for (left, right) in left.iter().zip(right) {
                     vec.push({
                         let units = left.units;
@@ -5261,7 +5261,7 @@ pub fn limit(
             }
             (Vector(v1), Vector(v2)) => {
                 let mut v3: Vec<Number> = Vec::new();
-                let mut vec = Vec::with_capacity(v1.len());
+                let mut vec = Vec::with_capacity(v1.len().max(1));
                 for (i, (n1, n2)) in v1.iter().zip(v2).enumerate() {
                     let units = n1.units;
                     let n1 = n1.number.clone();
@@ -5550,7 +5550,7 @@ pub fn limit(
                         }
                     }
                     (Vector(left), Vector(right)) => {
-                        let mut vec = Vec::with_capacity(left.len());
+                        let mut vec = Vec::with_capacity(left.len().max(1));
                         for (left, right) in left.iter().zip(right) {
                             let units = left.units;
                             let left = &left.number;
@@ -5752,7 +5752,7 @@ fn limsided(
         }
         (Vector(n1), Vector(n2)) => {
             let mut n3: Vec<Number> = Vec::new();
-            let mut vec = Vec::with_capacity(n1.len());
+            let mut vec = Vec::with_capacity(n1.len().max(1));
             for (i, (n1, n2)) in n1.iter().zip(n2).enumerate() {
                 let units = n1.units;
                 let n1 = &n1.number;

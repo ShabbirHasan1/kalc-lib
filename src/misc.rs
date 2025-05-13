@@ -963,7 +963,7 @@ pub fn get_word_bank(word: &str, vars: &[Variable], options: Options) -> Vec<Str
                 .iter(),
             )
             .filter_map(|f| {
-                (f.starts_with(&word)
+                (f.starts_with(word)
                     && !bank
                         .iter()
                         .any(|b| b.contains('(') && b.split('(').next() == f.split('(').next()))

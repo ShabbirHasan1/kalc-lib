@@ -977,7 +977,7 @@ pub fn do_math(
                             }
                             "sort" => Matrix(sort_mat(a, options.prec)),
                             "max" => {
-                                let mut vec = Vec::with_capacity(a.len());
+                                let mut vec = Vec::with_capacity(a.len().max(1));
                                 for j in a {
                                     let mut max = j[0].clone();
                                     for i in j {
@@ -990,7 +990,7 @@ pub fn do_math(
                                 Vector(vec)
                             }
                             "min" => {
-                                let mut vec = Vec::with_capacity(a.len());
+                                let mut vec = Vec::with_capacity(a.len().max(1));
                                 for j in a {
                                     let mut min = j[0].clone();
                                     for i in j {
@@ -1058,7 +1058,7 @@ pub fn do_math(
                                             let getcol = n1 == -1;
                                             let n1 = n1.to_usize().unwrap_or_default();
                                             if getcol {
-                                                let mut mat = Vec::with_capacity(c.len());
+                                                let mut mat = Vec::with_capacity(c.len().max(1));
                                                 for n in c {
                                                     let n = n
                                                         .number
@@ -1080,7 +1080,7 @@ pub fn do_math(
                                                 }
                                                 Matrix(transpose(&mat))
                                             } else {
-                                                let mut vec = Vec::with_capacity(c.len());
+                                                let mut vec = Vec::with_capacity(c.len().max(1));
                                                 for n in c {
                                                     let n2 = n
                                                         .number
@@ -1108,7 +1108,7 @@ pub fn do_math(
                                                 .unwrap_or_default()
                                                 .to_usize()
                                                 .unwrap_or_default();
-                                            let mut vec = Vec::with_capacity(b.len());
+                                            let mut vec = Vec::with_capacity(b.len().max(1));
                                             for n in b {
                                                 let n1 = n
                                                     .number
@@ -1127,9 +1127,9 @@ pub fn do_math(
                                             Vector(vec)
                                         }
                                         (Vector(b), Vector(c)) => {
-                                            let mut mat = Vec::with_capacity(b.len());
+                                            let mut mat = Vec::with_capacity(b.len().max(1));
                                             for g in b {
-                                                let mut vec = Vec::with_capacity(c.len());
+                                                let mut vec = Vec::with_capacity(c.len().max(1));
                                                 let n1 = g
                                                     .number
                                                     .clone()
@@ -1177,7 +1177,7 @@ pub fn do_math(
                                             }
                                         }
                                         Vector(b) => {
-                                            let mut vec = Vec::with_capacity(b.len());
+                                            let mut vec = Vec::with_capacity(b.len().max(1));
                                             for i in b {
                                                 let n = i
                                                     .number
@@ -1224,7 +1224,7 @@ pub fn do_math(
                                 a[0][0].units,
                             )),
                             "mode" => {
-                                let mut most = (Vec::with_capacity(a.len()), 0);
+                                let mut most = (Vec::with_capacity(a.len().max(1)), 0);
                                 for i in a.iter().flatten() {
                                     let mut count = 0;
                                     for j in a.iter().flatten() {
