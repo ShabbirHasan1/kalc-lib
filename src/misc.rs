@@ -1,3 +1,4 @@
+use crate::functions::{functions_with_args, options_list, units_list};
 use crate::{
     complex::{
         NumStr,
@@ -939,4 +940,37 @@ pub fn insert_last(input: &[char], last: &str) -> String {
         }
     }
     output
+}
+pub fn get_word_bank(word: &str, vars: &[Variable], options: Options) -> Vec<String> {
+    let mut bank: Vec<String> = vars
+        .iter()
+        .filter_map(|v| {
+            v.name
+                .starts_with(&word.chars().collect::<Vec<char>>()[..])
+                .then_some(v.name.iter().collect())
+        })
+        .collect();
+    bank.extend(
+        functions_with_args()
+            .iter()
+            .chain(options_list().iter())
+            .chain(
+                if options.units {
+                    units_list()
+                } else {
+                    Default::default()
+                }
+                .iter(),
+            )
+            .filter_map(|f| {
+                (f.starts_with(&word)
+                    && !bank
+                        .iter()
+                        .any(|b| b.contains('(') && b.split('(').next() == f.split('(').next()))
+                .then_some(f.to_string())
+            })
+            .collect::<Vec<String>>(),
+    );
+    bank.sort_unstable();
+    bank
 }
