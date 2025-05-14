@@ -182,7 +182,7 @@ pub fn input_var(
             match output.last() {
                 Some(Num(_)) | Some(Vector(_)) | Some(Matrix(_)) => output.push(Exponent),
                 Some(Func(s))
-                    if matches!(s.as_str(), "x" | "y" | "rnd" | "rand" | "epoch")
+                    if matches!(s.as_str(), "x" | "y" | "w" | "rnd" | "rand" | "epoch")
                         || sumrec.iter().any(|v| &v.1 == s) =>
                 {
                     output.push(Exponent)
@@ -1100,6 +1100,7 @@ pub fn input_var(
                     && !word.ends_with("henry")
                     && !word.ends_with("Gy")
                     && !word.ends_with("gray"))
+                || (word.ends_with('w') && word != "pw" && word != "lambertw" && word != "skew")
                 || (word.ends_with('z')
                     && !word.ends_with("Hz")
                     && !word.ends_with("hertz")
@@ -1350,7 +1351,7 @@ pub fn input_var(
                 && i + countv < chars.len()
                 && (matches!(
                     chars[i + countv],
-                    'x' | 'y' | 'z' | '(' | '|' | '{' | '0'..='9' | '⁻' | '*' | '\'' | '`'
+                    'x' | 'y' | 'w' | 'z' | '(' | '|' | '{' | '0'..='9' | '⁻' | '*' | '\'' | '`'
                 ) || (chars[i + countv] == '^' && chars[i] != 'C' && countv != 1)))
                 || matches!(
                     word.to_ascii_lowercase().as_str(),
@@ -1767,10 +1768,19 @@ pub fn input_var(
                                                     graph.graph = true;
                                                     graph.y = true;
                                                     sumvar = Some(s.clone());
-                                                } else if !(s == "x" || s == "y")
+                                                } else if s != "y"
+                                                    && s != "x"
+                                                    && s != "w"
+                                                    && sumvar == Some("w".to_string())
+                                                {
+                                                    graph.graph = true;
+                                                    graph.w = true;
+                                                    sumvar = Some(s.clone());
+                                                } else if !(s == "x" || s == "y" || s == "w")
                                                     || sumvar.is_none()
                                                     || sumvar == Some("y".to_string())
                                                     || sumvar == Some("x".to_string())
+                                                    || sumvar == Some("w".to_string())
                                                 {
                                                     sumvar = Some(s.clone());
                                                 } else if s == "y" {
@@ -1779,6 +1789,9 @@ pub fn input_var(
                                                 } else if s == "x" {
                                                     graph.graph = true;
                                                     graph.x = true;
+                                                } else if s == "w" {
+                                                    graph.graph = true;
+                                                    graph.w = true;
                                                 }
                                             } else if collectvars[0].0 < 0 {
                                                 sumvar = Some(s)
@@ -1798,6 +1811,7 @@ pub fn input_var(
                                                         || matches!(
                                                             s.as_str(),
                                                             "x" | "y"
+                                                                | "w"
                                                                 | "rnd"
                                                                 | "rand"
                                                                 | "epoch"
@@ -1816,6 +1830,7 @@ pub fn input_var(
                                                             || matches!(
                                                                 s.as_str(),
                                                                 "x" | "y"
+                                                                    | "w"
                                                                     | "rnd"
                                                                     | "rand"
                                                                     | "epoch"
@@ -2100,10 +2115,19 @@ pub fn input_var(
                                                 graph.graph = true;
                                                 graph.y = true;
                                                 sumvar = Some(s.clone());
-                                            } else if !(s == "x" || s == "y")
+                                            } else if s != "y"
+                                                && s != "x"
+                                                && s != "w"
+                                                && sumvar == Some("w".to_string())
+                                            {
+                                                graph.graph = true;
+                                                graph.w = true;
+                                                sumvar = Some(s.clone());
+                                            } else if !(s == "x" || s == "y" || s == "w")
                                                 || sumvar.is_none()
                                                 || sumvar == Some("y".to_string())
                                                 || sumvar == Some("x".to_string())
+                                                || sumvar == Some("w".to_string())
                                             {
                                                 sumvar = Some(s.clone());
                                             } else if s == "y" {
@@ -2112,6 +2136,9 @@ pub fn input_var(
                                             } else if s == "x" {
                                                 graph.graph = true;
                                                 graph.x = true;
+                                            } else if s == "w" {
+                                                graph.graph = true;
+                                                graph.w = true;
                                             }
                                         } else if collectvars[0].0 < 0 {
                                             sumvar = Some(s)
@@ -2131,6 +2158,7 @@ pub fn input_var(
                                                     || matches!(
                                                         s.as_str(),
                                                         "x" | "y"
+                                                            | "w"
                                                             | "rnd"
                                                             | "rand"
                                                             | "epoch"
@@ -2149,6 +2177,7 @@ pub fn input_var(
                                                         || matches!(
                                                             s.as_str(),
                                                             "x" | "y"
+                                                                | "w"
                                                                 | "rnd"
                                                                 | "rand"
                                                                 | "epoch"
@@ -2429,9 +2458,9 @@ pub fn input_var(
             }
             if (i == 0 || chars[i - 1] != ' ' || c != ' ')
                 && (if options.notation == SmallEngineering {
-                    matches!(c, 'x' | 'y' | 'z' | 'i' | 'e')
+                    matches!(c, 'x' | 'y' | 'w' | 'z' | 'i' | 'e')
                 } else {
-                    matches!(c, 'x' | 'y' | 'z' | 'i' | 'E')
+                    matches!(c, 'x' | 'y' | 'w' | 'z' | 'i' | 'E')
                 } || !c.is_alphabetic())
                 && (solvesn == 0 || c == 'i' || {
                     let a = chars[i..]
@@ -2454,11 +2483,17 @@ pub fn input_var(
                             || (options.notation != SmallEngineering && c == 'E') =>
                     {
                         if let Some(last) = output.last() {
-                            if last.num().is_ok() || last.str_is("x") || last.str_is("y") {
+                            if last.num().is_ok()
+                                || last.str_is("x")
+                                || last.str_is("y")
+                                || last.str_is("w")
+                            {
                                 output.insert(output.len().saturating_sub(1), LeftBracket);
                                 if i + 1 != chars.len()
-                                    && (matches!(chars[i + 1], '-' | '+' | 'x' | 'y' | 'z' | 'i')
-                                        || is_digit(chars[i + 1], options.base.0))
+                                    && (matches!(
+                                        chars[i + 1],
+                                        '-' | '+' | 'x' | 'y' | 'w' | 'z' | 'i'
+                                    ) || is_digit(chars[i + 1], options.base.0))
                                 {
                                     scientific = true;
                                 }
@@ -2477,19 +2512,24 @@ pub fn input_var(
                             output.push(Exponent);
                         }
                         if !(i + 1 != chars.len()
-                            && (matches!(chars[i + 1], '-' | '+' | 'x' | 'y' | 'z' | 'i')
+                            && (matches!(chars[i + 1], '-' | '+' | 'x' | 'y' | 'w' | 'z' | 'i')
                                 || is_digit(chars[i + 1], options.base.0)))
                         {
                             output.push(RightBracket);
                         }
                     }
-                    'x' | 'y' if collectvars.is_empty() && options.graphtype != GraphType::None => {
+                    'x' | 'y' | 'w'
+                        if collectvars.is_empty() && options.graphtype != GraphType::None =>
+                    {
                         graph.graph = true;
                         if c == 'x' {
                             graph.x = true
                         }
                         if c == 'y' {
                             graph.y = true
+                        }
+                        if c == 'y' {
+                            graph.w = true
                         }
                         place_multiplier(&mut output, sumrec, &sumvar);
                         output.push(Func(c.to_string()));
@@ -2643,10 +2683,19 @@ pub fn input_var(
                         graph.graph = true;
                         graph.y = true;
                         sumvar = Some(word.clone());
-                    } else if !(word == "x" || word == "y")
+                    } else if word != "y"
+                        && word != "x"
+                        && word != "w"
+                        && sumvar == Some("w".to_string())
+                    {
+                        graph.graph = true;
+                        graph.w = true;
+                        sumvar = Some(word.clone());
+                    } else if !(word == "x" || word == "y" || word == "w")
                         || sumvar.is_none()
                         || sumvar == Some("y".to_string())
                         || sumvar == Some("x".to_string())
+                        || sumvar == Some("w".to_string())
                     {
                         sumvar = Some(word.clone());
                     } else if word == "y" {
@@ -2655,6 +2704,9 @@ pub fn input_var(
                     } else if word == "x" {
                         graph.graph = true;
                         graph.x = true;
+                    } else if word == "w" {
+                        graph.graph = true;
+                        graph.w = true;
                     }
                 }
                 place_multiplier(&mut output, sumrec, &sumvar);
@@ -2741,7 +2793,7 @@ pub fn input_var(
         match output.last() {
             Some(Num(_)) | Some(Vector(_)) | Some(Matrix(_)) => output.push(Exponent),
             Some(Func(s))
-                if matches!(s.as_str(), "x" | "y" | "rnd" | "rand" | "epoch")
+                if matches!(s.as_str(), "x" | "y" | "w" | "rnd" | "rand" | "epoch")
                     || sumrec.iter().any(|v| &v.1 == s) =>
             {
                 output.push(Exponent)
@@ -3006,7 +3058,7 @@ fn place_multiplier(output: &mut Vec<NumStr>, sumrec: &[(isize, String)], sumvar
     match output.last() {
         Some(RightCurlyBracket) | Some(RightBracket) => output.push(Multiplication),
         Some(Func(s))
-            if matches!(s.as_str(), "x" | "y" | "rnd" | "rand" | "epoch" | "@")
+            if matches!(s.as_str(), "x" | "y" | "w" | "rnd" | "rand" | "epoch" | "@")
                 || sumrec
                     .iter()
                     .any(|a| a.1 == *s || "@".to_owned() + &a.1 == *s)
@@ -3040,8 +3092,10 @@ pub fn simplify(
         if !v.0.ends_with(')')
             && v.1.iter().all(|v| {
                 if let Func(s) = &v {
-                    !(matches!(s.as_str(), "x" | "y" | "rnd" | "rand" | "epoch" | "roll")
-                        || s.starts_with("rand_"))
+                    !(matches!(
+                        s.as_str(),
+                        "x" | "y" | "w" | "rnd" | "rand" | "epoch" | "roll"
+                    ) || s.starts_with("rand_"))
                 } else {
                     true
                 }
@@ -3121,7 +3175,10 @@ pub fn simplify(
             Func(s)
                 if s.starts_with("rand_")
                     || funcvars.iter().any(|a| a.0 == *s)
-                    || matches!(s.as_str(), "x" | "y" | "roll" | "rnd" | "rand" | "epoch") =>
+                    || matches!(
+                        s.as_str(),
+                        "x" | "y" | "w" | "roll" | "rnd" | "rand" | "epoch"
+                    ) =>
             {
                 to.clear();
             }

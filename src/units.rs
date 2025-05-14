@@ -140,6 +140,7 @@ pub struct HowGraphing {
     pub graph: bool,
     pub x: bool,
     pub y: bool,
+    pub w: bool,
 }
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fractions {
