@@ -73,6 +73,16 @@ impl Number {
     pub fn set_prec(&mut self, prec: u32) {
         self.number.set_prec(prec)
     }
+    pub fn from_f64(f: f64, opt: &Options) -> Number {
+        let number = Complex::with_val(opt.prec, f);
+        let units = None;
+        Self { number, units }
+    }
+    pub fn new(opt: &Options) -> Number {
+        let number = Complex::new(opt.prec);
+        let units = None;
+        Self { number, units }
+    }
 }
 pub fn add(a: &Number, b: &Number) -> Number {
     Number::from(
