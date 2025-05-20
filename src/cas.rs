@@ -8,7 +8,7 @@ use crate::{
     units::{Number, Options},
 };
 use rug::Complex;
-fn place<'a>(func: &'a [NumStr], target: &'a NumStr) -> Vec<&'a [NumStr]> {
+fn place<'a>(func: &'a [NumStr], target: &'a NumStr, once: bool) -> Vec<&'a [NumStr]> {
     let mut b = 0;
     let mut l = 0;
     let mut vec = Vec::new();
@@ -19,6 +19,10 @@ fn place<'a>(func: &'a [NumStr], target: &'a NumStr) -> Vec<&'a [NumStr]> {
             _ if b == 0 && n == target => {
                 vec.push(&func[l..i]);
                 l = i + 1;
+                if once {
+                    vec.push(&func[l..]);
+                    return vec;
+                }
             }
             _ => {}
         }
@@ -102,7 +106,7 @@ fn get_polynomial(
     }
     let zero = || Complex::new(options.prec);
     let mut arr = [zero(), zero(), zero(), zero(), zero()];
-    let list = place(func, &Plus);
+    let list = place(func, &Plus, false);
     let is_empty = list.is_empty();
     for p in list {
         poly_add(options, var.clone(), &mut arr, p)?;
@@ -110,28 +114,24 @@ fn get_polynomial(
     if !is_empty {
         return Ok(arr);
     }
-    let list = place(func, &Minus);
+    let list = place(func, &Minus, false);
     let is_empty = list.is_empty();
     for (k, p) in list.into_iter().enumerate() {
         if k == 0 {
-            poly_add(options, var.clone(), &mut arr, p)?;
+            arr = get_polynomial(p, options, var.clone())?;
             continue;
         }
         if is_constant(p, var.clone()) {
             arr[0] -= do_math(p.to_vec(), *options, Vec::new())?.num()?.number
         } else {
-            let [a, b, c, d, e] = get_polynomial(p, options, var.clone())?;
-            arr[0] -= a;
-            arr[1] -= b;
-            arr[2] -= c;
-            arr[3] -= d;
-            arr[4] -= e;
+            let q = get_polynomial(p, options, var.clone())?;
+            arr.iter_mut().zip(q.into_iter()).for_each(|(a, b)| *a -= b);
         }
     }
     if !is_empty {
         return Ok(arr);
     }
-    let list = place(func, &Multiplication);
+    let list = place(func, &Multiplication, false);
     let is_empty = list.is_empty();
     if !is_empty {
         arr[0] += 1;
@@ -142,14 +142,11 @@ fn get_polynomial(
     if !is_empty {
         return Ok(arr);
     }
-    let list = place(func, &Division);
+    let list = place(func, &Division, false);
     let is_empty = list.is_empty();
-    if !is_empty {
-        arr[0] += 1;
-    }
     for (k, p) in list.into_iter().enumerate() {
         if k == 0 {
-            poly_mul(options, var.clone(), &mut arr, p)?;
+            arr = get_polynomial(p, options, var.clone())?;
             continue;
         }
         if is_constant(p, var.clone()) {
@@ -164,24 +161,40 @@ fn get_polynomial(
     if !is_empty {
         return Ok(arr);
     }
+    let mut list = place(func, &Exponent, true);
+    let is_empty = list.is_empty();
+    if !is_empty {
+        let p = list.remove(0);
+        let p = get_polynomial(p, options, var.clone())?;
+        let k = do_math(list.remove(0).to_vec(), *options, Vec::new())?
+            .num()?
+            .number
+            .into_real_imag()
+            .0
+            .to_integer()
+            .unwrap_or_default();
+        arr = p.clone();
+        if k > 0 {
+            let mut i = rug::Integer::from(1);
+            while i < k {
+                poly_mult(&mut arr, &p)?;
+                i += 1;
+            }
+        }
+    }
+    if !is_empty {
+        return Ok(arr);
+    }
     if func[0] == Func(var) {
         arr[1] += 1
     }
     Ok(arr)
 }
-fn poly_mult(arr: &mut [Complex; 5], p: [Complex; 5]) -> Result<(), &'static str> {
+fn poly_mult(arr: &mut [Complex; 5], p: &[Complex; 5]) -> Result<(), &'static str> {
     let prec = p[0].prec();
-    let q = std::mem::replace(
-        arr,
-        [
-            Complex::new(prec),
-            Complex::new(prec),
-            Complex::new(prec),
-            Complex::new(prec),
-            Complex::new(prec),
-        ],
-    );
-    for (j, b) in p.into_iter().enumerate() {
+    let zero = || Complex::new(prec);
+    let q = std::mem::replace(arr, [zero(), zero(), zero(), zero(), zero()]);
+    for (j, b) in p.iter().enumerate() {
         if b.is_zero() {
             continue;
         }
@@ -209,7 +222,7 @@ fn poly_mul(
         }
     } else {
         let p = get_polynomial(p, options, var.clone())?;
-        poly_mult(arr, p)?
+        poly_mult(arr, &p)?
     }
     Ok(())
 }
@@ -222,12 +235,8 @@ fn poly_add(
     if is_constant(p, var.clone()) {
         arr[0] += do_math(p.to_vec(), *options, Vec::new())?.num()?.number
     } else {
-        let [a, b, c, d, e] = get_polynomial(p, options, var.clone())?;
-        arr[0] += a;
-        arr[1] += b;
-        arr[2] += c;
-        arr[3] += d;
-        arr[4] += e;
+        let q = get_polynomial(p, options, var.clone())?;
+        arr.iter_mut().zip(q.iter()).for_each(|(a, b)| *a += b);
     }
     Ok(())
 }
@@ -253,7 +262,7 @@ fn isolate_inner(
         return Ok(v);
     }
     let mut v = Vec::new();
-    let list = place(func, &Plus);
+    let list = place(func, &Plus, false);
     let mut some = false;
     let empty = list.is_empty();
     for p in list {

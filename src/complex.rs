@@ -2249,6 +2249,20 @@ pub fn quartic(div: Number, b: Number, c: Number, d: Number, e: Number, real: bo
     let b = c / div.clone();
     let c = d / div.clone();
     let d = e / div;
+    if a.is_zero() && b.is_zero() && c.is_zero() {
+        if d.is_zero() {
+            return vec![Number::from(Complex::new(prec), None)];
+        } else {
+            let a = Complex::with_val(prec, 1) / 4;
+            let mut a: Complex = (-d).pow(a);
+            let mut v = vec![a.clone()];
+            for _ in 0..3 {
+                a = a.mul_i(false);
+                v.push(a.clone());
+            }
+            return v.into_iter().map(|a| Number::from(a, None)).collect();
+        }
+    }
     // https://upload.wikimedia.org/wikipedia/commons/9/99/Quartic_Formula.svg
     let alpha: Complex = sqr(b.clone()) - 3 * a.clone() * c.clone() + 12 * d.clone();
     let phi: Complex = 2 * cube(b.clone()) - 9 * a.clone() * b.clone() * c.clone()
