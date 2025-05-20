@@ -1152,6 +1152,7 @@ pub fn input_var(
                 | "lim"
                 | "set"
                 | "limit"
+                | "isolate"
         ) && chars.len() > i + countv + 1
             && var_overrule
             && chars[i + countv] == '('
@@ -1176,7 +1177,7 @@ pub fn input_var(
                     place >= 3
                 }
                 "sarea" | "surfacearea" => place >= 6,
-                "solve" | "extrema" => place >= 1,
+                "solve" | "extrema" | "isolate" => place >= 1,
                 "D" | "slope" | "lim" | "limit" | "set" => place >= 2,
                 _ => place > 0,
             } {

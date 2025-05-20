@@ -1,3 +1,4 @@
+pub mod cas;
 pub mod complex;
 pub mod fraction;
 pub mod functions;

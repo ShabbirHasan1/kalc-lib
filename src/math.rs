@@ -1,3 +1,4 @@
+use crate::cas::isolate;
 use crate::{
     complex::{
         LimSide::{Both, Left, Right},
@@ -310,6 +311,7 @@ pub fn do_math(
                                 | "lim"
                                 | "limit"
                                 | "set"
+                                | "isolate"
                         ) {
                             i = j - 1;
                             continue;
@@ -389,6 +391,7 @@ pub fn do_math(
                         | "lim"
                         | "limit"
                         | "set"
+                        | "isolate"
                 ) {
                     let mut place = Vec::new();
                     let mut count = 0;
@@ -641,6 +644,15 @@ pub fn do_math(
                                     Complex::with_val(options.prec, 1)
                                 },
                                 place.len() != 6,
+                            )?;
+                            function.drain(i + 1..=*place.last().unwrap());
+                        }
+                        ("isolate", Func(var)) if place.len() == 2 => {
+                            function[i] = isolate(
+                                &function[place[0] + 1..place[1]],
+                                func_vars.clone(),
+                                options,
+                                var.to_string(),
                             )?;
                             function.drain(i + 1..=*place.last().unwrap());
                         }

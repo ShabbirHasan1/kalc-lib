@@ -530,6 +530,7 @@ pub fn place_funcvarxy(
                                 | "mat" | "D" | "integrate" | "arclength" | "∫" | "area"
                                 | "surfacearea" | "sarea" | "solve" | "length" | "slope"
                                 | "lim" | "set" | "limit" | "iter" | "extrema" | "taylor"
+                                | "isolate"
                                     if j + 2 < i.1.len()
                                         && if let Func(s) = &i.1[j + 2] {
                                             matches!(s.as_str(), "x" | "y")
@@ -598,7 +599,7 @@ pub fn place_varxy(mut func: Vec<NumStr>, num: NumStr) -> Vec<NumStr> {
                         "sum" | "summation" | "prod" | "product" | "Σ" | "Π" | "vec" | "mat"
                         | "D" | "integrate" | "arclength" | "∫" | "area" | "surfacearea"
                         | "sarea" | "solve" | "length" | "slope" | "lim" | "limit" | "set"
-                        | "iter" | "extrema" | "taylor"
+                        | "iter" | "extrema" | "taylor" | "isolate"
                             if i + 2 < func.len()
                                 && if let Func(s) = &func[i + 2] {
                                     matches!(s.as_str(), "x" | "y")
@@ -673,7 +674,7 @@ pub fn place_funcvar(
                                     | "vec" | "mat" | "D" | "integrate" | "arclength" | "∫"
                                     | "area" | "solve" | "length" | "slope" | "lim" | "limit"
                                     | "set" | "iter" | "extrema" | "surfacearea" | "sarea"
-                                    | "taylor"
+                                    | "taylor" | "isolate"
                                         if j + 2 < i.1.len()
                                             && i.1[j + 2] == Func(var.to_string()) =>
                                     {
@@ -720,7 +721,7 @@ pub fn place_var(mut func: Vec<NumStr>, var: &str, num: NumStr) -> Vec<NumStr> {
                             "sum" | "summation" | "prod" | "product" | "Σ" | "Π" | "vec"
                             | "mat" | "D" | "integrate" | "arclength" | "∫" | "area" | "solve"
                             | "length" | "slope" | "lim" | "set" | "limit" | "iter" | "extrema"
-                            | "surfacearea" | "sarea" | "taylor"
+                            | "surfacearea" | "sarea" | "taylor" | "isolate"
                                 if i + 2 < func.len() && func[i + 2] == Func(var.to_string()) =>
                             {
                                 i += 3;
