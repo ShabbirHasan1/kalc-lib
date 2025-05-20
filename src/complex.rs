@@ -2133,8 +2133,8 @@ pub fn cubic(a: Number, b: Number, c: Number, d: Number, real: bool) -> Vec<Numb
     if b.is_zero() && c.is_zero() {
         let reuse = pow_nth(d / a.clone(), threerecip.clone().into());
         let mut z1 = -reuse.clone();
-        let mut z2 = reuse.clone() * Float::with_val(prec.0, -1).pow(threerecip.clone());
-        let mut z3: Complex = -reuse * Float::with_val(prec.0, -1).pow(2 * threerecip);
+        let mut z2 = reuse.clone() * Complex::with_val(prec.0, -1).pow(threerecip.clone());
+        let mut z3: Complex = -reuse * Complex::with_val(prec.0, -1).pow(2 * threerecip);
         if -z1.imag().clone().abs().log10() > a.prec().0 / 4 {
             z1 = z1.real().clone().into();
         }
