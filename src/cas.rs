@@ -1,15 +1,16 @@
 use crate::complex::{NumStr, cubic, quadratic, quartic};
 use crate::{
     complex::NumStr::{
-        Comma, Division, Exponent, Func, LeftBracket, LeftCurlyBracket, Minus, Multiplication, Num,
-        Plus, RightBracket, RightCurlyBracket,
+        Comma, Division, Exponent, Func, InternalMultiplication, LeftBracket, LeftCurlyBracket,
+        Minus, Multiplication, Num, Plus, RightBracket, RightCurlyBracket,
     },
     math::do_math,
     units::{Number, Options},
 };
 use rug::Complex;
+use std::cmp::Ordering;
 use std::ops::{AddAssign, DivAssign, MulAssign, SubAssign};
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct Polynomial {
     quotient: Vec<Complex>,
     divisor: Vec<Complex>,
@@ -155,24 +156,30 @@ impl Polynomial {
             self.quotient.pop();
         }
     }
-    fn compute(mut self) -> Result<Vec<Complex>, &'static str> {
-        fn last_non_zero(a: &[Complex]) -> Result<usize, &'static str> {
+    fn degree(&self) -> (Option<usize>, Option<usize>) {
+        fn last_non_zero(a: &[Complex]) -> Option<usize> {
             if a.is_empty() {
-                Err("zero polynomial")
+                None
             } else {
-                Ok(a.len() - 1)
+                Some(a.len() - 1)
             }
         }
-        let d_div = last_non_zero(&self.divisor)?;
+        (last_non_zero(&self.quotient), last_non_zero(&self.divisor))
+    }
+    fn div_checked(mut self) -> Result<(Vec<Complex>, Option<Vec<Complex>>), &'static str> {
+        let (d_rem, Some(d_div)) = self.degree() else {
+            return Err("zero divisor");
+        };
         if d_div == 0 {
-            return Ok(self.quotient);
+            return Ok((self.quotient, None));
         }
         let lead_div = self.divisor[d_div].clone();
-        let mut d_rem = match last_non_zero(&self.quotient) {
-            Ok(d) => d,
-            Err(_) => return Ok(Vec::new()),
+        let mut d_rem = match d_rem {
+            Some(d) => d,
+            None => return Ok((Vec::new(), None)),
         };
-        let mut quotient = vec![Complex::new(self.quotient[0].prec()); d_rem - d_div + 1];
+        let mut quotient =
+            vec![Complex::new(self.quotient[0].prec()); (d_rem + 1).saturating_sub(d_div)];
         while d_rem >= d_div {
             let shift = d_rem - d_div;
             let coeff = self.quotient[d_rem].clone() / lead_div.clone();
@@ -182,14 +189,27 @@ impl Polynomial {
             self.quotient.pop();
             self.simplify();
             quotient[shift] = coeff;
-            d_rem = match last_non_zero(&self.quotient) {
-                Ok(d) => d,
-                Err(_) => {
-                    return Ok(quotient);
+            d_rem = match self.degree().0 {
+                Some(d) => d,
+                None => {
+                    return Ok((quotient, None));
                 }
             };
         }
-        Ok(quotient)
+        Ok((self.divisor, Some(self.quotient)))
+    }
+    fn gcd(mut self) -> Result<Vec<Complex>, &'static str> {
+        let mut d = self.divisor.clone();
+        while let Ok((_, Some(r))) = std::mem::take(&mut self).div_checked() {
+            self.quotient = d;
+            self.divisor = r.clone();
+            d = r;
+        }
+        Ok(d)
+    }
+    fn compute(mut self) -> Result<Vec<Complex>, &'static str> {
+        self.divisor = self.clone().gcd()?;
+        Ok(self.div_checked()?.0)
     }
     fn get_polynomial(
         func: &[NumStr],
@@ -200,10 +220,15 @@ impl Polynomial {
             return Self::get_polynomial(&func[1..func.len() - 1], options, var);
         }
         let mut arr = Polynomial::new(options.prec);
+        if is_constant(func, var.clone()) {
+            arr.quotient
+                .push(do_math(func.to_vec(), *options, Vec::new())?.num()?.number);
+            return Ok(arr);
+        }
         if func == vec![Func(var.clone())] {
             arr.quotient.push(Complex::new(options.prec));
             arr.quotient.push(Complex::with_val(options.prec, 1));
-            return Ok(arr)
+            return Ok(arr);
         }
         let list = place(func, &Plus, false);
         let is_empty = list.is_empty();
@@ -249,7 +274,11 @@ impl Polynomial {
                 continue;
             }
             if is_constant(p, var.clone()) {
-                arr /= do_math(p.to_vec(), *options, Vec::new())?.num()?.number
+                let d = do_math(p.to_vec(), *options, Vec::new())?.num()?.number;
+                if d.is_zero() {
+                    return Err("zero divisor");
+                }
+                arr /= d
             } else {
                 let p = Self::get_polynomial(p, options, var.clone())?;
                 arr /= p;
@@ -270,12 +299,27 @@ impl Polynomial {
                 .0
                 .to_integer()
                 .unwrap_or_default();
-            arr = p.clone();
-            if k > 0 {
-                let mut i = rug::Integer::from(1);
-                while i < k {
-                    arr *= &p;
-                    i += 1;
+            match k.cmp0() {
+                Ordering::Less => {
+                    let mut i = rug::Integer::from(1);
+                    let k = -k;
+                    arr = p.clone();
+                    while i < k {
+                        arr *= &p;
+                        i += 1;
+                    }
+                    arr = arr.recip();
+                }
+                Ordering::Equal => {
+                    arr.quotient.push(Complex::with_val(options.prec, 1));
+                }
+                Ordering::Greater => {
+                    arr = p.clone();
+                    let mut i = rug::Integer::from(1);
+                    while i < k {
+                        arr *= &p;
+                        i += 1;
+                    }
                 }
             }
         }
@@ -331,7 +375,14 @@ fn is_constant(func: &[NumStr], var: String) -> bool {
 fn is_poly(func: &[NumStr], var: &str) -> bool {
     func.iter().all(|f| match f {
         Func(a) => a == var,
-        Num(_) | Plus | Multiplication | Minus | Division | Exponent | LeftBracket
+        Num(_)
+        | Plus
+        | Multiplication
+        | InternalMultiplication
+        | Minus
+        | Division
+        | Exponent
+        | LeftBracket
         | RightBracket => true,
         _ => false,
     })
