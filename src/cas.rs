@@ -329,49 +329,6 @@ impl Polynomial {
         Ok(arr)
     }
 }
-fn place<'a>(func: &'a [NumStr], target: &'a NumStr, once: bool) -> Vec<&'a [NumStr]> {
-    let mut b = 0;
-    let mut l = 0;
-    let mut vec = Vec::new();
-    for (i, n) in func.iter().enumerate() {
-        match n {
-            LeftBracket | LeftCurlyBracket => b += 1,
-            RightBracket | RightCurlyBracket => b -= 1,
-            _ if b == 0 && n == target => {
-                vec.push(&func[l..i]);
-                l = i + 1;
-                if once {
-                    vec.push(&func[l..]);
-                    return vec;
-                }
-            }
-            _ => {}
-        }
-    }
-    if l != 0 {
-        vec.push(&func[l..]);
-    }
-    vec
-}
-fn is_interior(func: &[NumStr]) -> bool {
-    let mut b = 0;
-    if func[0] == LeftBracket && func[func.len() - 1] == RightBracket {
-        for n in func {
-            match n {
-                LeftBracket => b += 1,
-                RightBracket => b -= 1,
-                _ if b == 0 => return false,
-                _ => {}
-            }
-        }
-        true
-    } else {
-        false
-    }
-}
-fn is_constant(func: &[NumStr], var: String) -> bool {
-    !func.contains(&Func(var))
-}
 fn is_poly(func: &[NumStr], var: &str) -> bool {
     func.iter().all(|f| match f {
         Func(a) => a == var,
@@ -414,6 +371,56 @@ fn poly_add(
         *arr += q
     }
     Ok(())
+}
+fn place<'a>(func: &'a [NumStr], target: &'a NumStr, once: bool) -> Vec<&'a [NumStr]> {
+    let mut b = 0;
+    let mut l = 0;
+    let mut vec = Vec::new();
+    for (i, n) in func.iter().enumerate() {
+        match n {
+            LeftBracket | LeftCurlyBracket => b += 1,
+            RightBracket | RightCurlyBracket => b -= 1,
+            _ if b == 0
+                && (n == target
+                    || if target == &Multiplication {
+                        n == &InternalMultiplication
+                    } else {
+                        false
+                    }) =>
+            {
+                vec.push(&func[l..i]);
+                l = i + 1;
+                if once {
+                    vec.push(&func[l..]);
+                    return vec;
+                }
+            }
+            _ => {}
+        }
+    }
+    if l != 0 {
+        vec.push(&func[l..]);
+    }
+    vec
+}
+fn is_interior(func: &[NumStr]) -> bool {
+    let mut b = 0;
+    if func[0] == LeftBracket && func[func.len() - 1] == RightBracket {
+        for n in func {
+            match n {
+                LeftBracket => b += 1,
+                RightBracket => b -= 1,
+                _ if b == 0 => return false,
+                _ => {}
+            }
+        }
+        true
+    } else {
+        false
+    }
+}
+fn is_constant(func: &[NumStr], var: String) -> bool {
+    !func.contains(&Func(var))
 }
 fn isolate_inner(
     func: &[NumStr],
