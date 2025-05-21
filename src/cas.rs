@@ -164,7 +164,7 @@ impl Polynomial {
             }
         }
         let d_div = last_non_zero(&self.divisor)?;
-        if d_div == 1 {
+        if d_div == 0 {
             return Ok(self.quotient);
         }
         let lead_div = self.divisor[d_div].clone();
@@ -200,6 +200,11 @@ impl Polynomial {
             return Self::get_polynomial(&func[1..func.len() - 1], options, var);
         }
         let mut arr = Polynomial::new(options.prec);
+        if func == vec![Func(var.clone())] {
+            arr.quotient.push(Complex::new(options.prec));
+            arr.quotient.push(Complex::with_val(options.prec, 1));
+            return Ok(arr)
+        }
         let list = place(func, &Plus, false);
         let is_empty = list.is_empty();
         for p in list {
@@ -276,10 +281,6 @@ impl Polynomial {
         }
         if !is_empty {
             return Ok(arr);
-        }
-        if func[0] == Func(var) {
-            arr.quotient.push(Complex::new(options.prec));
-            arr.quotient.push(Complex::with_val(options.prec, 1));
         }
         Ok(arr)
     }
@@ -377,7 +378,7 @@ fn isolate_inner(
         let mut p = p.into_iter();
         let n = |c: Complex| Number::from(c, None);
         let r = match l {
-            1 => vec![Number::from(
+            0 | 1 => vec![Number::from(
                 Complex::with_val(options.prec, rug::float::Special::Nan),
                 None,
             )],
