@@ -1,4 +1,4 @@
-use crate::complex::{NumStr, cubic, quadratic, quartic};
+use crate::complex::{NumStr, cubic, quadratic, quartic, unity};
 use crate::{
     complex::NumStr::{
         Comma, Division, Exponent, Func, InternalMultiplication, LeftBracket, LeftCurlyBracket,
@@ -214,18 +214,18 @@ impl Polynomial {
     fn get_polynomial(
         func: &[NumStr],
         options: &Options,
-        var: String,
+        var: &[NumStr],
     ) -> Result<Self, &'static str> {
         if is_interior(func) {
             return Self::get_polynomial(&func[1..func.len() - 1], options, var);
         }
         let mut arr = Polynomial::new(options.prec);
-        if is_constant(func, var.clone()) {
+        if is_constant(func, var) {
             arr.quotient
                 .push(do_math(func.to_vec(), *options, Vec::new())?.num()?.number);
             return Ok(arr);
         }
-        if func == vec![Func(var.clone())] {
+        if func == var {
             arr.quotient.push(Complex::new(options.prec));
             arr.quotient.push(Complex::with_val(options.prec, 1));
             return Ok(arr);
@@ -233,7 +233,7 @@ impl Polynomial {
         let list = place(func, &Plus, false);
         let is_empty = list.is_empty();
         for p in list {
-            poly_add(options, var.clone(), &mut arr, p)?;
+            poly_add(options, &var, &mut arr, p)?;
         }
         if !is_empty {
             return Ok(arr);
@@ -242,13 +242,13 @@ impl Polynomial {
         let is_empty = list.is_empty();
         for (k, p) in list.into_iter().enumerate() {
             if k == 0 {
-                arr = Self::get_polynomial(p, options, var.clone())?;
+                arr = Self::get_polynomial(p, options, var)?;
                 continue;
             }
-            if is_constant(p, var.clone()) {
+            if is_constant(p, var) {
                 arr -= do_math(p.to_vec(), *options, Vec::new())?.num()?.number
             } else {
-                let q = Self::get_polynomial(p, options, var.clone())?;
+                let q = Self::get_polynomial(p, options, var)?;
                 arr -= q;
             }
         }
@@ -261,7 +261,7 @@ impl Polynomial {
             arr.quotient.push(Complex::with_val(options.prec, 1));
         }
         for p in list {
-            poly_mul(options, var.clone(), &mut arr, p)?;
+            poly_mul(options, var, &mut arr, p)?;
         }
         if !is_empty {
             return Ok(arr);
@@ -270,17 +270,17 @@ impl Polynomial {
         let is_empty = list.is_empty();
         for (k, p) in list.into_iter().enumerate() {
             if k == 0 {
-                arr = Self::get_polynomial(p, options, var.clone())?;
+                arr = Self::get_polynomial(p, options, var)?;
                 continue;
             }
-            if is_constant(p, var.clone()) {
+            if is_constant(p, var) {
                 let d = do_math(p.to_vec(), *options, Vec::new())?.num()?.number;
                 if d.is_zero() {
                     return Err("zero divisor");
                 }
                 arr /= d
             } else {
-                let p = Self::get_polynomial(p, options, var.clone())?;
+                let p = Self::get_polynomial(p, options, var)?;
                 arr /= p;
             }
         }
@@ -291,14 +291,15 @@ impl Polynomial {
         let is_empty = list.is_empty();
         if !is_empty {
             let p = list.remove(0);
-            let p = Self::get_polynomial(p, options, var.clone())?;
+            let p = Self::get_polynomial(p, options, var)?;
             let k = do_math(list.remove(0).to_vec(), *options, Vec::new())?
                 .num()?
                 .number
-                .into_real_imag()
-                .0
-                .to_integer()
-                .unwrap_or_default();
+                .into_real_imag();
+            if !k.1.is_zero() || !k.0.clone().fract().is_zero() {
+                return Err("non integer exponent");
+            }
+            let k = k.0.to_integer().unwrap_or_default();
             match k.cmp0() {
                 Ordering::Less => {
                     let mut i = rug::Integer::from(1);
@@ -326,48 +327,77 @@ impl Polynomial {
         if !is_empty {
             return Ok(arr);
         }
-        Ok(arr)
+        Err("not poly")
     }
 }
-fn is_poly(func: &[NumStr], var: &str) -> bool {
-    func.iter().all(|f| match f {
-        Func(a) => a == var,
-        Num(_)
-        | Plus
-        | Multiplication
-        | InternalMultiplication
-        | Minus
-        | Division
-        | Exponent
-        | LeftBracket
-        | RightBracket => true,
-        _ => false,
-    })
+fn is_poly(func: &[NumStr], var: &[NumStr]) -> bool {
+    let a = func.len();
+    let b = var.len();
+    if a >= b {
+        let mut i = 0;
+        while i <= a - b {
+            if &func[i..i + b] == var {
+                i += b
+            } else {
+                if !matches!(
+                    func[i],
+                    Num(_)
+                        | Plus
+                        | Multiplication
+                        | InternalMultiplication
+                        | Minus
+                        | Division
+                        | Exponent
+                        | LeftBracket
+                        | RightBracket
+                ) {
+                    return false;
+                }
+                i += 1
+            }
+        }
+        true
+    } else {
+        func.iter().all(|f| {
+            matches!(
+                f,
+                Num(_)
+                    | Plus
+                    | Multiplication
+                    | InternalMultiplication
+                    | Minus
+                    | Division
+                    | Exponent
+                    | LeftBracket
+                    | RightBracket
+            )
+        })
+    }
 }
 fn poly_mul(
     options: &Options,
-    var: String,
+    var: &[NumStr],
     arr: &mut Polynomial,
     p: &[NumStr],
 ) -> Result<(), &'static str> {
-    if is_constant(p, var.clone()) {
+    if is_constant(p, var) {
         *arr *= do_math(p.to_vec(), *options, Vec::new())?.num()?.number
     } else {
-        let p = Polynomial::get_polynomial(p, options, var.clone())?;
+        let p = Polynomial::get_polynomial(p, options, var)?;
         *arr *= &p
     }
     Ok(())
 }
 fn poly_add(
     options: &Options,
-    var: String,
+    var: &[NumStr],
     arr: &mut Polynomial,
     p: &[NumStr],
 ) -> Result<(), &'static str> {
-    if is_constant(p, var.clone()) {
+    if is_constant(p, var) {
         *arr += do_math(p.to_vec(), *options, Vec::new())?.num()?.number
     } else {
-        let q = Polynomial::get_polynomial(p, options, var.clone())?;
+        let q = Polynomial::get_polynomial(p, options, var)?;
         *arr += q
     }
     Ok(())
@@ -419,21 +449,72 @@ fn is_interior(func: &[NumStr]) -> bool {
         false
     }
 }
-fn is_constant(func: &[NumStr], var: String) -> bool {
-    !func.contains(&Func(var))
+fn is_constant(func: &[NumStr], var: &[NumStr]) -> bool {
+    let a = func.len();
+    let b = var.len();
+    if a >= b {
+        let mut i = 0;
+        while i <= a - b {
+            if &func[i..i + b] == var {
+                return false;
+            }
+            i += 1
+        }
+    }
+    true
+}
+fn get_var<'a>(func: &'a [NumStr], var: &'a [NumStr]) -> &'a [NumStr] {
+    let a = func.len();
+    let b = var.len();
+    let mut values = Vec::new();
+    if a >= b {
+        let mut i = 0;
+        while i <= a - b {
+            if &func[i..i + b] == var {
+                values.push(i);
+                i += b;
+            } else {
+                i += 1
+            }
+        }
+    }
+    let mut i = 0;
+    let mut j = 0;
+    &func[values[0] - i..b + j]
 }
 fn isolate_inner(
     func: &[NumStr],
     options: &Options,
-    var: String,
+    var: &[NumStr],
 ) -> Result<Vec<NumStr>, &'static str> {
     if is_interior(func) {
         return isolate_inner(&func[1..func.len() - 1], options, var);
     }
+    let var = get_var(func, var);
     if is_poly(func, &var) {
         let p: Vec<Complex> = Polynomial::get_polynomial(func, options, var)?.compute()?;
-        let l = p.len();
-        let mut p = p.into_iter();
+        let mut mult = 1;
+        let powers = p
+            .iter()
+            .enumerate()
+            .filter_map(|(i, n)| if n.is_zero() && i != 0 { None } else { Some(i) })
+            .collect::<Vec<usize>>();
+        if powers.len() >= 2 {
+            mult = powers[1] - powers[0];
+            for (i, p) in powers[1..].iter().enumerate() {
+                if let Some(q) = powers.get(i + 2) {
+                    if q - p != mult {
+                        mult = 1;
+                        break;
+                    }
+                }
+            }
+        }
+        let l = p.len().div_ceil(mult);
+        let mut p = p
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, a)| if i % mult == 0 { Some(a) } else { None });
         let n = |c: Complex| Number::from(c, None);
         let r = match l {
             0 | 1 => vec![Number::from(
@@ -468,9 +549,18 @@ fn isolate_inner(
             }
             _ => return Err("poly greater then quartic"),
         };
+        let mut a = Vec::new();
+        if mult != 1 {
+            let m = Complex::with_val(options.prec, mult);
+            for n in r.into_iter() {
+                a.extend(unity(n.number.ln(), m.clone()))
+            }
+        } else {
+            a = r
+        }
         let mut v = Vec::new();
         v.push(LeftCurlyBracket);
-        for o in r.into_iter().map(|a| Num(Box::new(a))) {
+        for o in a.into_iter().map(|a| Num(Box::new(a))) {
             v.push(o);
             v.push(Comma)
         }
@@ -478,12 +568,13 @@ fn isolate_inner(
         v.push(RightCurlyBracket);
         return Ok(v);
     }
+    //TODO
     let mut v = Vec::new();
     let list = place(func, &Plus, false);
     let mut some = false;
     let empty = list.is_empty();
     for p in list {
-        if is_constant(p, var.clone()) {
+        if is_constant(p, var) {
             v.push(LeftBracket);
             v.push(Num(Box::new(Number::new(options))));
             v.push(Minus);
@@ -494,8 +585,8 @@ fn isolate_inner(
             v.push(Plus);
             some = true;
         } else {
-            let list = isolate_inner(p, options, var.clone())?;
-            if !list.is_empty() && list != vec![Func(var.clone())] {
+            let list = isolate_inner(p, options, var)?;
+            if !list.is_empty() && list != var {
                 v.extend(list);
                 v.push(Plus);
                 some = true;
@@ -519,5 +610,9 @@ pub fn isolate(
     if func.is_empty() {
         return Err("nothing to isolate");
     }
-    do_math(isolate_inner(func, &options, var)?, options, func_vars)
+    do_math(
+        isolate_inner(func, &options, &[Func(var)])?,
+        options,
+        func_vars,
+    )
 }
