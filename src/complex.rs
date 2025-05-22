@@ -599,15 +599,24 @@ pub fn root(a: &Number, b: &Number) -> Number {
     )
 }
 pub fn unity(y: Complex, x: Complex) -> Vec<Number> {
-    if x.real().is_zero() {
-        return Vec::new();
+    if y.is_zero() {
+        let n = x
+            .into_real_imag()
+            .0
+            .trunc()
+            .to_integer()
+            .unwrap_or_default()
+            .to_i128()
+            .unwrap_or_default() as usize;
+        return vec![Number::from(Complex::new(y.prec()), None); n];
     }
+    let x = x.ln();
     let mut vec: Vec<Number> = Vec::new();
     let taui: Complex = 2 * Complex::with_val(x.prec(), (0, Pi));
     let r: Float = x.imag().clone().pow(2) / 2;
     let r: Float = x.real().clone() / 2 + r / x.real().clone();
     let n = (x.imag().clone() * y.real() / x.real() - y.imag()) / taui.imag().clone();
-    let left: Float = -r.clone() + n.clone();
+    let left: Float = n.clone() - r.clone();
     let right: Float = r + n;
     for k in if left < right {
         left.clone()
@@ -2250,8 +2259,8 @@ pub fn quartic(div: Number, b: Number, c: Number, d: Number, e: Number, real: bo
     let c = d / div.clone();
     let d = e / div;
     if a.is_zero() && b.is_zero() && c.is_zero() {
-        if d.is_zero() {
-            return vec![Number::from(Complex::new(prec), None)];
+        return if d.is_zero() {
+            vec![Number::from(Complex::new(prec), None)]
         } else {
             let a = Complex::with_val(prec, 1) / 4;
             let mut a: Complex = (-d).pow(a);
@@ -2260,8 +2269,8 @@ pub fn quartic(div: Number, b: Number, c: Number, d: Number, e: Number, real: bo
                 a = a.mul_i(false);
                 v.push(a.clone());
             }
-            return v.into_iter().map(|a| Number::from(a, None)).collect();
-        }
+            v.into_iter().map(|a| Number::from(a, None)).collect()
+        };
     }
     // https://upload.wikimedia.org/wikipedia/commons/9/99/Quartic_Formula.svg
     let alpha: Complex = sqr(b.clone()) - 3 * a.clone() * c.clone() + 12 * d.clone();

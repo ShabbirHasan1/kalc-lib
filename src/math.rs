@@ -3492,18 +3492,15 @@ pub fn do_math(
                                 let vec = if i + 1 < function.len()
                                     && !matches!(&function[i + 1], Func(_))
                                 {
-                                    unity(
-                                        arg.num()?.number.ln(),
-                                        function.remove(i + 1).num()?.number,
-                                    )
+                                    unity(arg.num()?.number, function.remove(i + 1).num()?.number)
                                 } else {
-                                    unity(Complex::new(options.prec), arg.num()?.number)
+                                    unity(Complex::with_val(options.prec, 1), arg.num()?.number)
                                 };
                                 if vec.is_empty() {
-                                    NumStr::new(Number::from(
+                                    Vector(vec![Number::from(
                                         Complex::with_val(options.prec, Nan),
                                         None,
-                                    ))
+                                    )])
                                 } else {
                                     Vector(vec)
                                 }

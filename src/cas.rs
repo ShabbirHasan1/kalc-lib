@@ -572,7 +572,7 @@ fn isolate_inner(
         if mult != 1 {
             let m = Complex::with_val(options.prec, mult);
             for n in r.into_iter() {
-                a.extend(unity(n.number.ln(), m.clone()))
+                a.extend(unity(n.number, m.clone()))
             }
         } else {
             a = r
