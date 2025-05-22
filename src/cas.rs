@@ -233,7 +233,7 @@ impl Polynomial {
         let list = place(func, &Plus, false);
         let is_empty = list.is_empty();
         for p in list {
-            poly_add(options, &var, &mut arr, p)?;
+            poly_add(options, var, &mut arr, p)?;
         }
         if !is_empty {
             return Ok(arr);
@@ -480,7 +480,26 @@ fn get_var<'a>(func: &'a [NumStr], var: &'a [NumStr]) -> &'a [NumStr] {
     }
     let mut i = 0;
     let mut j = 0;
-    &func[values[0] - i..b + j]
+    while values.iter().all(|k| {
+        values[0] > i
+            && func[k - i - 1] == func[values[0] - i - 1]
+            && matches!(func[k - i - 1], LeftBracket)
+    }) && values.iter().all(|k| {
+        func.len() > k + b + j + 1
+            && func[k + b + j + 1] == func[values[0] + b + j + 1]
+            && matches!(func[k + b + j + 1], RightBracket)
+    }) {
+        i -= 1;
+        if values.iter().all(|k| {
+            values[0] > i
+                && func[k - i - 1] == func[values[0] - i - 1]
+                && matches!(func[k - i - 1], Func(_))
+        }) {
+            i -= 1;
+        }
+        j += 1;
+    }
+    &func[values[0] - i..values[0] + b + j]
 }
 fn isolate_inner(
     func: &[NumStr],
@@ -491,7 +510,7 @@ fn isolate_inner(
         return isolate_inner(&func[1..func.len() - 1], options, var);
     }
     let var = get_var(func, var);
-    if is_poly(func, &var) {
+    if is_poly(func, var) {
         let p: Vec<Complex> = Polynomial::get_polynomial(func, options, var)?.compute()?;
         let mut mult = 1;
         let powers = p
@@ -607,7 +626,10 @@ pub fn isolate(
     options: Options,
     var: String,
 ) -> Result<NumStr, &'static str> {
-    if func.is_empty() {
+    if func.iter().all(|f| match f {
+        Func(v) => v != &var,
+        _ => true,
+    }) {
         return Err("nothing to isolate");
     }
     do_math(
