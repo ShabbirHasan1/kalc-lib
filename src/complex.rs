@@ -610,7 +610,7 @@ pub fn unity(y: Complex, x: Complex) -> Vec<Number> {
             .unwrap_or_default() as usize;
         return vec![Number::from(Complex::new(y.prec()), None); n];
     }
-    let x = x.ln();
+    let y = y.ln();
     let mut vec: Vec<Number> = Vec::new();
     let taui: Complex = 2 * Complex::with_val(x.prec(), (0, Pi));
     let r: Float = x.imag().clone().pow(2) / 2;
