@@ -513,18 +513,20 @@ fn isolate_inner(
     if is_poly(func, var) {
         let p: Vec<Complex> = Polynomial::get_polynomial(func, options, var)?.compute()?;
         let mut mult = 1;
-        let powers = p
-            .iter()
-            .enumerate()
-            .filter_map(|(i, n)| if n.is_zero() && i != 0 { None } else { Some(i) })
-            .collect::<Vec<usize>>();
-        if powers.len() >= 2 {
-            mult = powers[1] - powers[0];
-            for (i, p) in powers[1..].iter().enumerate() {
-                if let Some(q) = powers.get(i + 2) {
-                    if q - p != mult {
-                        mult = 1;
-                        break;
+        if p.len() > 5 {
+            let powers = p
+                .iter()
+                .enumerate()
+                .filter_map(|(i, n)| if n.is_zero() && i != 0 { None } else { Some(i) })
+                .collect::<Vec<usize>>();
+            if powers.len() >= 2 {
+                mult = powers[1] - powers[0];
+                for (i, p) in powers[1..].iter().enumerate() {
+                    if let Some(q) = powers.get(i + 2) {
+                        if q - p != mult {
+                            mult = 1;
+                            break;
+                        }
                     }
                 }
             }
