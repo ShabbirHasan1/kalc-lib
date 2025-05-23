@@ -478,28 +478,31 @@ fn get_var<'a>(func: &'a [NumStr], var: &'a [NumStr]) -> &'a [NumStr] {
             }
         }
     }
+    if values.len() <= 1 {
+        return var;
+    }
     let mut i = 0;
-    let mut j = 0;
+    let mut j = b;
     while values.iter().all(|k| {
         values[0] > i
             && func[k - i - 1] == func[values[0] - i - 1]
             && matches!(func[k - i - 1], LeftBracket)
     }) && values.iter().all(|k| {
-        func.len() > k + b + j + 1
-            && func[k + b + j + 1] == func[values[0] + b + j + 1]
-            && matches!(func[k + b + j + 1], RightBracket)
+        func.len() > k + j
+            && func[k + j] == func[values[0] + j]
+            && matches!(func[k + j], RightBracket)
     }) {
-        i -= 1;
+        i += 1;
         if values.iter().all(|k| {
             values[0] > i
                 && func[k - i - 1] == func[values[0] - i - 1]
                 && matches!(func[k - i - 1], Func(_))
         }) {
-            i -= 1;
+            i += 1;
         }
         j += 1;
     }
-    &func[values[0] - i..values[0] + b + j]
+    &func[values[0] - i..values[0] + j]
 }
 fn isolate_inner(
     func: &[NumStr],
@@ -589,7 +592,6 @@ fn isolate_inner(
         v.push(RightCurlyBracket);
         return Ok(v);
     }
-    //TODO
     let mut v = Vec::new();
     let list = place(func, &Plus, false);
     let mut some = false;
