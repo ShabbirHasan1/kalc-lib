@@ -297,6 +297,7 @@ pub fn set_commands(
                                 false,
                                 &mut Vec::new(),
                                 None,
+                                None,
                             )
                             .unwrap_or((
                                 Vec::new(),
@@ -379,6 +380,7 @@ pub fn set_commands(
                                 false,
                                 &mut Vec::new(),
                                 None,
+                                None,
                             )?;
                             args.push(
                                 do_math(parsed.0, *options, parsed.1)?
@@ -403,6 +405,7 @@ pub fn set_commands(
                     Vec::new(),
                     false,
                     &mut Vec::new(),
+                    None,
                     None,
                 )?;
                 args.push(
@@ -584,6 +587,7 @@ pub fn set_commands(
                                                     false,
                                                     &mut Vec::new(),
                                                     None,
+                                                    None,
                                                 )?;
                                                 func_vars.push((-1, s.clone()));
                                                 fvs.push((s, parsed.0));
@@ -602,6 +606,7 @@ pub fn set_commands(
                                         var.name.clone(),
                                         false,
                                         &mut Vec::new(),
+                                        None,
                                         None,
                                     ) {
                                         Ok(n) => (n.0, n.1),
@@ -1304,6 +1309,7 @@ pub fn equal_to(
                 Vec::new(),
                 false,
                 &mut Vec::new(),
+                None,
                 None,
             );
             match input {

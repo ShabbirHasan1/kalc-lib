@@ -375,6 +375,7 @@ pub fn add_var(
                             false,
                             &mut Vec::new(),
                             None,
+                            None,
                         )?;
                         func_vars.push((-1, s.clone()));
                         fvs.push((s, parsed.0));
@@ -393,6 +394,7 @@ pub fn add_var(
                 l.clone(),
                 false,
                 &mut Vec::new(),
+                None,
                 None,
             )?
         } else {
@@ -415,6 +417,7 @@ pub fn add_var(
                             false,
                             &mut Vec::new(),
                             None,
+                            None,
                         )?;
                         func_vars.push((-1, s.clone()));
                         fvs.push((s, parsed.0));
@@ -433,6 +436,7 @@ pub fn add_var(
                 l.clone(),
                 false,
                 &mut Vec::new(),
+                None,
                 None,
             )?
         };
@@ -522,6 +526,7 @@ pub fn add_var(
                                     false,
                                     &mut Vec::new(),
                                     None,
+                                    None,
                                 )?;
                                 func_vars.push((-1, s.clone()));
                                 fvs.push((s, parsed.0));
@@ -540,6 +545,7 @@ pub fn add_var(
                         v.name.clone(),
                         false,
                         &mut Vec::new(),
+                        None,
                         None,
                     )?;
                     parsed.1.extend(fvs);

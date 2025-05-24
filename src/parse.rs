@@ -36,6 +36,7 @@ pub fn input_var(
     isgraphing: bool,
     collectvars: &mut Vec<(isize, usize)>,
     solven: Option<usize>,
+    ison: Option<usize>,
 ) -> Result<
     (
         Vec<NumStr>,
@@ -73,6 +74,8 @@ pub fn input_var(
     let mut err = "";
     let mut solves = Vec::new();
     let mut solvesp = Vec::new();
+    let mut iso = Vec::new();
+    let mut isop = Vec::new();
     let mut slope = Vec::new();
     let mut chars = input
         .replace('[', "(car{")
@@ -146,6 +149,11 @@ pub fn input_var(
         n
     } else {
         chars.iter().filter(|a| a == &&'~').count()
+    };
+    let mut ison = if let Some(n) = ison {
+        n
+    } else {
+        chars.iter().filter(|a| a == &&'=').count()
     };
     'main: while i < chars.len() {
         let c = chars[i];
@@ -430,18 +438,84 @@ pub fn input_var(
                 }
                 '=' if i != 0
                     && i + 1 < chars.len()
-                    && !matches!(chars[i + 1], ')' | '}' | ']') =>
+                    && (!matches!(chars[i + 1], ')' | '}' | ']') || *bracket != 0) =>
                 {
+                    macro_rules! iso {
+                        () => {
+                            *bracket += 1;
+                            isop.insert(0, (*bracket, false));
+                            if i + 1 == chars.len()
+                                || (chars[i + 1] == '0'
+                                    && (i + 2 == chars.len() || chars[i + 2] == ')'))
+                            {
+                                i += 1;
+                                isop[0].1 = true;
+                            } else if i != 0
+                                && chars[i - 1] == '0'
+                                && (i - 1 == 0 || chars[i - 1] == '(')
+                            {
+                                output.pop();
+                                isop[0].1 = true;
+                            } else {
+                                if i + 1 > chars.len() || chars[i + 1] != ')' {
+                                    output.push(Minus);
+                                }
+                                output.push(LeftBracket);
+                            }
+                            let mut brac = 0;
+                            let mut j = 0;
+                            for (i, f) in output.iter().rev().enumerate() {
+                                match f {
+                                    LeftBracket if brac == 1 => {
+                                        j = output.len() - i;
+                                        break;
+                                    }
+                                    LeftBracket => brac += 1,
+                                    RightBracket => brac -= 1,
+                                    _ => {}
+                                }
+                            }
+                            if let Some(n) = sumvar.clone() {
+                                sumrec.push((*bracket, n.clone()));
+                                output.insert(j, Comma);
+                                output.insert(j, Func(n));
+                            } else {
+                                collectvars.insert(0, (*bracket, j + 2))
+                            }
+                            output.insert(j, LeftBracket);
+                            output.insert(j, Func("isolate".to_string()));
+                        };
+                    }
                     if chars[i + 1] == '=' {
-                        output.push(Equal);
+                        ison -= 1;
                         i += 1;
+                        if i + 1 < chars.len() && chars[i + 1] == '=' {
+                            i += 1;
+                            ison -= 1;
+                            iso!();
+                        } else {
+                            output.push(Equal);
+                        }
                     } else if chars[i - 1] == '>' {
                         output.push(GreaterEqual);
                     } else if chars[i - 1] == '<' {
                         output.push(LesserEqual);
-                    } else {
+                    } else if *bracket == 0 {
                         return Ok((Vec::new(), Vec::new(), HowGraphing::default(), true, None));
+                    } else if i == 0
+                        || matches!(chars[i - 1], '(' | '{' | '[')
+                        || (chars[i - 1] == '|' && !abs.is_empty())
+                    {
+                        place_multiplier(&mut output, sumrec, &sumvar);
+                        output.push(Func("isolate".to_string()));
+                        output.push(LeftBracket);
+                        *bracket += 1;
+                        collectvars.insert(0, (*bracket, output.len()));
+                        iso.insert(0, *bracket);
+                    } else {
+                        iso!();
                     }
+                    ison -= 1;
                 }
                 '{' => {
                     *bracket += 1;
@@ -730,7 +804,9 @@ pub fn input_var(
                             output.pop();
                             solvesp[0].2 = true;
                         } else {
-                            output.push(Minus);
+                            if i + 1 > chars.len() || chars[i + 1] != ')' {
+                                output.push(Minus);
+                            }
                             output.push(LeftBracket);
                         }
                         let mut brac = 0;
@@ -776,6 +852,10 @@ pub fn input_var(
                         output.push(RightBracket);
                         solves.remove(0);
                     }
+                    if !iso.is_empty() && iso[0] == *bracket {
+                        output.push(RightBracket);
+                        iso.remove(0);
+                    }
                     if !collectvars.is_empty() && collectvars[0].0 == *bracket {
                         output.insert(collectvars[0].1, Comma);
                         collectvars.remove(0);
@@ -807,6 +887,13 @@ pub fn input_var(
                         }
                         output.push(RightBracket);
                         solvesp.remove(0);
+                    }
+                    if !isop.is_empty() && isop[0].0 == *bracket {
+                        if !isop[0].1 {
+                            output.push(RightBracket);
+                        }
+                        output.push(RightBracket);
+                        isop.remove(0);
                     }
                     *bracket -= 1;
                     output.push(RightBracket);
@@ -1250,7 +1337,7 @@ pub fn input_var(
                     continue;
                 }
             } else if place == 0 {
-                if matches!(word.as_str(), "extrema" | "solve") {
+                if matches!(word.as_str(), "extrema" | "solve" | "isolate") {
                     *bracket += 1;
                     place_multiplier(&mut output, sumrec, &sumvar);
                     output.push(Func(word.clone()));
@@ -1731,6 +1818,7 @@ pub fn input_var(
                                             false,
                                             &mut cv,
                                             Some(solvesn),
+                                            Some(ison),
                                         ) {
                                             Ok(f) => f,
                                             Err(s) => {
@@ -2075,6 +2163,7 @@ pub fn input_var(
                                         false,
                                         &mut cv,
                                         Some(solvesn),
+                                        Some(ison),
                                     ) {
                                         Ok(f) => f,
                                         Err(s) => {
@@ -2463,10 +2552,10 @@ pub fn input_var(
                 } else {
                     matches!(c, 'x' | 'y' | 'w' | 'z' | 'i' | 'E')
                 } || !c.is_alphabetic())
-                && (solvesn == 0 || c == 'i' || {
+                && ((solvesn == 0 && ison == 0) || c == 'i' || {
                     let a = chars[i..]
                         .iter()
-                        .filter(|a| matches!(a, '(' | ')' | '~'))
+                        .filter(|a| matches!(a, '(' | ')' | '~' | '='))
                         .cloned()
                         .collect::<Vec<char>>();
                     a.starts_with(&['(']) && a.ends_with(&[')'])
@@ -2654,7 +2743,7 @@ pub fn input_var(
                         }
                     }
                 }
-            } else if !collectvars.is_empty() || solvesn != 0 {
+            } else if !collectvars.is_empty() || solvesn != 0 || ison != 0 {
                 if neg {
                     output.push(NumStr::new(Number::from(n1.clone(), None)));
                     output.push(InternalMultiplication);
@@ -2782,6 +2871,15 @@ pub fn input_var(
                 Complex::with_val(options.prec, Nan),
                 None,
             )));
+        }
+        output.push(RightBracket);
+    }
+    for _ in 0..iso.len() {
+        output.push(RightBracket);
+    }
+    for s in isop {
+        if !s.1 {
+            output.push(RightBracket);
         }
         output.push(RightBracket);
     }

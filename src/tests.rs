@@ -23,6 +23,7 @@ fn test_math() {
         false,
         &mut Vec::new(),
         None,
+        None,
     )
     .unwrap();
     let expected = vec![
