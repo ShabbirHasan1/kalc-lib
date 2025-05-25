@@ -1,8 +1,8 @@
 use crate::complex::{NumStr, cubic, quadratic, quartic, unity};
 use crate::{
     complex::NumStr::{
-        Comma, Division, Exponent, Func, InternalMultiplication, LeftBracket, LeftCurlyBracket,
-        Minus, Multiplication, Num, Plus, RightBracket, RightCurlyBracket,
+        Division, Exponent, Func, InternalMultiplication, LeftBracket, LeftCurlyBracket, Minus,
+        Multiplication, Num, Plus, RightBracket, RightCurlyBracket,
     },
     math::do_math,
     units::{Number, Options},
@@ -504,6 +504,21 @@ fn get_var<'a>(func: &'a [NumStr], var: &'a [NumStr]) -> &'a [NumStr] {
     }
     &func[values[0] - i..values[0] + j]
 }
+fn inverse(func: &[NumStr], val: NumStr, options: &Options) -> Result<NumStr, &'static str> {
+    if func.len() > 1 {
+        let Func(f) = &func[0] else { unreachable!() };
+        let inv = "a".to_owned() + f;
+        let v = vec![Func(inv), LeftBracket, val, RightBracket];
+        let v = do_math(v, *options, Vec::new());
+        if func.len() == 2 {
+            v
+        } else {
+            inverse(&func[2..func.len() - 1], v?, options)
+        }
+    } else {
+        Ok(val)
+    }
+}
 fn isolate_inner(
     func: &[NumStr],
     options: &Options,
@@ -511,6 +526,15 @@ fn isolate_inner(
 ) -> Result<Vec<NumStr>, &'static str> {
     if is_interior(func) {
         return isolate_inner(&func[1..func.len() - 1], options, var);
+    }
+    if matches!(func[0], Func(_)) && func.len() > 1 && is_interior(&func[1..]) {
+        let v = do_math(
+            isolate_inner(&func[2..func.len() - 1], options, var)?,
+            *options,
+            Vec::new(),
+        )?;
+        let m = inverse(&func[0..2], v, options)?;
+        return Ok(vec![m]);
     }
     let var = get_var(func, var);
     if is_poly(func, var) {
@@ -582,15 +606,25 @@ fn isolate_inner(
         } else {
             a = r
         }
-        let mut v = Vec::new();
-        v.push(LeftCurlyBracket);
-        for o in a.into_iter().map(|a| Num(Box::new(a))) {
-            v.push(o);
-            v.push(Comma)
-        }
-        v.pop();
-        v.push(RightCurlyBracket);
-        return Ok(v);
+        return if var.len() == 1 {
+            Ok(vec![NumStr::Vector(a)])
+        } else {
+            Ok(vec![inverse(
+                var,
+                if a.len() == 1 {
+                    NumStr::new(std::mem::replace(
+                        &mut a[0],
+                        Number::new(&Options {
+                            prec: 1,
+                            ..Default::default()
+                        }),
+                    ))
+                } else {
+                    NumStr::Vector(a)
+                },
+                options,
+            )?])
+        };
     }
     let mut v = Vec::new();
     let list = place(func, &Plus, false);
