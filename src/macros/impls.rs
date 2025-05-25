@@ -1168,6 +1168,18 @@ macro_rules! impl_cneg {
     };
 }
 
+macro_rules! impl_from_complex_tuple {
+    ($a: ty, $b: ty) => {
+        impl WithVal<($a, $b)> for Complex {
+            fn with_val(obj: Type, prec: u32, (c, d): ($a, $b)) -> Self {
+                let r = Float::with_val(obj, prec, c);
+                let i = Float::with_val(obj, prec, d);
+                Complex::from((r, i))
+            }
+        }
+    };
+}
+
 macro_rules! impl_types {
     ($($ty:ty),*) => {
         $(
@@ -1245,6 +1257,7 @@ macro_rules! impl_types {
                 (F64, |_, x| x as f64),
                 (F32, |_, x| x as f32)
             );
+            impl_from_complex_tuple!($ty, $ty);
         )*
     };
 }
@@ -1398,7 +1411,7 @@ macro_rules! impl_complex {
 
 pub(crate) use {
     dec_c_impl, dec_impl, float_impl, impl_c_ops, impl_c_pow, impl_c_rt, impl_cneg, impl_complex,
-    impl_int_ops, impl_neg, impl_new_val, impl_new_val_cdeci, impl_new_val_deci, impl_ops,
-    impl_partial_ord, impl_pow, impl_self_c_ops, impl_self_ops, impl_sinh_cosh, impl_types,
-    impl_with_val, impl_with_val_cdeci, impl_with_val_deci,
+    impl_from_complex_tuple, impl_int_ops, impl_neg, impl_new_val, impl_new_val_cdeci,
+    impl_new_val_deci, impl_ops, impl_partial_ord, impl_pow, impl_self_c_ops, impl_self_ops,
+    impl_sinh_cosh, impl_types, impl_with_val, impl_with_val_cdeci, impl_with_val_deci,
 };

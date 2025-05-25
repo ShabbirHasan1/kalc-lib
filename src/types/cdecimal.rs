@@ -24,6 +24,12 @@ impl From<Decimal> for CDecimal {
     }
 }
 
+impl From<(Decimal, Decimal)> for CDecimal {
+    fn from((a, b): (Decimal, Decimal)) -> Self {
+        Self(a, b)
+    }
+}
+
 impl Display for CDecimal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}+{}i", self.0, self.1)

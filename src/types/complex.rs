@@ -1,8 +1,10 @@
 use super::{
-    CDecimal, CF32, CF64, Decimal, Float, NewVal, ParseU, Prec, SpecialValues, SpecialValuesDeci,
-    Type, WithValDeci,
+    CDecimal, CF32, CF64, Decimal, Float, NewVal, ParseU, Prec, Special, SpecialValues,
+    SpecialValuesDeci, Type, WithVal, WithValDeci,
 };
-use crate::macros::impls::{impl_complex, impl_neg, impl_new_val, impl_self_ops};
+use crate::macros::impls::{
+    impl_complex, impl_from_complex_tuple, impl_neg, impl_new_val, impl_self_ops,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
@@ -86,6 +88,18 @@ impl From<Float> for Complex {
             Float::Fastnum(a) => Complex::Fastnum(a.into()),
             Float::F64(a) => Complex::F64(a.into()),
             Float::F32(a) => Complex::F32(a.into()),
+        }
+    }
+}
+
+impl From<(Float, Float)> for Complex {
+    fn from(value: (Float, Float)) -> Self {
+        match value {
+            (Float::Rug(a), Float::Rug(b)) => Complex::Rug((a, b).into()),
+            (Float::Fastnum(a), Float::Fastnum(b)) => Complex::Fastnum((a, b).into()),
+            (Float::F64(a), Float::F64(b)) => Complex::F64((a, b).into()),
+            (Float::F32(a), Float::F32(b)) => Complex::F32((a, b).into()),
+            _ => unreachable!(),
         }
     }
 }
@@ -196,6 +210,11 @@ impl_new_val!(
     (F32, |_, x| CF32(x as f32, 0.0))
 );
 
+impl_from_complex_tuple!(f64, i32);
+impl_from_complex_tuple!(i32, f64);
+impl_from_complex_tuple!(i32, Special);
+impl_from_complex_tuple!(Special, Special);
+impl_from_complex_tuple!(Special, i32);
 impl_complex!(Complex, Rug, Fastnum, F64, F32);
 impl_neg!(Complex, Rug, Fastnum, F64, F32);
 impl_self_ops!(Complex, Rug, Fastnum, F64, F32);

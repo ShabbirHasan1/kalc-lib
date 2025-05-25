@@ -19,6 +19,12 @@ impl From<f32> for CF32 {
     }
 }
 
+impl From<(f32, f32)> for CF32 {
+    fn from((a, b): (f32, f32)) -> Self {
+        Self(a, b)
+    }
+}
+
 impl Display for CF32 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}+{}i", self.0, self.1)

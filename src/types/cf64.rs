@@ -19,6 +19,12 @@ impl From<f64> for CF64 {
     }
 }
 
+impl From<(f64, f64)> for CF64 {
+    fn from((a, b): (f64, f64)) -> Self {
+        Self(a, b)
+    }
+}
+
 impl Display for CF64 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}+{}i", self.0, self.1)
