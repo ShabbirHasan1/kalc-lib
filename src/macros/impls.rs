@@ -348,9 +348,24 @@ macro_rules! dec_impl {
     };
 }
 
+macro_rules! impl_rem {
+    ($t:ty,$(($variant:ident, $cast:expr)),*) => {
+                  impl std::ops::Rem<usize> for $t {
+            type Output = Self;
+            fn rem(self, rhs: usize) -> Self::Output {
+                match self {
+                    $(
+                        Self::$variant(a) => Self::$variant(a % $cast(rhs)),
+                    )*
+                }
+            }
+        }
+    };
+}
+
 macro_rules! float_impl {
     ($t:ty,$($variant:ident),*) => {
-        impl $t {
+      impl $t {
             pub fn abs(self) -> Self {
                 match self {
                     $(Self::$variant(a) => Self::$variant(a.abs()),)*
@@ -1412,6 +1427,7 @@ macro_rules! impl_complex {
 pub(crate) use {
     dec_c_impl, dec_impl, float_impl, impl_c_ops, impl_c_pow, impl_c_rt, impl_cneg, impl_complex,
     impl_from_complex_tuple, impl_int_ops, impl_neg, impl_new_val, impl_new_val_cdeci,
-    impl_new_val_deci, impl_ops, impl_partial_ord, impl_pow, impl_self_c_ops, impl_self_ops,
-    impl_sinh_cosh, impl_types, impl_with_val, impl_with_val_cdeci, impl_with_val_deci,
+    impl_new_val_deci, impl_ops, impl_partial_ord, impl_pow, impl_rem, impl_self_c_ops,
+    impl_self_ops, impl_sinh_cosh, impl_types, impl_with_val, impl_with_val_cdeci,
+    impl_with_val_deci,
 };

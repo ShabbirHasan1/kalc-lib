@@ -2,7 +2,9 @@ use super::{
     Decimal, Integer, NewVal, Parse, ParseU, Prec, SinhCosh, Special, SpecialValues,
     SpecialValuesDeci, Type, WithVal, WithValDeci,
 };
-use crate::macros::impls::{float_impl, impl_neg, impl_new_val, impl_partial_ord, impl_self_ops};
+use crate::macros::impls::{
+    float_impl, impl_neg, impl_new_val, impl_partial_ord, impl_rem, impl_self_ops,
+};
 use rug::ops::CompleteRound;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -242,6 +244,13 @@ impl_new_val!(
     (Fastnum, Decimal::with_val),
     (F64, |_, x| x),
     (F32, |_, x| x as f32)
+);
+impl_rem!(
+    Float,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x as f64),
+    (F32, |x| x as f32)
 );
 float_impl!(Float, Rug, Fastnum, F64, F32);
 impl_partial_ord!(

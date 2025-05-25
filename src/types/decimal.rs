@@ -1,6 +1,6 @@
 use super::{NewDeciVal, Parse, Prec, SinhCosh, SpecialValuesDeci};
 use crate::macros::impls::{
-    dec_impl, impl_neg, impl_new_val_deci, impl_partial_ord, impl_self_ops,
+    dec_impl, impl_neg, impl_new_val_deci, impl_partial_ord, impl_rem, impl_self_ops,
 };
 use fastnum::I512;
 use serde::{Deserialize, Serialize};
@@ -127,6 +127,7 @@ impl PartialEq<i32> for Decimal {
         }
     }
 }
+impl_rem!(Decimal, (D512, |x| x), (D256, |x| x));
 impl_new_val_deci!(Decimal);
 impl_partial_ord!(
     Decimal,
