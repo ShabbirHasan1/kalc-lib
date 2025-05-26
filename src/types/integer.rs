@@ -1,5 +1,7 @@
 use super::Type;
-use crate::macros::impls::{impl_int_ops, impl_self_ops};
+use crate::macros::impls::{impl_int_ops, impl_pow, impl_self_ops};
+use crate::types::Pow;
+use rug::ops::Pow as RugPow;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
@@ -73,5 +75,13 @@ impl Integer {
     }
 }
 
+impl_pow!(
+    Integer,
+    u32,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x)
+);
 impl_self_ops!(Integer, Rug, Fastnum, F64, F32);
 impl_int_ops!(Integer, Integer, i32);
