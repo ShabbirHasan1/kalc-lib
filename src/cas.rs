@@ -570,8 +570,13 @@ fn isolate_inner(
     }
     let var = get_var(func, var);
     if is_poly(func, var) {
-        let p: Vec<Complex> = Polynomial::get_polynomial(func, options, var)?.compute()?;
+        let mut p: Vec<Complex> = Polynomial::get_polynomial(func, options, var)?.compute()?;
         let mut mult = 1;
+        let mut r = Vec::with_capacity(p.len());
+        while p.len() > 1 && p[0].is_zero() && p[1].is_zero() {
+            p.remove(0);
+            r.push(Number::new(options))
+        }
         if p.len() > 5 {
             let powers = p
                 .iter()
@@ -596,7 +601,7 @@ fn isolate_inner(
             .enumerate()
             .filter_map(|(i, a)| if i % mult == 0 { Some(a) } else { None });
         let n = |c: Complex| Number::from(c, None);
-        let r = match l {
+        r.extend(match l {
             0 | 1 => vec![Number::from(
                 Complex::with_val(options.prec, rug::float::Special::Nan),
                 None,
@@ -627,8 +632,12 @@ fn isolate_inner(
                 let a = p.next().unwrap();
                 quartic(n(a), n(b), n(c), n(d), n(e), false)
             }
-            _ => return Err("poly greater then quartic"),
-        };
+            _ => {
+                //TODO newtons method
+                return Err("poly greater then quartic");
+            }
+        });
+        r.sort_unstable_by(|a, b| a.number.total_cmp(&b.number));
         let mut a = Vec::new();
         if mult != 1 {
             let m = Complex::with_val(options.prec, mult);
