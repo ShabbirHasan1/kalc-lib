@@ -85,3 +85,4 @@ impl_pow!(
 );
 impl_self_ops!(Integer, Rug, Fastnum, F64, F32);
 impl_int_ops!(Integer, Integer, i32);
+impl_int_ops!(Integer, Integer, u32);
