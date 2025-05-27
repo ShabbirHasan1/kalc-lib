@@ -121,6 +121,30 @@ impl Div<Integer> for Float {
         }
     }
 }
+impl Mul<Float> for Integer {
+    type Output = Float;
+    fn mul(self, rhs: Float) -> Self::Output {
+        match (rhs, self) {
+            (Float::Rug(a), Integer::Rug(b)) => Float::Rug(a * b),
+            (Float::Fastnum(a), Integer::Fastnum(b)) => Float::Fastnum(a * b),
+            (Float::F64(a), Integer::F64(b)) => Float::F64(a * b as f64),
+            (Float::F32(a), Integer::F32(b)) => Float::F32(a * b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
+impl Div<Float> for Integer {
+    type Output = Float;
+    fn div(self, rhs: Float) -> Self::Output {
+        match (rhs, self) {
+            (Float::Rug(a), Integer::Rug(b)) => Float::Rug(a / b),
+            (Float::Fastnum(a), Integer::Fastnum(b)) => Float::Fastnum(a / b),
+            (Float::F64(a), Integer::F64(b)) => Float::F64(a / b as f64),
+            (Float::F32(a), Integer::F32(b)) => Float::F32(a / b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
 impl SpecialValues for Float {
     fn pi(t: Type, prec: u32) -> Self {
         match t {
@@ -302,4 +326,10 @@ impl_partial_ord!(
     (F32, |x: &f32| *x as f64)
 );
 impl_neg!(Float, Rug, Fastnum, F64, F32);
-impl_self_ops!(Float, Rug, Fastnum, F64, F32);
+impl_self_ops!(
+    Float,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x)
+);

@@ -32,5 +32,5 @@ impl Display for CF64 {
 }
 
 dec_c_impl!(CF64, f64, |_, x| x as f64);
-impl_cneg!(CF64);
+impl_cneg!(CF64, CF64);
 impl_self_c_ops!(CF64);

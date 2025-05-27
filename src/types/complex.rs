@@ -1,5 +1,5 @@
 use super::{
-    CDecimal, CF32, CF64, Decimal, Float, NewVal, ParseU, Prec, Special, SpecialValues,
+    CDecimal, CF32, CF64, Decimal, Float, Integer, NewVal, ParseU, Prec, Special, SpecialValues,
     SpecialValuesDeci, Type, WithVal, WithValDeci,
 };
 use crate::macros::impls::{
@@ -7,7 +7,7 @@ use crate::macros::impls::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-use std::ops::{Add, Mul};
+use std::ops::{Add, Div, Mul};
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Complex {
     Rug(rug::Complex),
@@ -226,7 +226,66 @@ impl PartialEq<i32> for Complex {
         }
     }
 }
+impl Mul<Integer> for Complex {
+    type Output = Self;
+    fn mul(self, rhs: Integer) -> Self::Output {
+        match (self, rhs) {
+            (Complex::Rug(a), Integer::Rug(b)) => Complex::Rug(a * b),
+            (Complex::Fastnum(a), Integer::Fastnum(b)) => Complex::Fastnum(a * b),
+            (Complex::F64(a), Integer::F64(b)) => Complex::F64(a * b as f64),
+            (Complex::F32(a), Integer::F32(b)) => Complex::F32(a * b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
+impl Div<Integer> for Complex {
+    type Output = Self;
+    fn div(self, rhs: Integer) -> Self::Output {
+        match (self, rhs) {
+            (Complex::Rug(a), Integer::Rug(b)) => Complex::Rug(a / b),
+            (Complex::Fastnum(a), Integer::Fastnum(b)) => Complex::Fastnum(a / b),
+            (Complex::F64(a), Integer::F64(b)) => Complex::F64(a / b as f64),
+            (Complex::F32(a), Integer::F32(b)) => Complex::F32(a / b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
+impl Mul<Complex> for Integer {
+    type Output = Complex;
+    fn mul(self, rhs: Complex) -> Self::Output {
+        match (rhs, self) {
+            (Complex::Rug(a), Integer::Rug(b)) => Complex::Rug(a * b),
+            (Complex::Fastnum(a), Integer::Fastnum(b)) => Complex::Fastnum(a * b),
+            (Complex::F64(a), Integer::F64(b)) => Complex::F64(a * b as f64),
+            (Complex::F32(a), Integer::F32(b)) => Complex::F32(a * b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
+impl Div<Complex> for Integer {
+    type Output = Complex;
+    fn div(self, rhs: Complex) -> Self::Output {
+        match (rhs, self) {
+            (Complex::Rug(a), Integer::Rug(b)) => Complex::Rug(a / b),
+            (Complex::Fastnum(a), Integer::Fastnum(b)) => Complex::Fastnum(a / b),
+            (Complex::F64(a), Integer::F64(b)) => Complex::F64(a / b as f64),
+            (Complex::F32(a), Integer::F32(b)) => Complex::F32(a / b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
 
+impl WithVal<(Float, Float)> for Complex {
+    fn with_val(_: Type, prec: u32, val: (Float, Float)) -> Self {
+        match val {
+            (Float::Rug(a), Float::Rug(b)) => Complex::Rug(rug::Complex::with_val(prec, (a, b))),
+            (Float::Fastnum(a), Float::Fastnum(b)) => Complex::Fastnum(CDecimal(a, b)),
+            (Float::F64(a), Float::F64(b)) => Complex::F64(CF64(a, b)),
+            (Float::F32(a), Float::F32(b)) => Complex::F32(CF32(a, b)),
+            _ => unreachable!(),
+        }
+    }
+}
 impl_new_val!(
     Complex,
     (Rug, rug::Complex::with_val),
@@ -242,4 +301,10 @@ impl_from_complex_tuple!(Special, Special);
 impl_from_complex_tuple!(Special, i32);
 impl_complex!(Complex, Rug, Fastnum, F64, F32);
 impl_neg!(Complex, Rug, Fastnum, F64, F32);
-impl_self_ops!(Complex, Rug, Fastnum, F64, F32);
+impl_self_ops!(
+    Complex,
+    (Rug, |x| x),
+    (Fastnum, |x| x),
+    (F64, |x| x),
+    (F32, |x| x)
+);

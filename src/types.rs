@@ -19,6 +19,7 @@ use rug::ops::Pow as RugPow;
 //TODO malachite num maybe
 //TODO make real only an option
 
+#[derive(PartialEq)]
 pub enum IsPrime {
     No,
     Probably,

@@ -2,9 +2,10 @@ use super::{Decimal, NewDeciVal, Pow, Prec, Rt, SpecialValuesDeci, WithValDeci};
 use crate::macros::impls::{
     dec_c_impl, impl_c_ops, impl_cneg, impl_new_val_cdeci, impl_self_c_ops,
 };
+use fastnum::I512;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-
+use std::ops::{Div, Mul};
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CDecimal(pub Decimal, pub Decimal);
 
@@ -36,8 +37,25 @@ impl Display for CDecimal {
     }
 }
 
+impl Mul<I512> for CDecimal {
+    type Output = Self;
+    fn mul(mut self, rhs: I512) -> Self::Output {
+        self.0 = self.0 * rhs;
+        self.1 = self.1 * rhs;
+        self
+    }
+}
+impl Div<I512> for CDecimal {
+    type Output = Self;
+    fn div(mut self, rhs: I512) -> Self::Output {
+        self.0 = self.0 / rhs;
+        self.1 = self.1 / rhs;
+        self
+    }
+}
+
 impl_c_ops!(CDecimal, CDecimal, Decimal, |x| x);
 impl_new_val_cdeci!(CDecimal);
 dec_c_impl!(CDecimal, Decimal, Decimal::with_val);
-impl_cneg!(CDecimal);
+impl_cneg!(CDecimal, CDecimal);
 impl_self_c_ops!(CDecimal);

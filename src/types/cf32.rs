@@ -31,6 +31,6 @@ impl Display for CF32 {
     }
 }
 
-impl_cneg!(CF32);
+impl_cneg!(CF32, CF32);
 dec_c_impl!(CF32, f32, |_, x| x as f32);
 impl_self_c_ops!(CF32);

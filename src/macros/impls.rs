@@ -811,6 +811,66 @@ macro_rules! impl_self_c_ops {
                 )
             }
         }
+        impl std::ops::Add<&$t> for $t {
+            type Output = Self;
+            fn add(self, rhs: &$t) -> Self::Output {
+                Self(self.0 + rhs.0, self.1 + rhs.1)
+            }
+        }
+        impl std::ops::AddAssign<&$t> for $t {
+            fn add_assign(&mut self, rhs: &$t) {
+                self.0 += rhs.0;
+                self.1 += rhs.1;
+            }
+        }
+        impl std::ops::Sub<&$t> for $t {
+            type Output = Self;
+            fn sub(self, rhs: &$t) -> Self::Output {
+                Self(self.0 - rhs.0, self.1 - rhs.1)
+            }
+        }
+        impl std::ops::SubAssign<&$t> for $t {
+            fn sub_assign(&mut self, rhs: &$t) {
+                self.0 -= rhs.0;
+                self.1 -= rhs.1;
+            }
+        }
+        impl std::ops::Mul<&$t> for $t {
+            type Output = Self;
+            fn mul(self, rhs: &$t) -> Self::Output {
+                Self(
+                    self.0 * rhs.0 - self.1 * rhs.1,
+                    self.1 * rhs.0 + self.0 * rhs.1,
+                )
+            }
+        }
+        impl std::ops::MulAssign<&$t> for $t {
+            fn mul_assign(&mut self, rhs: &$t) {
+                *self = Self(
+                    self.0 * rhs.0 - self.1 * rhs.1,
+                    self.1 * rhs.0 + self.0 * rhs.1,
+                )
+            }
+        }
+        impl std::ops::Div<&$t> for $t {
+            type Output = Self;
+            fn div(self, rhs: &$t) -> Self::Output {
+                let sq = (self.0 * self.0 + rhs.0 * rhs.0).recip();
+                Self(
+                    (self.0 * rhs.0 + self.1 * rhs.1) * sq,
+                    (self.1 * rhs.0 - self.0 * rhs.1) * sq,
+                )
+            }
+        }
+        impl std::ops::DivAssign<&$t> for $t {
+            fn div_assign(&mut self, rhs: &$t) {
+                let sq = (self.0 * self.0 + rhs.0 * rhs.0).recip();
+                *self = Self(
+                    (self.0 / rhs.0 + self.1 / rhs.1) * sq,
+                    (self.1 / rhs.0 - self.0 / rhs.1) * sq,
+                )
+            }
+        }
     };
 }
 
@@ -1069,8 +1129,8 @@ macro_rules! impl_int_ops {
 }
 
 macro_rules! impl_self_ops {
-    ($ty:ty, $( $variant:ident ),* ) => {
-        impl std::ops::Add for $ty {
+    ($ty:ty, $( ($variant:ident, $c: expr) ),* ) => {
+        impl std::ops::Add<$ty> for $ty {
             type Output = Self;
             fn add(self, rhs: Self) -> Self::Output {
                 match (self, rhs) {
@@ -1081,7 +1141,7 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-        impl std::ops::AddAssign for $ty {
+        impl std::ops::AddAssign<$ty> for $ty {
             fn add_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
                     $(
@@ -1091,7 +1151,7 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-        impl std::ops::Sub for $ty {
+        impl std::ops::Sub<$ty> for $ty {
             type Output = Self;
             fn sub(self, rhs: Self) -> Self::Output {
                 match (self, rhs) {
@@ -1102,7 +1162,7 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-        impl std::ops::SubAssign for $ty {
+        impl std::ops::SubAssign<$ty> for $ty {
             fn sub_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
                     $(
@@ -1112,7 +1172,7 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-        impl std::ops::Mul for $ty {
+        impl std::ops::Mul<$ty> for $ty {
             type Output = Self;
             fn mul(self, rhs: Self) -> Self::Output {
                 match (self, rhs) {
@@ -1123,7 +1183,7 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-        impl std::ops::MulAssign for $ty {
+        impl std::ops::MulAssign<$ty> for $ty {
             fn mul_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
                     $(
@@ -1133,7 +1193,7 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-        impl std::ops::Div for $ty {
+        impl std::ops::Div<$ty> for $ty {
             type Output = Self;
             fn div(self, rhs: Self) -> Self::Output {
                 match (self, rhs) {
@@ -1144,11 +1204,95 @@ macro_rules! impl_self_ops {
                 }
             }
         }
-        impl std::ops::DivAssign for $ty {
+        impl std::ops::DivAssign<$ty> for $ty {
             fn div_assign(&mut self, rhs: Self) {
                 match (self, rhs) {
                     $(
                         (Self::$variant(a), Self::$variant(b)) => *a /= b,
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::Add<& $ty> for $ty {
+            type Output = Self;
+            fn add(self, rhs: &Self) -> Self::Output {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => Self::$variant(a + $c(b)),
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::AddAssign<& $ty> for $ty {
+            fn add_assign(&mut self, rhs: &Self) {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => *a += $c(b),
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::Sub<& $ty> for $ty {
+            type Output = Self;
+            fn sub(self, rhs: &Self) -> Self::Output {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => Self::$variant(a - $c(b)),
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::SubAssign<& $ty> for $ty {
+            fn sub_assign(&mut self, rhs: &Self) {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => *a -= $c(b),
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::Mul<& $ty> for $ty {
+            type Output = Self;
+            fn mul(self, rhs: &Self) -> Self::Output {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => Self::$variant(a * $c(b)),
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::MulAssign<& $ty> for $ty {
+            fn mul_assign(&mut self, rhs: &Self) {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => *a *= $c(b),
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::Div<& $ty> for $ty {
+            type Output = Self;
+            fn div(self, rhs: &Self) -> Self::Output {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => Self::$variant(a / $c(b)),
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+        impl std::ops::DivAssign<& $ty> for $ty {
+            fn div_assign(&mut self, rhs: &Self) {
+                match (self, rhs) {
+                    $(
+                        (Self::$variant(a), Self::$variant(b)) => *a /= $c(b),
                     )*
                     _ => unreachable!(),
                 }
@@ -1173,11 +1317,17 @@ macro_rules! impl_neg {
 }
 
 macro_rules! impl_cneg {
-    ($ty:ty) => {
+    ($ty:ty, $b:ident) => {
         impl std::ops::Neg for $ty {
             type Output = Self;
             fn neg(self) -> Self::Output {
                 Self(-self.0, -self.1)
+            }
+        }
+        impl<'a> std::ops::Neg for &'a $ty {
+            type Output = $ty;
+            fn neg(self) -> Self::Output {
+                $b(-self.0, -self.1)
             }
         }
     };

@@ -168,4 +168,8 @@ impl_partial_ord!(
 );
 dec_impl!(Decimal, D512, D256);
 impl_neg!(Decimal, D512, D256);
-impl_self_ops!(Decimal, D512, D256);
+impl_self_ops!(
+    Decimal,
+    (D512, |x: &fastnum::D512| *x),
+    (D256, |x: &fastnum::D256| *x)
+);
