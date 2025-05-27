@@ -2,10 +2,10 @@ use super::{NewDeciVal, Parse, Prec, SinhCosh, SpecialValuesDeci};
 use crate::macros::impls::{
     dec_impl, impl_neg, impl_new_val_deci, impl_partial_ord, impl_rem, impl_self_ops,
 };
-use fastnum::I512;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
+use std::ops::{Div, Mul};
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Decimal {
     D512(fastnum::D512),
@@ -34,7 +34,7 @@ impl Decimal {
             Self::D256(a) => a.is_zero(),
         }
     }
-    pub fn to_integer(self) -> I512 {
+    pub fn to_integer(self) -> fastnum::I512 {
         match self {
             Self::D512(_) => todo!(),
             Self::D256(_) => todo!(),
@@ -50,6 +50,38 @@ impl Decimal {
         match self {
             Self::D512(a) => a.to_string(),
             Self::D256(a) => a.to_string(),
+        }
+    }
+}
+
+impl Mul<fastnum::I512> for Decimal {
+    type Output = Self;
+    fn mul(self, rhs: fastnum::I512) -> Self::Output {
+        match self {
+            Decimal::D512(a) => Decimal::D512(
+                a * fastnum::D512::from_str(&rhs.to_string(), fastnum::decimal::Context::default())
+                    .unwrap_or_default(),
+            ),
+            Decimal::D256(a) => Decimal::D256(
+                a * fastnum::D256::from_str(&rhs.to_string(), fastnum::decimal::Context::default())
+                    .unwrap_or_default(),
+            ),
+        }
+    }
+}
+
+impl Div<fastnum::I512> for Decimal {
+    type Output = Self;
+    fn div(self, rhs: fastnum::I512) -> Self::Output {
+        match self {
+            Decimal::D512(a) => Decimal::D512(
+                a / fastnum::D512::from_str(&rhs.to_string(), fastnum::decimal::Context::default())
+                    .unwrap_or_default(),
+            ),
+            Decimal::D256(a) => Decimal::D256(
+                a / fastnum::D256::from_str(&rhs.to_string(), fastnum::decimal::Context::default())
+                    .unwrap_or_default(),
+            ),
         }
     }
 }

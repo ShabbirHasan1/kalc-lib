@@ -7,11 +7,11 @@ use crate::macros::impls::{
 };
 use rug::ops::CompleteRound;
 use serde::{Deserialize, Serialize};
+use std::ops::{Div, Mul};
 use std::{
     cmp::{Ordering, PartialOrd},
     fmt::{Display, Formatter},
 };
-
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Float {
     Rug(rug::Float),
@@ -97,7 +97,30 @@ impl ParseU<&str> for Float {
         }
     }
 }
-
+impl Mul<Integer> for Float {
+    type Output = Self;
+    fn mul(self, rhs: Integer) -> Self::Output {
+        match (self, rhs) {
+            (Float::Rug(a), Integer::Rug(b)) => Float::Rug(a * b),
+            (Float::Fastnum(a), Integer::Fastnum(b)) => Float::Fastnum(a * b),
+            (Float::F64(a), Integer::F64(b)) => Float::F64(a * b as f64),
+            (Float::F32(a), Integer::F32(b)) => Float::F32(a * b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
+impl Div<Integer> for Float {
+    type Output = Self;
+    fn div(self, rhs: Integer) -> Self::Output {
+        match (self, rhs) {
+            (Float::Rug(a), Integer::Rug(b)) => Float::Rug(a / b),
+            (Float::Fastnum(a), Integer::Fastnum(b)) => Float::Fastnum(a / b),
+            (Float::F64(a), Integer::F64(b)) => Float::F64(a / b as f64),
+            (Float::F32(a), Integer::F32(b)) => Float::F32(a / b as f32),
+            _ => unreachable!(),
+        }
+    }
+}
 impl SpecialValues for Float {
     fn pi(t: Type, prec: u32) -> Self {
         match t {
