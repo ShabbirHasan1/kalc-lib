@@ -7,7 +7,7 @@ use crate::macros::impls::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-
+use std::ops::{Add, Mul};
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum Complex {
     Rug(rug::Complex),
@@ -101,6 +101,31 @@ impl From<(Float, Float)> for Complex {
             (Float::F32(a), Float::F32(b)) => Complex::F32((a, b).into()),
             _ => unreachable!(),
         }
+    }
+}
+
+impl Add<Float> for Complex {
+    type Output = Self;
+    fn add(self, rhs: Float) -> Self::Output {
+        self + Complex::from(rhs)
+    }
+}
+impl Add<Complex> for Float {
+    type Output = Complex;
+    fn add(self, rhs: Complex) -> Self::Output {
+        Complex::from(self) + rhs
+    }
+}
+impl Mul<Float> for Complex {
+    type Output = Self;
+    fn mul(self, rhs: Float) -> Self::Output {
+        self * Complex::from(rhs)
+    }
+}
+impl Mul<Complex> for Float {
+    type Output = Complex;
+    fn mul(self, rhs: Complex) -> Self::Output {
+        Complex::from(self) * rhs
     }
 }
 

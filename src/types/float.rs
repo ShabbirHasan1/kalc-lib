@@ -238,6 +238,14 @@ impl Float {
             Float::F32(a) => Integer::F32(a as i128),
         }
     }
+    pub fn gamma(self) -> Self {
+        match self {
+            Float::Rug(a) => Self::Rug(a.gamma()),
+            Float::Fastnum(a) => Self::Fastnum(a),
+            Float::F64(a) => Self::F64(a),
+            Float::F32(a) => Self::F32(a),
+        }
+    }
 }
 
 impl PartialEq<f64> for Float {
@@ -257,6 +265,16 @@ impl PartialEq<i32> for Float {
             Float::Fastnum(a) => a == other,
             Float::F64(a) => *a == *other as f64,
             Float::F32(a) => *a == *other as f32,
+        }
+    }
+}
+impl PartialOrd<i32> for Float {
+    fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
+        match self {
+            Float::Rug(a) => a.partial_cmp(other),
+            Float::Fastnum(a) => a.to_integer().partial_cmp(&fastnum::I512::from(*other)),
+            Float::F64(a) => a.partial_cmp(&(*other as f64)),
+            Float::F32(a) => a.partial_cmp(&(*other as f32)),
         }
     }
 }

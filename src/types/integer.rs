@@ -5,7 +5,7 @@ use rug::ops::Pow as RugPow;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum Integer {
     Rug(rug::Integer),
     Fastnum(fastnum::I512),
@@ -71,6 +71,35 @@ impl Integer {
             Self::Fastnum(a) => a.to_str_radix(base as u32),
             Self::F64(a) => a.to_string(),
             Self::F32(a) => a.to_string(),
+        }
+    }
+    pub fn binomial(self, k: u32) -> Self {
+        match self {
+            Self::Rug(a) => Self::Rug(a.binomial(k)),
+            Self::Fastnum(a) => Self::Fastnum(a),
+            Self::F64(a) => Self::F64(a),
+            Self::F32(a) => Self::F32(a),
+        }
+    }
+    pub fn div_rem(self, d: Self) -> (Self, Self) {
+        match (self, d) {
+            (Self::Rug(a), Self::Rug(d)) => {
+                let (a, b) = a.div_rem(d);
+                (Self::Rug(a), Self::Rug(b))
+            }
+            (Self::Fastnum(a), Self::Fastnum(d)) => {
+                let (a, b) = (a / d, a.rem(d));
+                (Self::Fastnum(a), Self::Fastnum(b))
+            }
+            (Self::F64(a), Self::F64(d)) => {
+                let (a, b) = (a / d, a % d);
+                (Self::F64(a), Self::F64(b))
+            }
+            (Self::F32(a), Self::F32(d)) => {
+                let (a, b) = (a / d, a % d);
+                (Self::F32(a), Self::F32(b))
+            }
+            _ => unreachable!(),
         }
     }
 }

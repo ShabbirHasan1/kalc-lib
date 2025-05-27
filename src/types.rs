@@ -16,8 +16,23 @@ pub use integer::Integer;
 
 use rug::ops::Pow as RugPow;
 
-///TODO malachite num maybe
-///TODO make real only an option
+//TODO malachite num maybe
+//TODO make real only an option
+
+pub enum IsPrime {
+    No,
+    Probably,
+    Yes,
+}
+impl From<rug::integer::IsPrime> for IsPrime {
+    fn from(value: rug::integer::IsPrime) -> Self {
+        match value {
+            rug::integer::IsPrime::No => IsPrime::No,
+            rug::integer::IsPrime::Probably => IsPrime::Probably,
+            rug::integer::IsPrime::Yes => IsPrime::Yes,
+        }
+    }
+}
 
 #[derive(PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Type {
