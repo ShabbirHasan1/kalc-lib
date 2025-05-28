@@ -1785,13 +1785,15 @@ pub fn input_var(
                                 let mut fvs = var.funcvars.clone();
                                 let mut tempf = Vec::new();
                                 let mut tempf2 = Vec::new();
+                                let mut ignore: Vec<usize> = Vec::new();
+                                let mut ignorefv: Vec<(usize, usize)> = Vec::new();
                                 for (z, (varf, func_var)) in split.iter().zip(func_vars).enumerate()
                                 {
-                                    let mut num = if let Ok(n) = Complex::parse_radix(
+                                    let rnum = if let Ok(n) = Complex::parse_radix(
                                         varf.iter().collect::<String>(),
                                         options.base.0,
                                     ) {
-                                        vec![NumStr::new(Number::from(n.complete(prec), None))]
+                                        NumStr::new(Number::from(n.complete(prec), None))
                                     } else {
                                         let parsed;
                                         let exit;
@@ -1932,33 +1934,33 @@ pub fn input_var(
                                                 })
                                             })
                                         {
-                                            let iden = format!(
-                                                "@{}{}{}{}@",
-                                                i,
-                                                func_var,
-                                                depth,
-                                                vars.len()
-                                            );
                                             if parsed.len() == 1 {
-                                                parsed
+                                                parsed.into_iter().next().unwrap()
                                             } else {
+                                                let iden = format!(
+                                                    "@{}{}{}{}@",
+                                                    i,
+                                                    func_var,
+                                                    depth,
+                                                    vars.len()
+                                                );
                                                 funcvars.extend(func);
                                                 funcvars.push((iden.clone(), parsed));
-                                                vec![Func(iden)]
+                                                Func(iden)
                                             }
                                         } else {
-                                            vec![match do_math(parsed, options, func) {
+                                            match do_math(parsed, options, func) {
                                                 Ok(f) => f,
                                                 Err(s) => {
                                                     err = s;
                                                     continue;
                                                 }
-                                            }]
+                                            }
                                         }
                                     };
+                                    let mut num = vec![rnum];
                                     if print
-                                        && num.len() == 1
-                                        && if let Num(n) = num[0].clone() {
+                                        && if let Num(n) = &num[0] {
                                             n.number.real().is_sign_negative()
                                         } else {
                                             false
@@ -1991,19 +1993,29 @@ pub fn input_var(
                                             k = fv.1.len();
                                             while k != 0 {
                                                 k -= 1;
-                                                if fv.1[k].str_is(&func_var) {
-                                                    fvs[x].1.remove(k);
-                                                    fvs[x].1.splice(k..k, num.clone());
+                                                if fv.1[k].str_is(&func_var)
+                                                    && !ignorefv.contains(&(x, k))
+                                                {
+                                                    if num.len() == 1 {
+                                                        ignorefv.push((x, k));
+                                                        fvs[x].1[k] = num[0].clone();
+                                                    } else {
+                                                        ignorefv.push((x, k + 1));
+                                                        fvs[x].1.remove(k);
+                                                        fvs[x].1.splice(k..k, num.clone());
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                     while k < parsed.len() {
-                                        if parsed[k].str_is(&func_var) {
-                                            parsed.remove(k);
+                                        if parsed[k].str_is(&func_var) && !ignore.contains(&k) {
                                             if num.len() == 1 {
-                                                parsed.insert(k, num[0].clone());
+                                                ignore.push(k);
+                                                parsed[k] = num[0].clone();
                                             } else {
+                                                parsed.remove(k);
+                                                ignore.push(k + 1);
                                                 parsed.splice(k..k, num.clone());
                                                 k += num.len();
                                                 continue;
