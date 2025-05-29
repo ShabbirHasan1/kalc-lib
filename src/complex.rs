@@ -4392,10 +4392,10 @@ pub fn extrema(
         v.set_prec(op);
         Ok(v)
     } else {
-        Ok(NumStr::new(Number::from(
+        Ok(Vector(vec![Number::from(
             Complex::with_val(options.prec, Nan),
             None,
-        )))
+        )]))
     }
 }
 #[allow(clippy::too_many_arguments)]
