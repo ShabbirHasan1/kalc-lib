@@ -20,7 +20,7 @@ use std::{
     net::TcpStream,
     time::SystemTime,
 };
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone,Debug, Serialize, Deserialize)]
 pub struct Variable {
     pub name: Vec<char>,
     pub parsed: Vec<NumStr>,
@@ -46,14 +46,14 @@ pub struct Number {
     pub number: Complex,
     pub units: Option<Units>,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Data {
     pub vars: Vec<Variable>,
     pub options: Options,
     pub colors: Colors,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone,Debug, Serialize, Deserialize)]
 pub struct Colors {
     pub text: String,
     pub prompt: String,
@@ -105,13 +105,13 @@ impl Default for Colors {
         }
     }
 }
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
 pub enum AngleType {
     Radians,
     Degrees,
     Gradians,
 }
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug,PartialEq, Serialize, Deserialize)]
 pub enum Auto {
     True,
     False,
@@ -135,27 +135,27 @@ impl Auto {
     }
 }
 
-#[derive(Default, Copy, Clone, PartialEq)]
+#[derive(Default, Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HowGraphing {
     pub graph: bool,
     pub x: bool,
     pub y: bool,
     pub w: bool,
 }
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fractions {
     pub num: bool,
     pub vec: bool,
     pub mat: bool,
 }
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
 pub enum Notation {
     Normal,
     Scientific,
     LargeEngineering,
     SmallEngineering,
 }
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
 pub enum GraphType {
     Normal,
     Domain,
@@ -164,7 +164,7 @@ pub enum GraphType {
     Depth,
     None,
 }
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Options {
     pub float_type: Type,
     pub notation: Notation,

@@ -35,7 +35,7 @@ impl From<rug::integer::IsPrime> for IsPrime {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub enum Type {
     Rug,
     Fastnum,
