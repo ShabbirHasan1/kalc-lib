@@ -157,6 +157,7 @@ pub fn do_math(
                                 | "atan"
                                 | "arctan"
                                 | "atan2"
+                                | "hypot"
                                 | "normP"
                                 | "normD"
                                 | "betaP"
@@ -3955,6 +3956,7 @@ fn functions(
             | "asec"
             | "arcsec"
             | "atan2"
+            | "hypot"
             | "atan"
             | "arctan"
             | "acot"
@@ -4052,6 +4054,16 @@ fn functions(
                             angle: 1.0,
                             ..Units::default()
                         }),
+                    )
+                } else {
+                    return Err("not enough args");
+                }
+            }
+            "hypot" => {
+                if let Some(b) = c {
+                    Number::from(
+                        (b.number.clone() * b.number + a.number.clone() * a.number).sqrt(),
+                        a.units,
                     )
                 } else {
                     return Err("not enough args");

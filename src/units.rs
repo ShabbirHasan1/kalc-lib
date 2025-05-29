@@ -27,7 +27,7 @@ pub struct Variable {
     pub unparsed: String,
     pub funcvars: Vec<(String, Vec<NumStr>)>,
 }
-#[derive(Clone, PartialEq, Copy, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Copy, Debug, Serialize, Deserialize)]
 pub struct Units {
     pub second: f64,
     pub meter: f64,
@@ -41,7 +41,7 @@ pub struct Units {
     pub usd: f64,
     pub unit: f64,
 }
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Number {
     pub number: Complex,
     pub units: Option<Units>,

@@ -20,7 +20,7 @@ use rug::{
 };
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum NumStr {
     Num(Box<Number>),
     Func(String),
@@ -4270,7 +4270,7 @@ pub fn extrema(
     (prec, options.prec) = set_slope_prec(options.prec, 2);
     x.set_prec(options.prec);
     set_prec(&mut func, &mut func_vars, options.prec);
-    for _ in 0..op / 4 {
+    for _ in 0..(op / 4).max(64) {
         let n = Number::from(x.clone(), None);
         let y = do_math_with_var(
             func.clone(),
