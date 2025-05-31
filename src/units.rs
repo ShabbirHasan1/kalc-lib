@@ -20,7 +20,7 @@ use std::{
     net::TcpStream,
     time::SystemTime,
 };
-#[derive(Clone,Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Variable {
     pub name: Vec<char>,
     pub parsed: Vec<NumStr>,
@@ -53,7 +53,7 @@ pub struct Data {
     pub colors: Colors,
 }
 
-#[derive(Clone,Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Colors {
     pub text: String,
     pub prompt: String,
@@ -105,13 +105,13 @@ impl Default for Colors {
         }
     }
 }
-#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AngleType {
     Radians,
     Degrees,
     Gradians,
 }
-#[derive(Copy, Clone, Debug,PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Auto {
     True,
     False,
@@ -142,20 +142,20 @@ pub struct HowGraphing {
     pub y: bool,
     pub w: bool,
 }
-#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fractions {
     pub num: bool,
     pub vec: bool,
     pub mat: bool,
 }
-#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Notation {
     Normal,
     Scientific,
     LargeEngineering,
     SmallEngineering,
 }
-#[derive(Copy, Clone,Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum GraphType {
     Normal,
     Domain,

@@ -83,6 +83,12 @@ impl Number {
         let units = None;
         Self { number, units }
     }
+    pub fn real(&self) -> &Float {
+        self.number.real()
+    }
+    pub fn imag(&self) -> &Float {
+        self.number.imag()
+    }
 }
 pub fn add(a: &Number, b: &Number) -> Number {
     Number::from(
