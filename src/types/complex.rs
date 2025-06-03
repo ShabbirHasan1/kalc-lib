@@ -5,10 +5,12 @@ use super::{
 use crate::macros::impls::{
     impl_complex, impl_from_complex_tuple, impl_neg, impl_new_val, impl_self_ops,
 };
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Div, Mul};
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Complex {
     Rug(rug::Complex),
     Fastnum(CDecimal),

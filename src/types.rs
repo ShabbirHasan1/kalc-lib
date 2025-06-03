@@ -34,8 +34,11 @@ impl From<rug::integer::IsPrime> for IsPrime {
         }
     }
 }
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Type {
     Rug,
     Fastnum,

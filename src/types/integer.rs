@@ -2,10 +2,12 @@ use super::Type;
 use crate::macros::impls::{impl_int_ops, impl_pow, impl_self_ops};
 use crate::types::Pow;
 use rug::ops::Pow as RugPow;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Integer {
     Rug(rug::Integer),
     Fastnum(fastnum::I512),

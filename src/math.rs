@@ -1,4 +1,6 @@
 use crate::cas::isolate;
+#[cfg(feature = "fastrand")]
+use crate::complex::{rand_gamma, rand_norm};
 use crate::{
     complex::{
         LimSide::{Both, Left, Right},
@@ -15,10 +17,10 @@ use crate::{
         euleriannumbersint, extrema, gamma, gcd, ge, generalized_eigenvectors, gt, hsv2rgb,
         identity, implies, incomplete_beta, incomplete_gamma, inverse, iter, jcf, kernel, lambertw,
         length, limit, lower_incomplete_gamma, minors, mul_units, mvec, nand, ne, nor, not,
-        nth_prime, or, pow_nth, prime_factors, quadratic, quartic, rand_gamma, rand_norm, range,
-        rcf, recursion, regularized_incomplete_beta, rem, root, rref, shl, shr, slog, slope, solve,
-        sort, sort_mat, sqr, sub, subfactorial, sum, surface_area, taylor, tetration, to, to_cyl,
-        to_polar, trace, transpose, unity, variance, xor, zeta,
+        nth_prime, or, pow_nth, prime_factors, quadratic, quartic, range, rcf, recursion,
+        regularized_incomplete_beta, rem, root, rref, shl, shr, slog, slope, solve, sort, sort_mat,
+        sqr, sub, subfactorial, sum, surface_area, taylor, tetration, to, to_cyl, to_polar, trace,
+        transpose, unity, variance, xor, zeta,
     },
     fraction::{c_to_rational, rationalize},
     misc::do_math_with_var,
@@ -33,7 +35,9 @@ use rug::{
     integer::IsPrime,
     ops::Pow,
 };
-use std::{cmp::Ordering, ops::Rem, time::SystemTime};
+#[cfg(feature = "fastrand")]
+use std::ops::Rem;
+use std::{cmp::Ordering, time::SystemTime};
 pub fn do_math(
     mut function: Vec<NumStr>,
     options: Options,
@@ -1403,6 +1407,7 @@ pub fn do_math(
                                 ]);
                                 Matrix(mat)
                             }
+                            #[cfg(feature = "fastrand")]
                             "rand_weighted" => {
                                 if a.iter().any(|a| a.len() != 2) {
                                     return Err("bad data");
@@ -1439,6 +1444,7 @@ pub fn do_math(
                                 }
                                 NumStr::new(num)
                             }
+                            #[cfg(feature = "fastrand")]
                             "roll" => {
                                 let mut sum: Integer = Integer::new();
                                 for i in a {
@@ -1631,6 +1637,7 @@ pub fn do_math(
                                 }
                                 Vector(sort(vec))
                             }
+                            #[cfg(feature = "fastrand")]
                             "roll" => {
                                 let mut sum: Integer = Integer::new();
                                 let mut i = 0;
@@ -2954,6 +2961,7 @@ pub fn do_math(
                                     return Err("not enough args");
                                 }
                             }
+                            #[cfg(feature = "fastrand")]
                             "rand_hypergeometric" => {
                                 if i + 2 < function.len() {
                                     let mut pop = arg.num()?.number.real().clone();
@@ -3025,6 +3033,7 @@ pub fn do_math(
                                     return Err("not enough args");
                                 }
                             }
+                            #[cfg(feature = "fastrand")]
                             "rand_neg_hypergeometric" => {
                                 if i + 2 < function.len() {
                                     let mut pop = arg.num()?.number.real().clone();
@@ -3518,6 +3527,7 @@ pub fn do_math(
     while i < function.len() {
         if let Func(s) = &function[i] {
             function[i] = match s.as_str() {
+                #[cfg(feature = "fastrand")]
                 "rnd" | "rand" => NumStr::new(Number::from(
                     Complex::with_val(options.prec, fastrand::u128(..)) / u128::MAX,
                     None,
@@ -4149,6 +4159,7 @@ fn functions(
                     Number::from(Complex::with_val(options.prec, (real, imag)), a.units)
                 }
             }
+            #[cfg(feature = "fastrand")]
             "rand_norm" => {
                 if let Some(b) = c {
                     Number::from(rand_norm(a.number, b.number), a.units)
@@ -4156,6 +4167,7 @@ fn functions(
                     return Err("not enough args");
                 }
             }
+            #[cfg(feature = "fastrand")]
             "rand_uniform" => {
                 if let Some(b) = c {
                     let units = a.units;
@@ -4171,6 +4183,7 @@ fn functions(
                     return Err("not enough args");
                 }
             }
+            #[cfg(feature = "fastrand")]
             "rand_int" => {
                 if let Some(b) = c {
                     let units = a.units;
@@ -4580,6 +4593,7 @@ fn functions(
                         Complex::new(options.prec)
                     }
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_gamma" => {
                     if let Some(b) = d {
                         rand_gamma(a.real().clone(), b.real().clone()).into()
@@ -4587,6 +4601,7 @@ fn functions(
                         return Err("not enough args");
                     }
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_beta" => {
                     if let Some(b) = d {
                         let x = rand_gamma(a.real().clone(), Float::with_val(options.prec, 1));
@@ -4596,6 +4611,7 @@ fn functions(
                         return Err("not enough args");
                     }
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_lognorm" => {
                     if let Some(b) = d {
                         rand_norm(a, b).exp()
@@ -4603,6 +4619,7 @@ fn functions(
                         return Err("not enough args");
                     }
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_bernoulli" => {
                     if *a.real() > Float::with_val(options.prec, fastrand::u128(..)) / u128::MAX {
                         Complex::with_val(options.prec, 1)
@@ -4610,6 +4627,7 @@ fn functions(
                         Complex::new(options.prec)
                     }
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_binomial" => {
                     if let Some(b) = d {
                         let p = b.real();
@@ -4626,6 +4644,7 @@ fn functions(
                         return Err("not enough args");
                     }
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_neg_binomial" => {
                     if let Some(b) = d {
                         let p = b.real();
@@ -4646,6 +4665,7 @@ fn functions(
                         return Err("not enough args");
                     }
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_geometric" => {
                     let q: Float = 1 - a.real().clone();
                     let n: Float = (Float::with_val(options.prec, fastrand::u128(..)) / u128::MAX)
@@ -4653,6 +4673,7 @@ fn functions(
                         / q.ln();
                     n.ceil().into()
                 }
+                #[cfg(feature = "fastrand")]
                 "rand_poisson" => {
                     let mut prod = Complex::with_val(options.prec, 1);
                     let lim = (-a).exp();

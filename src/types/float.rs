@@ -6,13 +6,15 @@ use crate::macros::impls::{
     float_impl, impl_neg, impl_new_val, impl_partial_ord, impl_rem, impl_self_ops,
 };
 use rug::ops::CompleteRound;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::ops::{Div, Mul};
 use std::{
     cmp::{Ordering, PartialOrd},
     fmt::{Display, Formatter},
 };
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Float {
     Rug(rug::Float),
     Fastnum(Decimal),

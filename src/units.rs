@@ -10,6 +10,7 @@ use rug::{
     float::Constant::Pi,
     ops::{DivRounding, Pow},
 };
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 #[cfg(feature = "bin-deps")]
@@ -20,14 +21,16 @@ use std::{
     net::TcpStream,
     time::SystemTime,
 };
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Variable {
     pub name: Vec<char>,
     pub parsed: Vec<NumStr>,
     pub unparsed: String,
     pub funcvars: Vec<(String, Vec<NumStr>)>,
 }
-#[derive(Clone, PartialEq, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Units {
     pub second: f64,
     pub meter: f64,
@@ -41,19 +44,22 @@ pub struct Units {
     pub usd: f64,
     pub unit: f64,
 }
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Number {
     pub number: Complex,
     pub units: Option<Units>,
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Data {
     pub vars: Vec<Variable>,
     pub options: Options,
     pub colors: Colors,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Colors {
     pub text: String,
     pub prompt: String,
@@ -105,13 +111,15 @@ impl Default for Colors {
         }
     }
 }
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum AngleType {
     Radians,
     Degrees,
     Gradians,
 }
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Auto {
     True,
     False,
@@ -135,27 +143,31 @@ impl Auto {
     }
 }
 
-#[derive(Default, Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct HowGraphing {
     pub graph: bool,
     pub x: bool,
     pub y: bool,
     pub w: bool,
 }
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Fractions {
     pub num: bool,
     pub vec: bool,
     pub mat: bool,
 }
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Notation {
     Normal,
     Scientific,
     LargeEngineering,
     SmallEngineering,
 }
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum GraphType {
     Normal,
     Domain,
@@ -164,7 +176,8 @@ pub enum GraphType {
     Depth,
     None,
 }
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Options {
     pub float_type: Type,
     pub notation: Notation,

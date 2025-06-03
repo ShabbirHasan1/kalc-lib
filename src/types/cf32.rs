@@ -1,9 +1,11 @@
 use super::{Pow, Prec, Rt, SinhCosh, SpecialValuesDeci};
 use crate::macros::impls::{dec_c_impl, impl_cneg, impl_self_c_ops};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CF32(pub f32, pub f32);
 
 impl Prec for CF32 {

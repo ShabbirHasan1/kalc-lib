@@ -136,7 +136,10 @@ pub fn graph(
                 "/tmp"
             }
         };
+        #[cfg(feature = "fastrand")]
         let data_dir = &(base_dir.to_owned() + "/kalc/" + &fastrand::u64(..).to_string());
+        #[cfg(not(feature = "fastrand"))]
+        let data_dir = &(base_dir.to_owned() + "/kalc/0");
         if fs::read_dir(data_dir).is_ok() {
             let _ = fs::remove_dir_all(data_dir);
         }

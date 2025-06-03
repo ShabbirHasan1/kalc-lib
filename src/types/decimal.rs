@@ -2,11 +2,13 @@ use super::{NewDeciVal, Parse, Prec, SinhCosh, SpecialValuesDeci};
 use crate::macros::impls::{
     dec_impl, impl_neg, impl_new_val_deci, impl_partial_ord, impl_rem, impl_self_ops,
 };
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::ops::{Div, Mul};
-#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Decimal {
     D512(fastnum::D512),
     D256(fastnum::D256),

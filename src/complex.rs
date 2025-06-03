@@ -8,6 +8,7 @@ use crate::{
     parse::simplify,
     units::{Number, Options, Units},
 };
+#[cfg(feature = "rayon")]
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rug::{
     Complex, Float, Integer,
@@ -18,9 +19,11 @@ use rug::{
     integer::IsPrime,
     ops::Pow,
 };
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum NumStr {
     Num(Box<Number>),
     Func(String),
@@ -3960,7 +3963,11 @@ pub fn area(
     let data: Vec<Result<(Option<Complex>, Option<Vec<Number>>), &str>> = if options.graphing {
         (0..points).map(body).collect()
     } else {
-        (0..points).into_par_iter().map(body).collect()
+        #[cfg(feature = "rayon")]
+        let r = (0..points).into_par_iter().map(body).collect();
+        #[cfg(not(feature = "rayon"))]
+        let r = (0..points).map(body).collect();
+        r
     };
     for d in data {
         if let Ok(a) = d {
@@ -5984,6 +5991,7 @@ fn initpoint(z: Complex, k: Integer) -> Complex {
     let zln = z.ln() + Complex::with_val(prec, (0, 2 * Float::with_val(prec.0, Pi) * k));
     zln.clone() - zln.ln()
 }
+#[cfg(feature = "fastrand")]
 pub fn rand_gamma(k: Float, t: Float) -> Float {
     let prec = k.prec();
     let mut sum = Float::new(prec);
@@ -6021,6 +6029,7 @@ pub fn rand_gamma(k: Float, t: Float) -> Float {
     let f: Float = eta - sum;
     t * f
 }
+#[cfg(feature = "fastrand")]
 pub fn rand_norm(m: Complex, s: Complex) -> Complex {
     let prec = s.prec().0;
     let mut u: Float = Float::with_val(prec, fastrand::i128(i128::MIN + 2..i128::MAX)) / i128::MAX;

@@ -2,6 +2,7 @@ pub mod cas;
 pub mod complex;
 pub mod fraction;
 pub mod functions;
+#[cfg(feature = "gnuplot")]
 pub mod graph;
 pub mod help;
 pub mod load_vars;
