@@ -24,6 +24,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::{fs::File, io::Write};
 #[cfg(not(unix))]
+#[cfg(feature = "bin-deps")]
 use term_size::dimensions;
 #[cfg(feature = "bin-deps")]
 #[cfg(unix)]
