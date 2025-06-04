@@ -20,6 +20,8 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, rea
 #[cfg(feature = "bin-deps")]
 #[cfg(unix)]
 use libc::{STDOUT_FILENO, TIOCGWINSZ, ioctl, winsize};
+use std::path::PathBuf;
+use std::process::Command;
 use std::{fs::File, io::Write};
 #[cfg(not(unix))]
 use term_size::dimensions;
@@ -974,4 +976,22 @@ pub fn get_word_bank(word: &str, vars: &[Variable], options: Options) -> Vec<Str
     );
     bank.sort_unstable();
     bank
+}
+#[cfg(unix)]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe fn spawn_cmd(func: PathBuf) -> Command {
+    let mut cmd = Command::new(func);
+    unsafe {
+        use std::os::unix::process::CommandExt;
+        cmd.pre_exec(|| {
+            #[cfg(feature = "bin-deps")]
+            libc::setsid();
+            Ok(())
+        });
+    }
+    cmd
+}
+#[cfg(not(unix))]
+pub fn spawn_cmd(func: PathBuf) -> Command {
+    Command::new(func)
 }
