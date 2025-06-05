@@ -1,5 +1,8 @@
 # kalc-lib
 
+[![crates.io](https://img.shields.io/crates/v/kalc-lib.svg)](https://crates.io/crates/kalc-lib)
+[<img src="https://img.shields.io/liberapay/patrons/bgkillas.svg?logo=liberapay">](https://liberapay.com/bgkillas/)
+
 history file is stored in [config_dir](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)/kalc/kalc.history
 
 config file is stored in [config_dir](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)/kalc/kalc.config example in
