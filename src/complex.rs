@@ -1366,7 +1366,7 @@ pub fn sum(
         }
         Ok(value)
     } else if start.is_infinite() {
-        return Err("unsupported due to lack of example for convergence");
+        Err("unsupported due to lack of example for convergence")
     } else {
         let start = start
             .to_integer()
@@ -4064,7 +4064,7 @@ pub fn iter(
                 }
                 Ok(Matrix(vec))
             } else {
-                return Err("unsupported iter");
+                Err("unsupported iter")
             }
         } else {
             while last != x {
@@ -4102,7 +4102,7 @@ pub fn iter(
                 }
                 Ok(Matrix(vec))
             } else {
-                return Err("unsupported iter");
+                Err("unsupported iter")
             }
         } else {
             for _ in 0..n {
