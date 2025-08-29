@@ -5,7 +5,7 @@ use rug::ops::Pow as RugPow;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-
+use std::ops::{Add, AddAssign};
 #[derive(Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Integer {
@@ -14,6 +14,10 @@ pub enum Integer {
     F64(i128),
     F32(i128),
 }
+
+#[derive(Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Int<T: Add + AddAssign>(T);
 
 impl Display for Integer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
