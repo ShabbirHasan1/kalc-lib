@@ -1745,9 +1745,9 @@ pub fn get_output(
                         format!(
                             "{}{}{}",
                             if options.color == Auto::True {
-                                "\x1b[".to_owned() + &colors.units
+                                &colors.units
                             } else {
-                                String::new()
+                                ""
                             },
                             units.to_string(options, colors),
                             if options.color == Auto::True {
@@ -1823,9 +1823,9 @@ pub fn get_output(
                         format!(
                             "{}{}{}",
                             if options.color == Auto::True {
-                                "\x1b[".to_owned() + &colors.units
+                                &colors.units
                             } else {
-                                String::new()
+                                ""
                             },
                             units.to_string(options, colors),
                             if options.color == Auto::True {
@@ -1896,9 +1896,9 @@ pub fn get_output(
                     format!(
                         "{}{}{}",
                         if options.color == Auto::True {
-                            "\x1b[".to_owned() + &colors.units
+                            &colors.units
                         } else {
-                            String::new()
+                            ""
                         },
                         units.to_string(options, colors),
                         if options.color == Auto::True {
