@@ -17,3 +17,5 @@ mod tests;
 pub mod types;
 pub mod units;
 //gui
+//multinomial distribution, categorical distribution, dirichlet distribution
+//multinomial distribution expansion
