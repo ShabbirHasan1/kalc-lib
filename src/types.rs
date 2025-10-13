@@ -137,5 +137,5 @@ impl SpecialValuesDeci for f32 {
     }
 }
 use crate::macros::impls::*;
-impl_types!(f64, f32, i32, u64, u128);
+impl_types!(f64, f32, i32, u64); //u128
 impl_sinh_cosh!(f64, f32, fastnum::decimal::D512, fastnum::decimal::D256);

@@ -15,6 +15,7 @@ pub enum Integer {
     F32(i128),
 }
 
+#[allow(dead_code)]
 #[derive(Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Int<T: Add + AddAssign>(T);
@@ -121,7 +122,7 @@ impl_pow!(
 impl_self_ops!(
     Integer,
     (Rug, |x| x),
-    (Fastnum, |x| x),
+    (Fastnum, |x: &fastnum::I512| *x),
     (F64, |x| x),
     (F32, |x| x)
 );
