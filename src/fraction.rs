@@ -203,15 +203,28 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
                                 )
                             }
                             (true, false) => {
-                                div *= recip.clone();
-                                format!(
-                                    "{sign}{}/{}{}{}{}",
-                                    if mul.is_empty() { "1" } else { &mul },
-                                    if i == 1 { "sqrt" } else { "cbrt" },
-                                    lb,
-                                    div,
-                                    rb
-                                )
+                                if div == 1 {
+                                    format!(
+                                        "{sign}{}/{}{}{}{}",
+                                        if mul.is_empty() { "1" } else { &mul },
+                                        if i == 1 { "sqrt" } else { "cbrt" },
+                                        lb,
+                                        recip,
+                                        rb,
+                                    )
+                                } else {
+                                    format!(
+                                        "{sign}{}/{}{}{}{}{}{}{}",
+                                        if mul.is_empty() { "1" } else { &mul },
+                                        lb,
+                                        div,
+                                        if i == 1 { "sqrt" } else { "cbrt" },
+                                        lb,
+                                        recip,
+                                        rb,
+                                        rb
+                                    )
+                                }
                             }
                             _ => String::new(),
                         }
