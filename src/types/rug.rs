@@ -24,14 +24,21 @@ macro_rules! pow {
 with_val!(
     rug::Complex,
     f64,
-    usize,
     (f64, f64),
+    i32,
+    (i32, i32),
+    usize,
     (usize, usize),
-    rug::Integer
+    isize,
+    (isize, isize),
+    rug::Float,
+    (rug::Float, rug::Float),
+    rug::Integer,
+    (rug::Integer, rug::Integer)
 );
-with_val!(rug::Float, f64, usize, rug::Integer);
-pow!(rug::Complex, f64, usize);
-pow!(rug::Float, f64, usize);
+with_val!(rug::Float, f64, i32, usize, isize, rug::Integer);
+pow!(rug::Complex, f64, usize, isize, u32, i32, Self);
+pow!(rug::Float, f64, usize, isize, u32, i32, Self);
 pow!(rug::Integer, u32);
 impl WithVal<Constant> for rug::Complex {
     fn with_val(prec: u32, val: Constant) -> Self {
@@ -60,6 +67,30 @@ impl Integer<rug::Float, rug::Complex> for rug::Integer {
     fn next_prime(self) -> Self {
         self.next_prime()
     }
+    fn binomial(self, k: u32) -> Self {
+        self.binomial(k)
+    }
+    fn to_u32(&self) -> Option<u32> {
+        self.to_u32()
+    }
+    fn to_usize(&self) -> Option<usize> {
+        self.to_usize()
+    }
+    fn to_u128(&self) -> Option<u128> {
+        self.to_u128()
+    }
+    fn to_i32(&self) -> Option<i32> {
+        self.to_i32()
+    }
+    fn to_isize(&self) -> Option<isize> {
+        self.to_isize()
+    }
+    fn to_i128(&self) -> Option<i128> {
+        self.to_i128()
+    }
+    fn abs(self) -> Self {
+        self.abs()
+    }
 }
 impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
     fn exp(self) -> Self {
@@ -80,6 +111,9 @@ impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
     fn prec(&self) -> u32 {
         self.prec()
     }
+    fn ln(self) -> Self {
+        self.ln()
+    }
     fn set_prec(&mut self, prec: u32) {
         self.set_prec(prec)
     }
@@ -99,6 +133,12 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     }
     fn trunc(self) -> Self {
         self.trunc()
+    }
+    fn gamma(self) -> Self {
+        self.gamma()
+    }
+    fn floor(self) -> Self {
+        self.floor()
     }
     fn to_integer(&self) -> Option<rug::Integer> {
         self.to_integer()
@@ -122,6 +162,9 @@ impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
     }
     fn prec(&self) -> u32 {
         self.prec().0
+    }
+    fn ln(self) -> Self {
+        self.ln()
     }
     fn set_prec(&mut self, prec: u32) {
         self.set_prec(prec)

@@ -4369,10 +4369,8 @@ fn functions(
                                 options.prec,
                                 (0, Float::with_val(options.prec, 0.5).pow(options.prec / 2)),
                             );
-                            (gamma(a.clone() + 1) / gamma(a.clone() - b + 1))
-                                .real()
-                                .clone()
-                                .into()
+                            let r: Complex = gamma(a.clone() + 1) / gamma(a.clone() - b + 1);
+                            r.real().clone().into()
                         } else {
                             gamma(a.clone() + 1) / gamma(a.clone() - b + 1)
                         }
@@ -4448,11 +4446,9 @@ fn functions(
                     } else if a.real().is_zero() {
                         Complex::with_val(options.prec, 1)
                     } else {
-                        (gamma(a.clone() + 1) / Float::with_val(options.prec, 1).exp())
-                            .real()
-                            .clone()
-                            .round()
-                            .into()
+                        let r: Complex =
+                            gamma(a.clone() + 1) / Float::with_val(options.prec, 1).exp();
+                        r.real().clone().round().into()
                     }
                 }
                 "sinc" => a.clone().sin() / a,

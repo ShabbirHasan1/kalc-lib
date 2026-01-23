@@ -903,11 +903,17 @@ pub fn digamma(mut z: Complex, mut n: u32) -> Complex {
     n.set_prec(oop);
     n
 }
-pub fn gamma(a: Complex) -> Complex {
+pub fn gamma<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    a: C,
+) -> C {
     if !a.imag().is_zero() {
         gamma0(a)
     } else if a.real().is_sign_negative() && a.real().clone().fract().is_zero() {
-        Complex::with_val(a.prec(), Infinity)
+        C::with_val(a.prec(), crate::types::Constant::Infinity)
     } else {
         a.real().clone().gamma().into()
     }
@@ -2710,34 +2716,46 @@ pub fn gcd(mut x: Integer, mut y: Integer) -> Integer {
     }
     x
 }
-pub fn incomplete_beta(x: Complex, a: Complex, b: Complex) -> Complex {
-    if x.real() > &((a.real().clone() + 1) / (a.real() + b.real().clone() + 2)) {
+pub fn incomplete_beta<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    x: C,
+    a: C,
+    b: C,
+) -> C {
+    if x.real() > &((a.real().clone() + 1) / (a.real().clone() + b.real() + 2)) {
         (gamma(a.clone()) * gamma(b.clone()) / gamma(a.clone() + b.clone()))
-            - incomplete_beta(1 - x, b, a)
+            - incomplete_beta(-x + 1, b, a)
     } else {
-        let f: Complex = 1 - x.clone();
+        let f: C = -x.clone() + 1;
         pow_nth(x.clone(), a.clone()) * pow_nth(f, b.clone())
-            / (a.clone() * (1 + incomplete_beta_recursion(x, a, b, 1, 10)))
+            / (a.clone() * (incomplete_beta_recursion(x, a, b, 1, 10) + 1))
     }
 }
-fn incomplete_beta_recursion(
-    x: Complex,
-    a: Complex,
-    b: Complex,
+fn incomplete_beta_recursion<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    x: C,
+    a: C,
+    b: C,
     iter: usize,
     max: usize,
-) -> Complex {
+) -> C {
     if iter == max {
-        Complex::new(x.prec())
+        C::new(x.prec())
     } else if iter % 2 == 1 {
         let m = (iter - 1) / 2;
         (-x.clone() * (a.clone() + m) * (a.clone() + b.clone() + m)
             / ((a.clone() + (2 * m)) * (a.clone() + (2 * m) + 1)))
-            / (1 + incomplete_beta_recursion(x, a, b, iter + 1, max))
+            / (incomplete_beta_recursion(x, a, b, iter + 1, max) + 1)
     } else {
         let m = iter / 2;
         (x.clone() * m * (b.clone() - m) / ((a.clone() + (2 * m)) * (a.clone() + (2 * m) - 1)))
-            / (1 + incomplete_beta_recursion(x, a, b, iter + 1, max))
+            / (incomplete_beta_recursion(x, a, b, iter + 1, max) + 1)
     }
 }
 pub fn erf(z: Complex) -> Complex {
@@ -2760,28 +2778,52 @@ fn erfc_recursion(z: Complex, iter: usize, max: usize) -> Complex {
         1 + iter / (2 * erfc_recursion(z, iter + 1, max))
     }
 }
-fn gamma0(z: Complex) -> Complex {
-    let p = z.prec().0 as usize / 4;
+fn gamma0<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    z: C,
+) -> C {
+    let p = z.prec() as usize / 4;
     gamma0_recursion_first(z.clone(), 0, p) + gamma0_recursion_second(z, 0, p)
 }
-fn gamma0_recursion_first(z: Complex, iter: usize, max: usize) -> Complex {
+fn gamma0_recursion_first<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    z: C,
+    iter: usize,
+    max: usize,
+) -> C {
     if iter == max {
-        Complex::with_val(z.prec(), 1)
+        C::with_val(z.prec(), 1)
     } else if iter == 0 {
-        Float::with_val(z.prec().0, -1).exp() / gamma0_recursion_first(z, 1, max)
+        F::with_val(z.prec(), -1).exp() / gamma0_recursion_first(z, 1, max)
     } else {
-        2 * iter - z.clone() + iter * (z.clone() - iter) / gamma0_recursion_first(z, iter + 1, max)
+        -z.clone() + 2 * iter + (z.clone() - iter) * iter / gamma0_recursion_first(z, iter + 1, max)
     }
 }
-fn gamma0_recursion_second(z: Complex, iter: usize, max: usize) -> Complex {
+fn gamma0_recursion_second<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    z: C,
+    iter: usize,
+    max: usize,
+) -> C {
     if iter == max {
-        Complex::with_val(z.prec(), 1)
+        C::with_val(z.prec(), 1)
     } else if iter == 0 {
-        Float::with_val(z.prec().0, -1).exp() / gamma0_recursion_second(z, 1, max)
+        F::with_val(z.prec(), -1).exp() / gamma0_recursion_second(z, 1, max)
     } else if iter % 2 == 1 {
-        (iter - 1) + z.clone() - (z.clone() + iter / 2) / gamma0_recursion_second(z, iter + 1, max)
+        z.clone() + (iter - 1) - (z.clone() + iter / 2) / gamma0_recursion_second(z, iter + 1, max)
     } else {
-        (iter - 1) + z.clone() + (iter / 2) / gamma0_recursion_second(z, iter + 1, max)
+        z.clone()
+            + (iter - 1)
+            + C::with_val(z.prec(), iter / 2) / gamma0_recursion_second(z, iter + 1, max)
     }
 }
 pub fn incomplete_gamma(s: Complex, z: Complex) -> Complex {
@@ -2863,7 +2905,14 @@ pub fn euleriannumbersint(n: u32, k: u32) -> Integer {
     }
     sum
 }
-pub fn binomial(a: Complex, b: Complex) -> Complex {
+pub fn binomial<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    a: C,
+    b: C,
+) -> C {
     if a.imag().is_zero()
         && b.imag().is_zero()
         && a.real().clone().fract().is_zero()
@@ -2872,7 +2921,7 @@ pub fn binomial(a: Complex, b: Complex) -> Complex {
         && a.real() >= &0
         && b.real() >= &0
     {
-        Complex::with_val(
+        C::with_val(
             a.prec(),
             a.real().to_integer().unwrap_or_default().binomial(
                 b.real()
@@ -2887,12 +2936,10 @@ pub fn binomial(a: Complex, b: Complex) -> Complex {
         && a.imag().is_zero()
         && b.imag().is_zero()
     {
-        let prec = a.prec().0;
-        let a = a + Complex::with_val(prec, (0, 1)) * Float::with_val(prec, 0.5).pow(prec / 2);
-        (gamma(a.clone() + 1) / (gamma(b.clone() + 1) * gamma(a.clone() - b.clone() + 1)))
-            .real()
-            .clone()
-            .into()
+        let prec = a.prec();
+        let a = a + C::with_val(prec, (0, 1)) * F::with_val(prec, 0.5).pow(prec / 2);
+        let g: C = gamma(a.clone() + 1) / (gamma(b.clone() + 1) * gamma(a.clone() - b.clone() + 1));
+        g.real().clone().into()
     } else {
         gamma(a.clone() + 1) / (gamma(b.clone() + 1) * gamma(a.clone() - b.clone() + 1))
     }
@@ -6230,32 +6277,59 @@ pub fn rand_norm(m: Complex, s: Complex) -> Complex {
     let z: Float = u * d.sqrt();
     m + z * s
 }
-pub fn regularized_incomplete_beta(x: Complex, a: Complex, b: Complex) -> Complex {
+pub fn regularized_incomplete_beta<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    x: C,
+    a: C,
+    b: C,
+) -> C {
     (gamma(a.clone() + b.clone())) * incomplete_beta(x, a.clone(), b.clone())
         / (gamma(a) * gamma(b))
 }
-pub fn sqr(z: Complex) -> Complex {
+pub fn sqr<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    z: C,
+) -> C {
     if z.imag().is_zero() {
         z.pow(2)
     } else {
         z.clone() * z
     }
 }
-pub fn cube(z: Complex) -> Complex {
+pub fn cube<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    z: C,
+) -> C {
     if z.imag().is_zero() {
         z.pow(3)
     } else {
         z.clone() * &z * z
     }
 }
-pub fn pow_nth(z: Complex, n: Complex) -> Complex {
+pub fn pow_nth<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    z: C,
+    n: C,
+) -> C {
     let zz = z.imag().is_zero();
     let nz = n.imag().is_zero();
     let nr = n.real();
     if nr.clone().fract().is_zero() && nz {
         if !zz && nr <= &256 {
             if nr.is_zero() {
-                Complex::with_val(z.prec(), 1)
+                C::with_val(z.prec(), 1)
             } else {
                 let mut p = z.clone();
                 for _ in 1..n
@@ -6268,7 +6342,7 @@ pub fn pow_nth(z: Complex, n: Complex) -> Complex {
                 {
                     p *= &z;
                 }
-                if nr.is_sign_positive() { p } else { 1 / p }
+                if nr.is_sign_positive() { p } else { p.recip() }
             }
         } else {
             z.pow(n)
@@ -6282,11 +6356,15 @@ pub fn pow_nth(z: Complex, n: Complex) -> Complex {
         (z.ln() * n).exp()
     }
 }
-pub fn hsv2rgb(
-    mut hue: Float,
-    sat: Float,
-    val: Float,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+pub fn hsv2rgb<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    mut hue: F,
+    sat: F,
+    val: F,
+) -> Vec<Number<I, F, C>> {
     if sat.is_zero() {
         return rgb2val(val.clone(), val.clone(), val);
     }
@@ -6299,9 +6377,9 @@ pub fn hsv2rgb(
         .to_usize()
         .unwrap_or_default();
     let f = hue - i;
-    let p = val.clone() * (1 - sat.clone());
-    let q = val.clone() * (1 - sat.clone() * f.clone());
-    let t = val.clone() * (1 - sat * (1 - f));
+    let p = val.clone() * (-sat.clone() + 1);
+    let q = val.clone() * (-sat.clone() * f.clone() + 1);
+    let t = val.clone() * (-sat * (-f + 1) + 1);
     match i % 6 {
         0 => rgb2val(val, t, p),
         1 => rgb2val(q, val, p),
@@ -6312,14 +6390,18 @@ pub fn hsv2rgb(
         _ => rgb2val(val, p, q),
     }
 }
-pub fn rgb2val(
-    r: Float,
-    g: Float,
-    b: Float,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
-    let r: Float = 255 * r;
-    let g: Float = 255 * g;
-    let b: Float = 255 * b;
+pub fn rgb2val<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    r: F,
+    g: F,
+    b: F,
+) -> Vec<Number<I, F, C>> {
+    let r: F = r * 255;
+    let g: F = g * 255;
+    let b: F = b * 255;
     vec![
         Number::from(r.into(), None),
         Number::from(g.into(), None),
