@@ -1,12 +1,12 @@
 // as per continued fraction expansion
 use crate::types::Constant::Pi;
-use crate::types::{Float1, Float2, Integer};
+use crate::types::{Complex, Float, Integer};
 use crate::{
     complex::prime_factors,
     units::{Auto, Colors, Number, Options},
 };
-pub fn fraction<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
-    value: T,
+pub fn fraction<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>(
+    value: F,
     options: Options,
     colors: &Colors,
     n: usize,
@@ -14,8 +14,8 @@ pub fn fraction<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
     if value.clone().fract().is_zero() || !value.is_finite() || options.prec < 128 {
         return String::new();
     }
-    let e = T::with_val(options.prec, 1.0).exp();
-    let pi = T::with_val(options.prec, Pi);
+    let e = F::with_val(options.prec, 1.0).exp();
+    let pi = F::with_val(options.prec, Pi);
     let sign: String = if value.is_sign_negative() {
         '-'.to_string()
     } else {
@@ -96,8 +96,8 @@ pub fn fraction<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
             };
         }
         let mut number = orig.clone().fract();
-        let mut mult = T::with_val(options.prec, 1);
-        let mut first = T::new(options.prec);
+        let mut mult = F::with_val(options.prec, 1);
+        let mut first = F::new(options.prec);
         for j in 0..64 {
             let mut recip = number.clone().recip();
             let fract = recip.clone().fract();
@@ -276,8 +276,8 @@ pub fn fraction<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
     }
     String::new()
 }
-pub fn rationalize<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
-    value: T,
+pub fn rationalize<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>(
+    value: F,
     options: Options,
 ) -> Option<(I, I)> {
     if !value.is_finite() || value.is_zero() {
@@ -287,8 +287,8 @@ pub fn rationalize<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
         return Some((value.to_integer().unwrap_or_default(), I::from(1)));
     }
     let mut number = value.clone().fract();
-    let mut mult = T::with_val(options.prec, 1);
-    let mut first = T::new(options.prec);
+    let mut mult = F::with_val(options.prec, 1);
+    let mut first = F::new(options.prec);
     for j in 0..256 {
         let mut recip = number.clone().recip();
         let fract = recip.clone().fract();
@@ -314,10 +314,10 @@ pub fn rationalize<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
     }
     None
 }
-pub fn c_to_rational<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
-    value: D,
+pub fn c_to_rational<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>(
+    value: C,
     options: Options,
-) -> Vec<Number<I, T, D>> {
+) -> Vec<Number<I, F, C>> {
     let sign_re = value.real().is_sign_positive();
     let sign_im = value.real().is_sign_positive();
     let re = rationalize(value.real().clone().abs(), options);
@@ -325,20 +325,20 @@ pub fn c_to_rational<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
     let mut vec = Vec::new();
     if let Some(n) = re {
         vec.push(Number::from(
-            D::with_val(options.prec, if sign_re { n.0 } else { -n.0 }),
+            C::with_val(options.prec, if sign_re { n.0 } else { -n.0 }),
             None,
         ));
-        vec.push(Number::from(D::with_val(options.prec, n.1), None));
+        vec.push(Number::from(C::with_val(options.prec, n.1), None));
     } else {
-        vec.push(Number::from(D::new(options.prec), None));
-        vec.push(Number::from(D::with_val(options.prec, 1), None));
+        vec.push(Number::from(C::new(options.prec), None));
+        vec.push(Number::from(C::with_val(options.prec, 1), None));
     }
     if let Some(n) = im {
         vec.push(Number::from(
-            D::with_val(options.prec, if sign_im { n.0 } else { -n.0 }),
+            C::with_val(options.prec, if sign_im { n.0 } else { -n.0 }),
             None,
         ));
-        vec.push(Number::from(D::with_val(options.prec, n.1), None));
+        vec.push(Number::from(C::with_val(options.prec, n.1), None));
     }
     vec
 }

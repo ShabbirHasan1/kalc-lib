@@ -1,4 +1,4 @@
-use crate::types::{Constant, Float, Float1, Float2, Integer, Pow, WithVal};
+use crate::types::{Complex, Constant, Float, FloatShared, Integer, Pow, WithVal};
 macro_rules! with_val {
     ($ty:ty, $($v:ty),*) => {
         $(
@@ -61,7 +61,7 @@ impl Integer<rug::Float, rug::Complex> for rug::Integer {
         self.next_prime()
     }
 }
-impl Float<rug::Integer, Self, rug::Complex> for rug::Float {
+impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
     fn exp(self) -> Self {
         self.exp()
     }
@@ -84,7 +84,7 @@ impl Float<rug::Integer, Self, rug::Complex> for rug::Float {
         self.set_prec(prec)
     }
 }
-impl Float1<rug::Integer, rug::Complex> for rug::Float {
+impl Float<rug::Integer, rug::Complex> for rug::Float {
     fn is_finite(&self) -> bool {
         self.is_finite()
     }
@@ -104,7 +104,7 @@ impl Float1<rug::Integer, rug::Complex> for rug::Float {
         self.to_integer()
     }
 }
-impl Float<rug::Integer, rug::Float, Self> for rug::Complex {
+impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
     fn exp(self) -> Self {
         self.exp()
     }
@@ -127,7 +127,7 @@ impl Float<rug::Integer, rug::Float, Self> for rug::Complex {
         self.set_prec(prec)
     }
 }
-impl Float2<rug::Integer, rug::Float> for rug::Complex {
+impl Complex<rug::Integer, rug::Float> for rug::Complex {
     fn real(&self) -> &rug::Float {
         self.real()
     }

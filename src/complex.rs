@@ -1,4 +1,3 @@
-use crate::types::{Float1, Float2};
 use crate::{
     complex::NumStr::{
         Comma, Division, Exponent, Func, LeftBracket, LeftCurlyBracket, Matrix, Minus,
@@ -71,7 +70,9 @@ impl NumStr {
         Num(Box::new(n))
     }
 }
-impl<I: crate::types::Integer<F, D>, F: Float1<I, D>, D: Float2<I, F>> Number<I, F, D> {
+impl<I: crate::types::Integer<F, D>, F: crate::types::Float<I, D>, D: crate::types::Complex<I, F>>
+    Number<I, F, D>
+{
     pub fn from(number: D, units: Option<Units>) -> Number<I, F, D> {
         Self {
             number,
@@ -1662,9 +1663,9 @@ pub fn nth_prime(n: Integer) -> Integer {
     num
 }
 pub fn prime_factors<
-    F: crate::types::Float1<I, D>,
+    F: crate::types::Float<I, D>,
     I: crate::types::Integer<F, D>,
-    D: crate::types::Float2<I, F>,
+    D: crate::types::Complex<I, F>,
 >(
     mut n: I,
 ) -> Vec<(I, isize)> {

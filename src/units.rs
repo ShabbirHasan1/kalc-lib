@@ -1,4 +1,4 @@
-use crate::types::{Float1, Float2, Integer};
+use crate::types::Integer;
 use crate::{
     complex::NumStr,
     units::{AngleType::Radians, Notation::Normal},
@@ -47,10 +47,10 @@ pub struct Units {
 }
 #[derive(Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Number<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>> {
+pub struct Number<I: Integer<F, D>, F: crate::types::Float<I, D>, D: crate::types::Complex<I, F>> {
     pub number: D,
     pub units: Option<Units>,
-    pub phantom: PhantomData<(I, T)>,
+    pub phantom: PhantomData<(I, F)>,
 }
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

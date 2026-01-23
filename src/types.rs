@@ -1,14 +1,15 @@
+pub mod f64;
 pub mod rug;
 use std::fmt::Display;
 use std::ops::*;
-pub trait Float2<I: Integer<F, Self>, F: Float1<I, Self>>:
-    Float<I, F, Self> + WithVal<(usize, usize)> + WithVal<(f64, f64)> + Display
+pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
+    FloatShared<I, F, Self> + WithVal<(usize, usize)> + WithVal<(f64, f64)> + Display
 {
     fn real(&self) -> &F;
     fn imag(&self) -> &F;
 }
-pub trait Float1<I: Integer<Self, F>, F: Float2<I, Self>>:
-    Float<I, Self, F> + PartialOrd<f64> + Compare
+pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
+    FloatShared<I, Self, C> + PartialOrd<f64> + Compare
 {
     fn is_finite(&self) -> bool;
     fn is_sign_negative(&self) -> bool;
@@ -17,7 +18,7 @@ pub trait Float1<I: Integer<Self, F>, F: Float2<I, Self>>:
     fn trunc(self) -> Self;
     fn to_integer(&self) -> Option<I>;
 }
-pub trait Float<I: Integer<F, D>, F: Float1<I, D>, D: Float2<I, F>>:
+pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     Shared
     + Pow<usize>
     + Pow<f64>
@@ -43,7 +44,7 @@ pub enum Constant {
     Infinity,
     NegInfinity,
 }
-pub trait Integer<F: Float1<Self, D>, D: Float2<Self, F>>:
+pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
     Shared + From<usize> + Pow<u32> + Display + Default + Compare
 {
     fn div_rem(self, rhs: Self) -> (Self, Self);
