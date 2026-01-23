@@ -1,3 +1,4 @@
+use crate::types::Constant;
 use crate::{
     complex::NumStr::{
         Comma, Division, Exponent, Func, LeftBracket, LeftCurlyBracket, Matrix, Minus,
@@ -6190,20 +6191,27 @@ pub fn lambertw(z: Complex, k: Integer) -> Complex {
     }
     w
 }
-fn initpoint(z: Complex, k: Integer) -> Complex {
+fn initpoint<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    z: Complex,
+    k: Integer,
+) -> Complex {
     let prec = z.prec();
     {
-        let e = Float::with_val(prec.0, -1).exp();
+        let e = Float::with_val(prec, -1).exp();
         let test: Complex = z.clone() + &e;
         if test.abs().real() <= &1.005 {
             if k == 0 && z.real() > &-0.5 {
-                let p1: Complex = 2 * z / e + 2;
+                let p1: Complex = z / e * 2 + 2;
                 let p = p1.clone().sqrt();
-                return p.clone() - (p1 / 3) + ((11 * cube(p)) / 72) - 1;
+                return p.clone() - (p1 / 3) + ((cube(p) * 11) / 72) - 1;
             } else if k == -1 && z.real().is_sign_negative() && z.imag().is_zero() {
-                let p1: Complex = 2 * z / e + 2;
+                let p1: Complex = z / e * 2 + 2;
                 let p = p1.clone().sqrt();
-                return -p.clone() - (p1 / 3) - ((11 * cube(p)) / 72) - 1;
+                return -p.clone() - (p1 / 3) - ((cube(p) * 11) / 72) - 1;
             }
         }
     }
@@ -6211,21 +6219,28 @@ fn initpoint(z: Complex, k: Integer) -> Complex {
         let test: Complex = z.clone() - 0.5;
         if test.abs().real() <= &0.6 {
             if k == 0 {
-                return (0.35173371 * (0.1237166 + 7.061302897 * z.clone()))
-                    / (2 + 0.827184 * (1 + 2 * z));
+                return ((z.clone() * 7.061302897 + 0.1237166) * 0.35173371)
+                    / ((z * 2 + 1) * 0.827184 + 2);
             } else if k == -1 {
                 return (Complex::with_val(prec, (-2.2591588985, -4.22096))
                     * (Complex::with_val(prec, (-14.073271, -33.767687754)) * &z
-                        + Complex::with_val(prec, (-12.7127, 19.071643)) * (1 + 2 * z.clone())))
-                    / (2 + Complex::with_val(prec, (-17.23103, 10.629721)) * (1 + 2 * z));
+                        + Complex::with_val(prec, (-12.7127, 19.071643)) * (z.clone() * 2 + 1)))
+                    / (Complex::with_val(prec, (-17.23103, 10.629721)) * (z * 2 + 1) + 2);
             }
         }
     }
-    let zln = z.ln() + Complex::with_val(prec, (0, 2 * Float::with_val(prec.0, Pi) * k));
+    let zln = z.ln() + Complex::with_val_imag(prec, Float::with_val(prec, Constant::Pi) * k * 2);
     zln.clone() - zln.ln()
 }
 #[cfg(feature = "fastrand")]
-pub fn rand_gamma(k: Float, t: Float) -> Float {
+pub fn rand_gamma<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    k: Float,
+    t: Float,
+) -> Float {
     let prec = k.prec();
     let mut sum = Float::new(prec);
     for _ in 1..=k
@@ -6249,10 +6264,10 @@ pub fn rand_gamma(k: Float, t: Float) -> Float {
         let w: Float = Float::with_val(prec, fastrand::u128(1..)) / u128::MAX;
         let n;
         if u <= check {
-            eta = v.pow(1 / s.clone());
+            eta = v.pow(s.clone().recip());
             n = w * eta.clone().pow(s.clone() - 1);
         } else {
-            eta = 1 - v.ln();
+            eta = -v.ln() + 1;
             n = w * (-eta.clone()).exp();
         };
         if n <= eta.clone().pow(s.clone() - 1) * (-eta.clone()).exp() {
@@ -6263,8 +6278,15 @@ pub fn rand_gamma(k: Float, t: Float) -> Float {
     t * f
 }
 #[cfg(feature = "fastrand")]
-pub fn rand_norm(m: Complex, s: Complex) -> Complex {
-    let prec = s.prec().0;
+pub fn rand_norm<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    m: Complex,
+    s: Complex,
+) -> Complex {
+    let prec = s.prec();
     let mut u: Float = Float::with_val(prec, fastrand::i128(i128::MIN + 2..i128::MAX)) / i128::MAX;
     let mut v: Float = Float::with_val(prec, fastrand::i128(i128::MIN + 2..i128::MAX)) / i128::MAX;
     let mut g: Float = u.clone().pow(2) + v.pow(2);
@@ -6273,7 +6295,7 @@ pub fn rand_norm(m: Complex, s: Complex) -> Complex {
         v = Float::with_val(prec, fastrand::i128(i128::MIN + 2..i128::MAX)) / i128::MAX;
         g = u.clone().pow(2) + v.pow(2);
     }
-    let d: Float = -2 * g.clone().ln() / g;
+    let d: Float = g.clone().ln() / g * -2i32;
     let z: Float = u * d.sqrt();
     m + z * s
 }

@@ -1,10 +1,21 @@
-use crate::types::{Complex, Constant, Float, FloatShared, Integer, Pow, WithVal};
+use crate::types::{Complex, Constant, Float, FloatShared, Integer, Pow, WithVal, WithValImag};
 macro_rules! with_val {
     ($ty:ty, $($v:ty),*) => {
         $(
             impl WithVal<$v> for $ty {
                 fn with_val(prec: u32, val: $v) -> Self {
                     Self::with_val(prec, val)
+                }
+            }
+        )*
+    };
+}
+macro_rules! with_val_imag {
+    ($ty:ty, $($v:ty),*) => {
+        $(
+            impl WithValImag<$v> for $ty {
+                fn with_val_imag(prec: u32, val: $v) -> Self {
+                    Self::with_val(prec, (0, val))
                 }
             }
         )*
@@ -21,22 +32,37 @@ macro_rules! pow {
         )*
     };
 }
+with_val_imag!(
+    rug::Complex,
+    f64,
+    i32,
+    usize,
+    isize,
+    i128,
+    u128,
+    rug::Float,
+    rug::Integer
+);
 with_val!(
     rug::Complex,
     f64,
-    (f64, f64),
     i32,
-    (i32, i32),
     usize,
-    (usize, usize),
     isize,
-    (isize, isize),
+    i128,
+    u128,
     rug::Float,
-    (rug::Float, rug::Float),
     rug::Integer,
+    (f64, f64),
+    (i32, i32),
+    (usize, usize),
+    (isize, isize),
+    (i128, i128),
+    (u128, u128),
+    (rug::Float, rug::Float),
     (rug::Integer, rug::Integer)
 );
-with_val!(rug::Float, f64, i32, usize, isize, rug::Integer);
+with_val!(rug::Float, f64, i32, usize, isize, rug::Integer, i128, u128);
 pow!(rug::Complex, f64, usize, isize, u32, i32, Self);
 pow!(rug::Float, f64, usize, isize, u32, i32, Self);
 pow!(rug::Integer, u32);
@@ -47,6 +73,16 @@ impl WithVal<Constant> for rug::Complex {
             Constant::E => Self::with_val(prec, 1).exp(),
             Constant::Infinity => Self::with_val(prec, rug::float::Special::Infinity),
             Constant::NegInfinity => Self::with_val(prec, rug::float::Special::NegInfinity),
+        }
+    }
+}
+impl WithValImag<Constant> for rug::Complex {
+    fn with_val_imag(prec: u32, val: Constant) -> Self {
+        match val {
+            Constant::Pi => Self::with_val(prec, (0, rug::float::Constant::Pi)),
+            Constant::E => Self::with_val(prec, 1).exp().mul_i(false),
+            Constant::Infinity => Self::with_val(prec, (0, rug::float::Special::Infinity)),
+            Constant::NegInfinity => Self::with_val(prec, (0, rug::float::Special::NegInfinity)),
         }
     }
 }
@@ -114,6 +150,9 @@ impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
     fn ln(self) -> Self {
         self.ln()
     }
+    fn sqrt(self) -> Self {
+        self.sqrt()
+    }
     fn set_prec(&mut self, prec: u32) {
         self.set_prec(prec)
     }
@@ -165,6 +204,9 @@ impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
     }
     fn ln(self) -> Self {
         self.ln()
+    }
+    fn sqrt(self) -> Self {
+        self.sqrt()
     }
     fn set_prec(&mut self, prec: u32) {
         self.set_prec(prec)

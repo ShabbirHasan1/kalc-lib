@@ -7,11 +7,23 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     + WithVal<(usize, usize)>
     + WithVal<(isize, isize)>
     + WithVal<(i32, i32)>
+    + WithVal<(i128, i128)>
+    + WithVal<(u128, u128)>
     + WithVal<(f64, f64)>
     + WithVal<(F, F)>
     + WithVal<(I, I)>
     + WithVal<F>
+    + WithValImag<usize>
+    + WithValImag<i128>
+    + WithValImag<u128>
+    + WithValImag<isize>
+    + WithValImag<f64>
+    + WithValImag<i32>
+    + WithValImag<I>
+    + WithValImag<F>
+    + WithValImag<Constant>
     + Ops<F>
+    + for<'a> Ops<&'a F>
     + From<F>
     + Pow<Self>
     + Display
@@ -39,6 +51,8 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     + Pow<isize>
     + Pow<f64>
     + WithVal<usize>
+    + WithVal<i128>
+    + WithVal<u128>
     + WithVal<isize>
     + WithVal<f64>
     + WithVal<i32>
@@ -55,6 +69,7 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     fn recip(self) -> Self;
     fn prec(&self) -> u32;
     fn ln(self) -> Self;
+    fn sqrt(self) -> Self;
     fn set_prec(&mut self, prec: u32);
 }
 pub enum Constant {
@@ -80,10 +95,29 @@ pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
 pub trait Shared: Operators + Clone {}
 impl<T> Shared for T where T: Operators + Clone {}
 pub trait Operators:
-    Ops<Self> + Ops<usize> + for<'a> Ops<&'a Self> + Neg<Output = Self> + Sized
+    Ops<Self>
+    + Ops<usize>
+    + Ops<u128>
+    + Ops<i128>
+    + Ops<i32>
+    + Ops<u32>
+    + for<'a> Ops<&'a Self>
+    + Neg<Output = Self>
+    + Sized
 {
 }
-impl<T> Operators for T where T: Ops<T> + Ops<usize> + for<'a> Ops<&'a T> + Neg<Output = T> + Sized {}
+impl<T> Operators for T where
+    T: Ops<T>
+        + Ops<usize>
+        + Ops<u128>
+        + Ops<i128>
+        + Ops<i32>
+        + Ops<u32>
+        + for<'a> Ops<&'a T>
+        + Neg<Output = T>
+        + Sized
+{
+}
 pub trait OperatorsOut<T, K>:
     Mul<T, Output = K> + Add<T, Output = K> + Sub<T, Output = K> + Div<T, Output = K>
 {
@@ -114,10 +148,32 @@ impl<K, T> Ops<T> for K where
         + DivAssign<T>
 {
 }
-pub trait Compare: PartialOrd + PartialEq + PartialOrd<usize> + Sized {}
-impl<T> Compare for T where T: PartialOrd + PartialEq + PartialOrd<usize> + PartialOrd<f64> + Sized {}
+pub trait Compare:
+    PartialOrd
+    + PartialEq
+    + PartialOrd<usize>
+    + PartialOrd<isize>
+    + PartialOrd<u32>
+    + PartialOrd<i32>
+    + Sized
+{
+}
+impl<T> Compare for T where
+    T: PartialOrd
+        + PartialEq
+        + PartialOrd<usize>
+        + PartialOrd<isize>
+        + PartialOrd<u32>
+        + PartialOrd<i32>
+        + PartialOrd<f64>
+        + Sized
+{
+}
 pub trait WithVal<From> {
     fn with_val(prec: u32, val: From) -> Self;
+}
+pub trait WithValImag<From> {
+    fn with_val_imag(prec: u32, val: From) -> Self;
 }
 pub trait Pow<Rhs> {
     fn pow(self, rhs: Rhs) -> Self;
