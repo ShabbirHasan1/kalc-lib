@@ -9,7 +9,7 @@ use crate::{
     units::{Number, Options},
 };
 use rug::float::Constant;
-use rug::{Complex, Float};
+use rug::{Complex, Float, Integer};
 use std::cmp::Ordering;
 use std::ops::{AddAssign, DivAssign, MulAssign, SubAssign};
 #[derive(Clone, Default)]
@@ -503,7 +503,7 @@ fn get_var<'a>(func: &'a [NumStr], var: &'a [NumStr]) -> &'a [NumStr] {
     }
     &func[values[0] - i..values[0] + j]
 }
-fn to_vec(a: NumStr) -> Vec<Number> {
+fn to_vec(a: NumStr) -> Vec<Number<Integer, Float, Complex>> {
     match a {
         Num(a) => vec![*a],
         Vector(a) => a,
@@ -512,9 +512,9 @@ fn to_vec(a: NumStr) -> Vec<Number> {
 }
 fn inverse(
     func: &[NumStr],
-    val: Vec<Number>,
+    val: Vec<Number<Integer, Float, Complex>>,
     options: &Options,
-) -> Result<Vec<Number>, &'static str> {
+) -> Result<Vec<Number<Integer, Float, Complex>>, &'static str> {
     if func.len() > 1 {
         let Func(f) = &func[0] else { unreachable!() };
         let v = match f.as_str() {

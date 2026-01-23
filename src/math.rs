@@ -70,7 +70,7 @@ pub fn do_math(
                 let mut single = 0;
                 let v = &function[i + 1..j - 1];
                 let mut vec = Vec::new();
-                let mut mat = Vec::<Vec<Number>>::new();
+                let mut mat = Vec::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>::new();
                 for (f, n) in v.iter().enumerate() {
                     match &n {
                         Comma if count == 0 => {
@@ -1019,7 +1019,7 @@ pub fn do_math(
                                 }
                                 Vector(vec)
                             }
-                            "flatten" => Vector(a.into_iter().flatten().collect::<Vec<Number>>()),
+                            "flatten" => Vector(a.into_iter().flatten().collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>()),
                             "cofactor" | "cofactors" | "cof" => Matrix(cofactor(&a)?),
                             "minor" | "minors" => Matrix(minors(&a)?),
                             "adjugate" | "adj" => Matrix(transpose(&cofactor(&a)?)),
@@ -1057,7 +1057,7 @@ pub fn do_math(
                                                     Vector(
                                                         a.iter()
                                                             .map(|a| a[n2].clone())
-                                                            .collect::<Vec<Number>>(),
+                                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
                                                     )
                                                 } else {
                                                     return Err("out of range");
@@ -1089,7 +1089,7 @@ pub fn do_math(
                                                         mat.push(
                                                             a.iter()
                                                                 .map(|a| a[n].clone())
-                                                                .collect::<Vec<Number>>(),
+                                                                .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
                                                         )
                                                     } else {
                                                         return Err("out of range");
@@ -1265,7 +1265,7 @@ pub fn do_math(
                                 }
                             }
                             "median" => {
-                                let a = sort(a.iter().flatten().cloned().collect::<Vec<Number>>());
+                                let a = sort(a.iter().flatten().cloned().collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>());
                                 if a.len() % 2 == 0 {
                                     Vector(vec![a[a.len() / 2 - 1].clone(), a[a.len() / 2].clone()])
                                 } else {
@@ -1382,7 +1382,7 @@ pub fn do_math(
                                 if a.is_empty() {
                                     return Err("bad list");
                                 }
-                                let mut a = sort(a.into_iter().flatten().collect::<Vec<Number>>());
+                                let mut a = sort(a.into_iter().flatten().collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>());
                                 let mut last = a[0].clone();
                                 let mut count = 1;
                                 a.remove(0);
@@ -1541,7 +1541,7 @@ pub fn do_math(
                                                     None,
                                                 )
                                             })
-                                            .collect::<Vec<Number>>(),
+                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
                                     )
                                 }
                             }
@@ -1689,7 +1689,7 @@ pub fn do_math(
                                                     None,
                                                 )
                                             })
-                                            .collect::<Vec<Number>>(),
+                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
                                     )
                                 } else {
                                     let mut current = Vec::new();
@@ -1713,7 +1713,7 @@ pub fn do_math(
                                                     None,
                                                 )
                                             })
-                                            .collect::<Vec<Number>>(),
+                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
                                     )
                                 }
                             }
@@ -2193,7 +2193,7 @@ pub fn do_math(
                                                         n.units,
                                                     )
                                                 })
-                                                .collect::<Vec<Number>>(),
+                                                .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
                                         )
                                     } else {
                                         return Err("cant project");
@@ -2229,7 +2229,7 @@ pub fn do_math(
                                                         a.units,
                                                     )
                                                 })
-                                                .collect::<Vec<Number>>(),
+                                                .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
                                         )
                                     } else {
                                         return Err("cant project");
@@ -2305,7 +2305,7 @@ pub fn do_math(
                                             Number::from(a.number.imag().clone().into(), None),
                                         ]
                                     })
-                                    .collect::<Vec<Vec<Number>>>(),
+                                    .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
                             ),
                             "uniq" => {
                                 let mut a = a;
@@ -2581,7 +2581,7 @@ pub fn do_math(
                             "rationalize" => Matrix(
                                 a.iter()
                                     .map(|c| c_to_rational(c.number.clone(), options))
-                                    .collect::<Vec<Vec<Number>>>(),
+                                    .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
                             ),
                             "prime_factors" => {
                                 if a.len() != 2 {
@@ -2619,7 +2619,7 @@ pub fn do_math(
                                                 ),
                                             ]
                                         })
-                                        .collect::<Vec<Vec<Number>>>(),
+                                        .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
                                 )
                             }
                             "poly" | "polynomial" => {
@@ -3415,7 +3415,7 @@ pub fn do_math(
                                                             ),
                                                         ]
                                                     })
-                                                    .collect::<Vec<Vec<Number>>>(),
+                                                    .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
                                             )
                                         }
                                     } else if let Some(a) = rationalize(a.real().clone(), options) {
@@ -3450,7 +3450,7 @@ pub fn do_math(
                                                         ),
                                                     ]
                                                 })
-                                                .collect::<Vec<Vec<Number>>>(),
+                                                .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
                                         )
                                     } else {
                                         NumStr::new(Number::from(
@@ -3813,12 +3813,12 @@ fn do_functions(
             {
                 function.remove(k + 1);
                 let mut mat = Vec::new();
-                for i in 0..a.len() {
+                for (a, b) in a.iter().zip(b) {
                     let mut vec = Vec::new();
-                    for j in 0..a[i].len() {
+                    for (a, b) in a.iter().zip(b) {
                         vec.push(functions(
-                            a[i][j].clone(),
-                            Some(b[i][j].clone()),
+                            a.clone(),
+                            Some(b.clone()),
                             to_deg.clone(),
                             s,
                             options,
@@ -3871,12 +3871,12 @@ fn do_functions(
             (Matrix(a), Vector(b)) if a.len() == b.len() => {
                 function.remove(k + 1);
                 let mut mat = Vec::new();
-                for i in 0..a.len() {
+                for (a, b) in a.iter().zip(b) {
                     let mut vec = Vec::new();
-                    for j in 0..a[i].len() {
+                    for a in a {
                         vec.push(functions(
-                            a[i][j].clone(),
-                            Some(b[i].clone()),
+                            a.clone(),
+                            Some(b.clone()),
                             to_deg.clone(),
                             s,
                             options,
@@ -3889,12 +3889,12 @@ fn do_functions(
             (Vector(a), Matrix(b)) if a.len() == b.len() => {
                 function.remove(k + 1);
                 let mut mat = Vec::new();
-                for i in 0..b.len() {
+                for (i, b) in b.iter().enumerate() {
                     let mut vec = Vec::new();
-                    for j in 0..b[i].len() {
+                    for b in b {
                         vec.push(functions(
                             a[i].clone(),
-                            Some(b[i][j].clone()),
+                            Some(b.clone()),
                             to_deg.clone(),
                             s,
                             options,
@@ -3937,12 +3937,12 @@ fn do_functions(
     }
 }
 fn functions(
-    mut a: Number,
-    mut c: Option<Number>,
+    mut a: Number<rug::Integer, rug::Float, rug::Complex>,
+    mut c: Option<Number<rug::Integer, rug::Float, rug::Complex>>,
     to_deg: Complex,
     s: &str,
     options: Options,
-) -> Result<Number, &'static str> {
+) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     if a.number.imag().is_zero() && !a.number.imag().is_sign_positive() {
         a.number = Complex::with_val(a.number.prec(), a.number.real())
     }

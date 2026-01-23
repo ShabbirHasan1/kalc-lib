@@ -312,7 +312,7 @@ pub fn set_commands(
                                 .unwrap_or(n.clone())
                         })
                     })
-                    .collect::<Vec<(String, Number)>>()
+                    .collect::<Vec<(String, Number<rug::Integer, rug::Float, rug::Complex>)>>()
             }
         }
         "label" => {

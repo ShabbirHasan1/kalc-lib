@@ -6,7 +6,6 @@ pub mod functions;
 pub mod graph;
 pub mod help;
 pub mod load_vars;
-mod macros;
 pub mod math;
 pub mod misc;
 pub mod options;

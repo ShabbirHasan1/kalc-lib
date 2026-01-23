@@ -1,6 +1,6 @@
+use crate::types::{Float1, Float2, Integer};
 use crate::{
     complex::NumStr,
-    types::Type,
     units::{AngleType::Radians, Notation::Normal},
 };
 #[cfg(feature = "bin-deps")]
@@ -13,6 +13,7 @@ use rug::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::marker::PhantomData;
 #[cfg(feature = "bin-deps")]
 use std::{
     fs,
@@ -46,9 +47,10 @@ pub struct Units {
 }
 #[derive(Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Number {
-    pub number: Complex,
+pub struct Number<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>> {
+    pub number: D,
     pub units: Option<Units>,
+    pub phantom: PhantomData<(I, T)>,
 }
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -71,7 +73,7 @@ pub struct Colors {
     pub imcol: Vec<String>,
     pub label: (String, String, String),
     pub graphtofile: String,
-    pub default_units: Vec<(String, Number)>,
+    pub default_units: Vec<(String, Number<rug::Integer, Float, Complex>)>,
 }
 impl Default for Colors {
     fn default() -> Self {
@@ -179,7 +181,6 @@ pub enum GraphType {
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Options {
-    pub float_type: Type,
     pub notation: Notation,
     pub angle: AngleType,
     pub graphtype: GraphType,
@@ -227,7 +228,6 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            float_type: Type::Rug,
             notation: Normal,
             angle: Radians,
             graphtype: GraphType::Normal,
@@ -1207,7 +1207,15 @@ pub fn units() -> HashSet<&'static str> {
     .cloned()
     .collect::<HashSet<&str>>()
 }
-pub fn to_unit(unit: String, mut num: Float, options: Options) -> (Number, Option<Number>) {
+#[allow(clippy::type_complexity)]
+pub fn to_unit(
+    unit: String,
+    mut num: Float,
+    options: Options,
+) -> (
+    Number<rug::Integer, rug::Float, rug::Complex>,
+    Option<Number<rug::Integer, rug::Float, rug::Complex>>,
+) {
     let mut units = Units::default();
     let mut add = None;
     match unit.as_str() {

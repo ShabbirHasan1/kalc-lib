@@ -1,3 +1,4 @@
+use crate::types::{Float1, Float2};
 use crate::{
     complex::NumStr::{
         Comma, Division, Exponent, Func, LeftBracket, LeftCurlyBracket, Matrix, Minus,
@@ -22,13 +23,14 @@ use rug::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::marker::PhantomData;
 #[derive(Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum NumStr {
-    Num(Box<Number>),
+    Num(Box<Number<Integer, Float, Complex>>),
     Func(String),
-    Vector(Vec<Number>),
-    Matrix(Vec<Vec<Number>>),
+    Vector(Vec<Number<Integer, Float, Complex>>),
+    Matrix(Vec<Vec<Number<Integer, Float, Complex>>>),
     LeftBracket,
     RightBracket,
     LeftCurlyBracket,
@@ -65,41 +67,59 @@ pub enum NumStr {
     Converse,
 }
 impl NumStr {
-    pub fn new(n: Number) -> Self {
+    pub fn new(n: Number<rug::Integer, rug::Float, rug::Complex>) -> Self {
         Num(Box::new(n))
     }
 }
-impl Number {
-    pub fn from(number: Complex, units: Option<Units>) -> Number {
-        Self { number, units }
+impl<I: crate::types::Integer<F, D>, F: Float1<I, D>, D: Float2<I, F>> Number<I, F, D> {
+    pub fn from(number: D, units: Option<Units>) -> Number<I, F, D> {
+        Self {
+            number,
+            units,
+            phantom: PhantomData,
+        }
     }
     pub fn set_prec(&mut self, prec: u32) {
         self.number.set_prec(prec)
     }
-    pub fn from_f64(f: f64, opt: &Options) -> Number {
-        let number = Complex::with_val(opt.prec, f);
+    pub fn from_f64(f: f64, opt: &Options) -> Number<I, F, D> {
+        let number = D::with_val(opt.prec, f);
         let units = None;
-        Self { number, units }
+        Self {
+            number,
+            units,
+            phantom: PhantomData,
+        }
     }
-    pub fn new(opt: &Options) -> Number {
-        let number = Complex::new(opt.prec);
+    pub fn new(opt: &Options) -> Number<I, F, D> {
+        let number = D::new(opt.prec);
         let units = None;
-        Self { number, units }
+        Self {
+            number,
+            units,
+            phantom: PhantomData,
+        }
     }
-    pub fn real(&self) -> &Float {
+    pub fn real(&self) -> &F {
         self.number.real()
     }
-    pub fn imag(&self) -> &Float {
+    pub fn imag(&self) -> &F {
         self.number.imag()
     }
 }
-pub fn add(a: &Number, b: &Number) -> Number {
+pub fn add(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         a.number.clone() + b.number.clone(),
         if a.units == b.units { a.units } else { None },
     )
 }
-pub fn sub(a: &Number, b: &Number) -> Number {
+pub fn sub(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         a.number.clone() - b.number.clone(),
         if a.units == b.units { a.units } else { None },
@@ -123,7 +143,10 @@ impl NumStr {
         }
     }
     pub fn mul(&self, b: &Self) -> Result<Self, &'static str> {
-        fn m(a: &Number, b: &Number) -> Number {
+        fn m(
+            a: &Number<rug::Integer, rug::Float, rug::Complex>,
+            b: &Number<rug::Integer, rug::Float, rug::Complex>,
+        ) -> Number<rug::Integer, rug::Float, rug::Complex> {
             Number::from(
                 {
                     let a = a.number.clone();
@@ -177,7 +200,7 @@ impl NumStr {
                         }
                         sum
                     })
-                    .collect::<Vec<Number>>(),
+                    .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
             ),
             (Vector(a), Matrix(b)) if a.len() == b.len() => Vector(
                 transpose(b)
@@ -190,7 +213,7 @@ impl NumStr {
                         }
                         sum
                     })
-                    .collect::<Vec<Number>>(),
+                    .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
             ),
             (Matrix(a), Matrix(b)) if a.iter().all(|a| a.len() == b.len()) => Matrix(
                 a.iter()
@@ -205,7 +228,7 @@ impl NumStr {
                                 }
                                 sum
                             })
-                            .collect::<Vec<Number>>()
+                            .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>()
                     })
                     .collect(),
             ),
@@ -240,9 +263,9 @@ impl NumStr {
                         a.iter()
                             .map(|a| add(a, b))
                             .chain(a.iter().map(|a| sub(a, b)))
-                            .collect::<Vec<Number>>()
+                            .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>()
                     })
-                    .collect::<Vec<Number>>(),
+                    .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
             ),
             (Num(b), Matrix(a)) => Vector(
                 a.iter()
@@ -250,15 +273,18 @@ impl NumStr {
                         a.iter()
                             .map(|a| add(b, a))
                             .chain(a.iter().map(|a| sub(b, a)))
-                            .collect::<Vec<Number>>()
+                            .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>()
                     })
-                    .collect::<Vec<Number>>(),
+                    .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
             ),
             _ => return Err("plus-minus unsupported"),
         })
     }
     pub fn pow(&self, b: &Self) -> Result<Self, &'static str> {
-        fn p(a: &Number, b: &Number) -> Number {
+        fn p(
+            a: &Number<rug::Integer, rug::Float, rug::Complex>,
+            b: &Number<rug::Integer, rug::Float, rug::Complex>,
+        ) -> Number<rug::Integer, rug::Float, rug::Complex> {
             Number::from(
                 {
                     let a = a.number.clone();
@@ -368,7 +394,7 @@ impl NumStr {
                         a.iter()
                             .zip(b.iter())
                             .map(|(a, b)| p(a, b))
-                            .collect::<Vec<Number>>()
+                            .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>()
                     })
                     .collect(),
             ),
@@ -377,7 +403,10 @@ impl NumStr {
     }
     pub fn func<F>(&self, b: &Self, func: F) -> Result<Self, &'static str>
     where
-        F: Fn(&Number, &Number) -> Number,
+        F: Fn(
+            &Number<rug::Integer, rug::Float, rug::Complex>,
+            &Number<rug::Integer, rug::Float, rug::Complex>,
+        ) -> Number<rug::Integer, rug::Float, rug::Complex>,
     {
         Ok(match (self, b) {
             (Num(a), Num(b)) => NumStr::new(func(a, b)),
@@ -420,7 +449,7 @@ impl NumStr {
                         a.iter()
                             .zip(b.iter())
                             .map(|(a, b)| func(a, b))
-                            .collect::<Vec<Number>>()
+                            .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>()
                     })
                     .collect(),
             ),
@@ -433,26 +462,32 @@ impl NumStr {
             _ => false,
         }
     }
-    pub fn num(&self) -> Result<Number, &'static str> {
+    pub fn num(&self) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
         match self {
             Num(n) => Ok(*n.clone()),
             _ => Err("failed to get number"),
         }
     }
-    pub fn vec(&self) -> Result<Vec<Number>, &'static str> {
+    pub fn vec(&self) -> Result<Vec<Number<rug::Integer, rug::Float, rug::Complex>>, &'static str> {
         match self {
             Vector(v) => Ok(v.clone()),
             _ => Err("failed to get vector"),
         }
     }
-    pub fn mat(&self) -> Result<Vec<Vec<Number>>, &'static str> {
+    #[allow(clippy::type_complexity)]
+    pub fn mat(
+        &self,
+    ) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
         match self {
             Matrix(m) => Ok(m.clone()),
             _ => Err("failed to get matrix"),
         }
     }
 }
-pub fn and(a: &Number, b: &Number) -> Number {
+pub fn and(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
@@ -463,7 +498,10 @@ pub fn and(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn or(a: &Number, b: &Number) -> Number {
+pub fn or(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
@@ -474,7 +512,10 @@ pub fn or(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn xor(a: &Number, b: &Number) -> Number {
+pub fn xor(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
@@ -486,7 +527,10 @@ pub fn xor(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn nand(a: &Number, b: &Number) -> Number {
+pub fn nand(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
@@ -497,7 +541,10 @@ pub fn nand(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn nor(a: &Number, b: &Number) -> Number {
+pub fn nor(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
@@ -508,7 +555,10 @@ pub fn nor(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn implies(a: &Number, b: &Number) -> Number {
+pub fn implies(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
@@ -558,7 +608,10 @@ pub fn not(a: &NumStr) -> Result<NumStr, &'static str> {
         _ => Err("bad not input"),
     }
 }
-pub fn div(a: &Number, b: &Number) -> Number {
+pub fn div(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         {
             let a = a.number.clone();
@@ -583,7 +636,10 @@ pub fn div(a: &Number, b: &Number) -> Number {
         },
     )
 }
-pub fn root(a: &Number, b: &Number) -> Number {
+pub fn root(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         {
             let a = a.number.clone();
@@ -607,7 +663,7 @@ pub fn root(a: &Number, b: &Number) -> Number {
         },
     )
 }
-pub fn unity(y: Complex, x: Complex) -> Vec<Number> {
+pub fn unity(y: Complex, x: Complex) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     if y.is_zero() {
         let n = x
             .into_real_imag()
@@ -620,7 +676,7 @@ pub fn unity(y: Complex, x: Complex) -> Vec<Number> {
         return vec![Number::from(Complex::new(y.prec()), None); n];
     }
     let y = y.ln();
-    let mut vec: Vec<Number> = Vec::new();
+    let mut vec: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
     let taui: Complex = 2 * Complex::with_val(x.prec(), (0, Pi));
     let r: Float = x.imag().clone().pow(2) / 2;
     let r: Float = x.real().clone() / 2 + r / x.real().clone();
@@ -683,19 +739,28 @@ pub fn unity(y: Complex, x: Complex) -> Vec<Number> {
     }
     vec
 }
-pub fn shl(a: &Number, b: &Number) -> Number {
+pub fn shl(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         a.number.clone() * pow_nth(Complex::with_val(a.number.prec(), 2), b.number.clone()),
         None,
     )
 }
-pub fn shr(a: &Number, b: &Number) -> Number {
+pub fn shr(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         a.number.clone() * pow_nth(Complex::with_val(a.number.prec(), 2), -b.number.clone()),
         None,
     )
 }
-pub fn ne(a: &Number, b: &Number) -> Number {
+pub fn ne(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let ua = a.units;
     let ub = b.units;
     let a = a.number.clone();
@@ -726,7 +791,10 @@ pub fn ne(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn eq(a: &Number, b: &Number) -> Number {
+pub fn eq(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let ua = a.units;
     let ub = b.units;
     let a = a.number.clone();
@@ -757,7 +825,10 @@ pub fn eq(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn about_eq(a: &Number, b: &Number) -> Number {
+pub fn about_eq(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let ua = a.units;
     let ub = b.units;
     let a = a.number.clone();
@@ -780,19 +851,28 @@ pub fn about_eq(a: &Number, b: &Number) -> Number {
         None,
     )
 }
-pub fn ge(a: &Number, b: &Number) -> Number {
+pub fn ge(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         Complex::with_val(a.number.prec(), (a.number.real() >= b.number.real()) as u8),
         None,
     )
 }
-pub fn gt(a: &Number, b: &Number) -> Number {
+pub fn gt(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     Number::from(
         Complex::with_val(a.number.prec(), (a.number.real() > b.number.real()) as u8),
         None,
     )
 }
-pub fn rem(a: &Number, b: &Number) -> Number {
+pub fn rem(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = &a.number;
     let b = &b.number;
     let c = a.clone() / b.clone();
@@ -831,7 +911,10 @@ pub fn gamma(a: Complex) -> Complex {
         a.real().clone().gamma().into()
     }
 }
-pub fn tetration(a: &Number, b: &Number) -> Number {
+pub fn tetration(
+    a: &Number<rug::Integer, rug::Float, rug::Complex>,
+    b: &Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let a = a.number.clone();
     let b = b.number.clone();
     Number::from(
@@ -896,7 +979,10 @@ pub fn atan(a: Complex, b: Complex) -> Complex {
         -i.clone() * ((a + b * i) / abs.sqrt()).ln()
     }
 }
-pub fn to_polar(mut a: Vec<Number>, to_deg: Complex) -> Vec<Number> {
+pub fn to_polar(
+    mut a: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
+    to_deg: Complex,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     if a.len() == 1 {
         a.push(Number::from(Complex::new(a[0].number.prec()), None));
     }
@@ -1029,7 +1115,10 @@ pub fn to_polar(mut a: Vec<Number>, to_deg: Complex) -> Vec<Number> {
         ]
     }
 }
-pub fn to_cyl(mut a: Vec<Number>, to_deg: Complex) -> Vec<Number> {
+pub fn to_cyl(
+    mut a: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
+    to_deg: Complex,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     if a.len() == 1 {
         a.push(Number::from(Complex::new(a[0].number.prec()), None));
     }
@@ -1152,7 +1241,7 @@ pub fn to(a: &NumStr, b: &NumStr) -> Result<NumStr, &'static str> {
                 .unwrap_or_default()
                 .to_isize()
                 .unwrap_or_default();
-            let vec: Vec<Number> = if a < b {
+            let vec: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = if a < b {
                 (a..=b)
                     .map(|a| Number::from(Complex::with_val(prec, a), None))
                     .collect()
@@ -1176,7 +1265,7 @@ pub fn to(a: &NumStr, b: &NumStr) -> Result<NumStr, &'static str> {
                 .unwrap_or_default()
                 .to_isize()
                 .unwrap_or_default();
-            let mat: Vec<Vec<Number>> = a
+            let mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> = a
                 .iter()
                 .map(|a| {
                     let a = a
@@ -1212,7 +1301,7 @@ pub fn to(a: &NumStr, b: &NumStr) -> Result<NumStr, &'static str> {
                 .unwrap_or_default()
                 .to_isize()
                 .unwrap_or_default();
-            let mat: Vec<Vec<Number>> = b
+            let mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> = b
                 .iter()
                 .map(|b| {
                     let b = b
@@ -1402,7 +1491,11 @@ pub fn sum(
         Ok(value)
     }
 }
-pub fn submatrix(a: &[Vec<Number>], row: usize, col: usize) -> Vec<Vec<Number>> {
+pub fn submatrix(
+    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+    row: usize,
+    col: usize,
+) -> Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> {
     a.iter()
         .enumerate()
         .filter(|&(i, _)| i != row)
@@ -1411,11 +1504,13 @@ pub fn submatrix(a: &[Vec<Number>], row: usize, col: usize) -> Vec<Vec<Number>> 
                 .enumerate()
                 .filter(|&(j, _)| j != col)
                 .map(|(_, value)| value.clone())
-                .collect::<Vec<Number>>()
+                .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>()
         })
         .collect()
 }
-pub fn trace(a: &[Vec<Number>]) -> Number {
+pub fn trace(
+    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let mut n = Complex::new(a[0][0].number.prec());
     for (i, j) in a.iter().enumerate() {
         if j.len() == i {
@@ -1425,7 +1520,7 @@ pub fn trace(a: &[Vec<Number>]) -> Number {
     }
     Number::from(n, a[0][0].units)
 }
-pub fn identity(a: usize, prec: u32) -> Vec<Vec<Number>> {
+pub fn identity(a: usize, prec: u32) -> Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> {
     let mut mat = Vec::with_capacity(a.max(1));
     for i in 0..a {
         let mut vec = Vec::with_capacity(a.max(1));
@@ -1440,7 +1535,9 @@ pub fn identity(a: usize, prec: u32) -> Vec<Vec<Number>> {
     }
     mat
 }
-pub fn determinant(a: &[Vec<Number>]) -> Result<Number, &'static str> {
+pub fn determinant(
+    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     if !a.is_empty() && (0..a.len()).all(|j| a.len() == a[j].len()) {
         Ok(Number::from(
             match a.len() {
@@ -1480,7 +1577,9 @@ pub fn determinant(a: &[Vec<Number>]) -> Result<Number, &'static str> {
         Err("not square")
     }
 }
-pub fn transpose(a: &[Vec<Number>]) -> Vec<Vec<Number>> {
+pub fn transpose(
+    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+) -> Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> {
     let mut max = 0;
     for i in a {
         if i.len() > max {
@@ -1495,7 +1594,10 @@ pub fn transpose(a: &[Vec<Number>]) -> Vec<Vec<Number>> {
     }
     b
 }
-pub fn minors(a: &[Vec<Number>]) -> Result<Vec<Vec<Number>>, &'static str> {
+#[allow(clippy::type_complexity)]
+pub fn minors(
+    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
     if a.iter().all(|j| a.len() == j.len()) {
         let mut result = vec![vec![Number::from(Complex::new(1), None); a[0].len()]; a.len()];
         for (i, k) in result.iter_mut().enumerate() {
@@ -1508,7 +1610,10 @@ pub fn minors(a: &[Vec<Number>]) -> Result<Vec<Vec<Number>>, &'static str> {
         Err("not square")
     }
 }
-pub fn cofactor(a: &[Vec<Number>]) -> Result<Vec<Vec<Number>>, &'static str> {
+#[allow(clippy::type_complexity)]
+pub fn cofactor(
+    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
     if a.iter().all(|j| a.len() == j.len()) && !a.is_empty() {
         let mut result = vec![vec![Number::from(Complex::new(1), None); a[0].len()]; a.len()];
         for (i, k) in result.iter_mut().enumerate() {
@@ -1526,7 +1631,10 @@ pub fn cofactor(a: &[Vec<Number>]) -> Result<Vec<Vec<Number>>, &'static str> {
         Err("not square")
     }
 }
-pub fn inverse(a: &[Vec<Number>]) -> Result<Vec<Vec<Number>>, &'static str> {
+#[allow(clippy::type_complexity)]
+pub fn inverse(
+    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
     if (0..a.len()).all(|j| a.len() == a[j].len()) {
         Matrix(transpose(&cofactor(a)?))
             .func(&NumStr::new(determinant(a)?), div)?
@@ -1553,12 +1661,18 @@ pub fn nth_prime(n: Integer) -> Integer {
     }
     num
 }
-pub fn prime_factors(mut n: Integer) -> Vec<(Integer, isize)> {
+pub fn prime_factors<
+    F: crate::types::Float1<I, D>,
+    I: crate::types::Integer<F, D>,
+    D: crate::types::Float2<I, F>,
+>(
+    mut n: I,
+) -> Vec<(I, isize)> {
     if n < 2 {
         return Vec::new();
     }
     let mut mat = Vec::new();
-    let mut prime = Integer::from(2);
+    let mut prime = I::from(2);
     let mut k = 0;
     loop {
         let (temp, rem) = n.clone().div_rem(prime.clone());
@@ -1579,7 +1693,9 @@ pub fn prime_factors(mut n: Integer) -> Vec<(Integer, isize)> {
     }
     mat
 }
-pub fn sort(mut a: Vec<Number>) -> Vec<Number> {
+pub fn sort(
+    mut a: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     a.sort_by(|x, y| {
         x.number
             .real()
@@ -1588,7 +1704,10 @@ pub fn sort(mut a: Vec<Number>) -> Vec<Number> {
     });
     a
 }
-pub fn sort_mat(mut a: Vec<Vec<Number>>, prec: u32) -> Vec<Vec<Number>> {
+pub fn sort_mat(
+    mut a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+    prec: u32,
+) -> Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> {
     a.sort_by(|x, y| {
         if x.is_empty() || y.is_empty() {
             Ordering::Equal
@@ -1605,7 +1724,10 @@ pub fn sort_mat(mut a: Vec<Vec<Number>>, prec: u32) -> Vec<Vec<Number>> {
     a.sort_by(|x, y| x.len().partial_cmp(&y.len()).unwrap_or(Ordering::Equal));
     a
 }
-pub fn eigenvalues(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static str> {
+pub fn eigenvalues(
+    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+    real: bool,
+) -> Result<NumStr, &'static str> {
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         match mat.len() {
             1 => Ok(NumStr::new(mat[0][0].clone())),
@@ -1782,7 +1904,10 @@ pub fn eigenvalues(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static s
         Err("not square")
     }
 }
-pub fn eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static str> {
+pub fn eigenvectors(
+    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+    real: bool,
+) -> Result<NumStr, &'static str> {
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         let one = Number::from(Complex::with_val(mat[0][0].number.prec(), 1), None);
         match mat.len() {
@@ -1820,7 +1945,7 @@ pub fn eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static 
                             .unwrap_or(None)
                     })
                     .flatten()
-                    .collect::<Vec<Vec<Number>>>();
+                    .collect::<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>();
                 Ok(Matrix(v))
             }
             _ => Err("unsupported"),
@@ -1829,7 +1954,9 @@ pub fn eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static 
         Err("not square")
     }
 }
-pub fn rcf(mat: Vec<Vec<Number>>) -> Result<NumStr, &'static str> {
+pub fn rcf(
+    mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+) -> Result<NumStr, &'static str> {
     if mat.is_empty() || (0..mat.len()).any(|j| mat.len() != mat[j].len()) {
         return Err("matrix not square");
     }
@@ -1863,7 +1990,9 @@ pub fn rcf(mat: Vec<Vec<Number>>) -> Result<NumStr, &'static str> {
     }
     change_basis(mat, &identity(l, pr), &transpose(&beta))
 }
-pub fn jcf(mat: Vec<Vec<Number>>) -> Result<NumStr, &'static str> {
+pub fn jcf(
+    mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+) -> Result<NumStr, &'static str> {
     if mat.is_empty() || (0..mat.len()).any(|j| mat.len() != mat[j].len()) {
         return Err("matrix not square");
     }
@@ -1900,7 +2029,11 @@ pub fn jcf(mat: Vec<Vec<Number>>) -> Result<NumStr, &'static str> {
     let d = change_basis(d, &i, &o)?;
     Ok(d)
 }
-fn gen_ev(mat: &[Vec<Number>], real: bool) -> Result<Vec<Vec<Vec<Number>>>, &'static str> {
+#[allow(clippy::type_complexity)]
+fn gen_ev(
+    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+    real: bool,
+) -> Result<Vec<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>, &'static str> {
     if mat.is_empty() || (0..mat.len()).any(|j| mat.len() != mat[j].len()) {
         return Err("matrix not square");
     }
@@ -1942,9 +2075,12 @@ fn gen_ev(mat: &[Vec<Number>], real: bool) -> Result<Vec<Vec<Vec<Number>>>, &'st
                 })
                 .unwrap_or(None)
         })
-        .collect::<Vec<Vec<Vec<Number>>>>())
+        .collect::<Vec<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>>())
 }
-pub fn generalized_eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumStr, &'static str> {
+pub fn generalized_eigenvectors(
+    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+    real: bool,
+) -> Result<NumStr, &'static str> {
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         let one = Number::from(Complex::with_val(mat[0][0].number.prec(), 1), None);
         match mat.len() {
@@ -1954,7 +2090,7 @@ pub fn generalized_eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumSt
                     .iter()
                     .flatten()
                     .cloned()
-                    .collect::<Vec<Vec<Number>>>(),
+                    .collect::<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>(),
             )),
             _ => Err("unsupported"),
         }
@@ -1963,9 +2099,9 @@ pub fn generalized_eigenvectors(mat: &[Vec<Number>], real: bool) -> Result<NumSt
     }
 }
 pub fn change_basis(
-    a: Vec<Vec<Number>>,
-    beta: &[Vec<Number>],
-    gamma: &[Vec<Number>],
+    a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+    beta: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+    gamma: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
 ) -> Result<NumStr, &'static str> {
     let m = Matrix(a);
     let tn = Matrix(inverse(&transpose(gamma))?);
@@ -1980,11 +2116,17 @@ pub fn change_basis(
     }
     Matrix(c).mul(&m)?.mul(&Matrix(d))
 }
-pub fn coordinate(v: Vec<Number>, beta: Vec<Vec<Number>>) -> Result<NumStr, &'static str> {
+pub fn coordinate(
+    v: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
+    beta: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+) -> Result<NumStr, &'static str> {
     let tn = Matrix(inverse(&transpose(&beta))?);
     tn.mul(&Vector(v))
 }
-pub fn rref(mut a: Vec<Vec<Number>>) -> Result<Vec<Vec<Number>>, &'static str> {
+#[allow(clippy::type_complexity)]
+pub fn rref(
+    mut a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
     if a.is_empty() || a[0].is_empty() || a.iter().any(|b| a[0].len() != b.len()) {
         return Err("invalid matrix");
     }
@@ -2014,7 +2156,10 @@ pub fn rref(mut a: Vec<Vec<Number>>) -> Result<Vec<Vec<Number>>, &'static str> {
     }
     Ok(a.to_vec())
 }
-pub fn kernel(a: Vec<Vec<Number>>) -> Result<Vec<Vec<Number>>, &'static str> {
+#[allow(clippy::type_complexity)]
+pub fn kernel(
+    a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
     if a.is_empty() || a[0].is_empty() || a.iter().any(|b| a[0].len() != b.len()) {
         return Err("invalid matrix");
     }
@@ -2049,7 +2194,10 @@ pub fn kernel(a: Vec<Vec<Number>>) -> Result<Vec<Vec<Number>>, &'static str> {
     }
     Ok(ker)
 }
-pub fn range(a: Vec<Vec<Number>>) -> Result<Vec<Vec<Number>>, &'static str> {
+#[allow(clippy::type_complexity)]
+pub fn range(
+    a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
     let rref = rref(a.clone())?;
     let mut ran = Vec::new();
     let mut leading_ones = Vec::new();
@@ -2080,7 +2228,12 @@ pub fn div_units(a: Option<Units>, b: Option<Units>) -> Option<Units> {
         _ => None,
     }
 }
-pub fn quadratic(a: Number, b: Number, c: Number, real: bool) -> Vec<Number> {
+pub fn quadratic(
+    a: Number<rug::Integer, rug::Float, rug::Complex>,
+    b: Number<rug::Integer, rug::Float, rug::Complex>,
+    c: Number<rug::Integer, rug::Float, rug::Complex>,
+    real: bool,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     if a.number.is_zero() {
         return if b.number.is_zero() {
             vec![Number::from(Complex::new(a.number.prec()), None)]
@@ -2132,7 +2285,13 @@ pub fn quadratic(a: Number, b: Number, c: Number, real: bool) -> Vec<Number> {
         vec![Number::from(z1, units), Number::from(z2, units)]
     }
 }
-pub fn cubic(a: Number, b: Number, c: Number, d: Number, real: bool) -> Vec<Number> {
+pub fn cubic(
+    a: Number<rug::Integer, rug::Float, rug::Complex>,
+    b: Number<rug::Integer, rug::Float, rug::Complex>,
+    c: Number<rug::Integer, rug::Float, rug::Complex>,
+    d: Number<rug::Integer, rug::Float, rug::Complex>,
+    real: bool,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     let units = div_units(d.units, a.units).map(|a| a.root(3.0));
     if a.number.is_zero() {
         return quadratic(b, c, d, real);
@@ -2246,7 +2405,14 @@ pub fn cubic(a: Number, b: Number, c: Number, d: Number, real: bool) -> Vec<Numb
         ]
     }
 }
-pub fn quartic(div: Number, b: Number, c: Number, d: Number, e: Number, real: bool) -> Vec<Number> {
+pub fn quartic(
+    div: Number<rug::Integer, rug::Float, rug::Complex>,
+    b: Number<rug::Integer, rug::Float, rug::Complex>,
+    c: Number<rug::Integer, rug::Float, rug::Complex>,
+    d: Number<rug::Integer, rug::Float, rug::Complex>,
+    e: Number<rug::Integer, rug::Float, rug::Complex>,
+    real: bool,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     let units = div_units(e.units, div.units).map(|a| a.root(4.0));
     if e.number.is_zero() {
         let mut vec = cubic(div, b, c, d, real);
@@ -2355,7 +2521,11 @@ pub fn quartic(div: Number, b: Number, c: Number, d: Number, e: Number, real: bo
         ]
     }
 }
-pub fn variance(a: &[Number], mean: Option<Complex>, prec: u32) -> Number {
+pub fn variance(
+    a: &[Number<rug::Integer, rug::Float, rug::Complex>],
+    mean: Option<Complex>,
+    prec: u32,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     let mean = if let Some(n) = mean {
         n
     } else {
@@ -2774,11 +2944,11 @@ pub fn surface_area(
     options: Options,
     varx: String,
     mut startx: Complex,
-    endx: Number,
+    endx: Number<rug::Integer, rug::Float, rug::Complex>,
     vary: String,
     starty_func: Vec<NumStr>,
     endy_func: Vec<NumStr>,
-) -> Result<Number, &'static str> {
+) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     if starty_func.is_empty() || endy_func.is_empty() {
         return Err("bad start/end");
     }
@@ -3181,8 +3351,8 @@ pub fn length(
     options: Options,
     var: String,
     mut start: Complex,
-    end: Number,
-) -> Result<Number, &'static str> {
+    end: Number<rug::Integer, rug::Float, rug::Complex>,
+) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     let points = options.prec as usize / 4;
     let units = end.units;
     let end = end.number;
@@ -3253,7 +3423,7 @@ pub fn area(
     options: Options,
     var: String,
     mut start: Complex,
-    mut end: Number,
+    mut end: Number<rug::Integer, rug::Float, rug::Complex>,
     nth: Complex,
     combine: bool,
 ) -> Result<NumStr, &'static str> {
@@ -3302,7 +3472,7 @@ pub fn area(
             func = func[last..func.len().saturating_sub(1)].to_vec();
         }
     }
-    let mut areavec: Vec<Number> = Vec::new();
+    let mut areavec: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
     let div = Float::with_val(options.prec, 0.5).pow(options.prec / 2);
     let mut delta: Complex = (end.clone() - start.clone()) / points;
     let mut area: Complex = Complex::new(options.prec);
@@ -3707,7 +3877,14 @@ pub fn area(
         }
     }
     let h: Complex = delta.clone() / 4;
-    let body = |i: usize| -> Result<(Option<Complex>, Option<Vec<Number>>), &str> {
+    #[allow(clippy::type_complexity)]
+    let body = |i: usize| -> Result<
+        (
+            Option<Complex>,
+            Option<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+        ),
+        &str,
+    > {
         let point = if i + 1 == points {
             end.clone()
         } else {
@@ -3960,7 +4137,15 @@ pub fn area(
         }
     };
     #[allow(clippy::type_complexity)]
-    let data: Vec<Result<(Option<Complex>, Option<Vec<Number>>), &str>> = if options.graphing {
+    let data: Vec<
+        Result<
+            (
+                Option<Complex>,
+                Option<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+            ),
+            &str,
+        >,
+    > = if options.graphing {
         (0..points).map(body).collect()
     } else {
         #[cfg(feature = "rayon")]
@@ -4010,7 +4195,7 @@ pub fn area(
                         a.units,
                     )
                 })
-                .collect::<Vec<Number>>(),
+                .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
         ))
     }
 }
@@ -4117,7 +4302,7 @@ pub fn solve(
     mut func_vars: Vec<(String, Vec<NumStr>)>,
     mut options: Options,
     var: String,
-    x: Number,
+    x: Number<rug::Integer, rug::Float, rug::Complex>,
 ) -> Result<NumStr, &'static str> {
     //newtons method, x-f(x)/f'(x)
     let units = x.units;
@@ -4142,7 +4327,7 @@ pub fn solve(
                 Number::from(Complex::with_val(options.prec, (4, -4)), None),
             ]
         };
-        let mut values: Vec<Number> = Vec::new();
+        let mut values: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
         let mut first = true;
         'main: for p in points {
             let v = solve(
@@ -4273,7 +4458,7 @@ pub fn extrema(
     mut func_vars: Vec<(String, Vec<NumStr>)>,
     mut options: Options,
     var: String,
-    x: Number,
+    x: Number<rug::Integer, rug::Float, rug::Complex>,
 ) -> Result<NumStr, &'static str> {
     //newtons method, x-f'(x)/f''(x)
     let units = x.units;
@@ -4417,8 +4602,8 @@ pub fn taylor(
     mut func_vars: Vec<(String, Vec<NumStr>)>,
     mut options: Options,
     var: String,
-    x: Option<Number>,
-    a: Number,
+    x: Option<Number<rug::Integer, rug::Float, rug::Complex>>,
+    a: Number<rug::Integer, rug::Float, rug::Complex>,
     nth: usize,
 ) -> Result<NumStr, &'static str> {
     fn fact(n: usize) -> Integer {
@@ -4600,7 +4785,7 @@ pub fn slope(
     func_vars: Vec<(String, Vec<NumStr>)>,
     mut options: Options,
     var: String,
-    mut point: Number,
+    mut point: Number<rug::Integer, rug::Float, rug::Complex>,
     combine: bool,
     nth: u32,
 ) -> Result<NumStr, &'static str> {
@@ -4739,7 +4924,7 @@ pub fn slopesided(
     func_vars: Vec<(String, Vec<NumStr>)>,
     mut options: Options,
     var: String,
-    point: Number,
+    point: Number<rug::Integer, rug::Float, rug::Complex>,
     combine: bool,
     nth: u32,
     right: bool,
@@ -4899,7 +5084,7 @@ pub fn slopesided(
                             },
                         )
                     })
-                    .collect::<Vec<Number>>(),
+                    .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
             );
             if oop != 0 {
                 v.set_prec(oop);
@@ -5023,7 +5208,7 @@ pub fn slopesided(
                                 },
                             )
                         })
-                        .collect::<Vec<Number>>(),
+                        .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
                 );
                 if oop != 0 {
                     v.set_prec(oop)
@@ -5045,7 +5230,7 @@ pub fn limit(
     mut func_vars: Vec<(String, Vec<NumStr>)>,
     mut options: Options,
     var: String,
-    point: Number,
+    point: Number<rug::Integer, rug::Float, rug::Complex>,
     side: LimSide,
 ) -> Result<NumStr, &'static str> {
     let xunits = point.units;
@@ -5306,7 +5491,7 @@ pub fn limit(
                 Ok(n)
             }
             (Vector(v1), Vector(v2)) => {
-                let mut v3: Vec<Number> = Vec::new();
+                let mut v3: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
                 let mut vec = Vec::with_capacity(v1.len().max(1));
                 for (i, (n1, n2)) in v1.iter().zip(v2).enumerate() {
                     let units = n1.units;
@@ -5644,7 +5829,7 @@ fn limsided(
     func_vars: Vec<(String, Vec<NumStr>)>,
     options: Options,
     var: String,
-    point: Number,
+    point: Number<rug::Integer, rug::Float, rug::Complex>,
     right: bool,
 ) -> Result<NumStr, &'static str> {
     let xunits = point.units;
@@ -5797,7 +5982,7 @@ fn limsided(
             )))
         }
         (Vector(n1), Vector(n2)) => {
-            let mut n3: Vec<Number> = Vec::new();
+            let mut n3: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
             let mut vec = Vec::with_capacity(n1.len().max(1));
             for (i, (n1, n2)) in n1.iter().zip(n2).enumerate() {
                 let units = n1.units;
@@ -6096,7 +6281,11 @@ pub fn pow_nth(z: Complex, n: Complex) -> Complex {
         (z.ln() * n).exp()
     }
 }
-pub fn hsv2rgb(mut hue: Float, sat: Float, val: Float) -> Vec<Number> {
+pub fn hsv2rgb(
+    mut hue: Float,
+    sat: Float,
+    val: Float,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     if sat.is_zero() {
         return rgb2val(val.clone(), val.clone(), val);
     }
@@ -6122,7 +6311,11 @@ pub fn hsv2rgb(mut hue: Float, sat: Float, val: Float) -> Vec<Number> {
         _ => rgb2val(val, p, q),
     }
 }
-pub fn rgb2val(r: Float, g: Float, b: Float) -> Vec<Number> {
+pub fn rgb2val(
+    r: Float,
+    g: Float,
+    b: Float,
+) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
     let r: Float = 255 * r;
     let g: Float = 255 * g;
     let b: Float = 255 * b;

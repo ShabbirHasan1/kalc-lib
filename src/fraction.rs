@@ -1,15 +1,21 @@
 // as per continued fraction expansion
+use crate::types::Constant::Pi;
+use crate::types::{Float1, Float2, Integer};
 use crate::{
     complex::prime_factors,
     units::{Auto, Colors, Number, Options},
 };
-use rug::{Complex, Float, Integer, float::Constant::Pi, ops::Pow};
-pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> String {
+pub fn fraction<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
+    value: T,
+    options: Options,
+    colors: &Colors,
+    n: usize,
+) -> String {
     if value.clone().fract().is_zero() || !value.is_finite() || options.prec < 128 {
         return String::new();
     }
-    let e = Float::with_val(options.prec, 1.0).exp();
-    let pi = Float::with_val(options.prec, Pi);
+    let e = T::with_val(options.prec, 1.0).exp();
+    let pi = T::with_val(options.prec, Pi);
     let sign: String = if value.is_sign_negative() {
         '-'.to_string()
     } else {
@@ -36,7 +42,7 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
                     let mut mul = String::new();
                     if num <= 65536 {
                         let pf = prime_factors(num.clone());
-                        let mut n = Integer::from(1);
+                        let mut n = I::from(1);
                         for p in pf {
                             n *= p.0.clone().pow((p.1 / if i == 1 { 2 } else { 3 }) as u32);
                             num /= p.0.pow((p.1 - (p.1 % if i == 1 { 2 } else { 3 })) as u32)
@@ -90,8 +96,8 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
             };
         }
         let mut number = orig.clone().fract();
-        let mut mult = Float::with_val(options.prec, 1);
-        let mut first: Float = Float::new(options.prec);
+        let mut mult = T::with_val(options.prec, 1);
+        let mut first = T::new(options.prec);
         for j in 0..64 {
             let mut recip = number.clone().recip();
             let fract = recip.clone().fract();
@@ -108,7 +114,7 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
                     Some(n) => n,
                     None => return String::new(),
                 };
-                let mut last = (last + recip.clone() * orig.trunc())
+                let mut last = (last + orig.trunc() * recip.clone())
                     .to_integer()
                     .unwrap_or_default();
                 return if (recip == 1 && i == 0)
@@ -132,7 +138,7 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
                         let mut mul = String::new();
                         if last <= 65536 {
                             let pf = prime_factors(last.clone());
-                            let mut n = Integer::from(1);
+                            let mut n = I::from(1);
                             for p in pf {
                                 n *= p.0.clone().pow((p.1 / if i == 1 { 2 } else { 3 }) as u32);
                                 last /= p.0.pow((p.1 - (p.1 % if i == 1 { 2 } else { 3 })) as u32)
@@ -151,7 +157,7 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
                         let mut mul = String::new();
                         if last <= 65536 {
                             let pf = prime_factors(last.clone());
-                            let mut n = Integer::from(1);
+                            let mut n = I::from(1);
                             for p in pf {
                                 n *= p.0.clone().pow((p.1 / if i == 1 { 2 } else { 3 }) as u32);
                                 last /= p.0.pow((p.1 - (p.1 % if i == 1 { 2 } else { 3 })) as u32)
@@ -160,10 +166,10 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
                                 mul = n.to_string()
                             }
                         }
-                        let mut div = Integer::from(1);
+                        let mut div = I::from(1);
                         if recip <= 65536 {
                             let pf = prime_factors(recip.clone());
-                            let mut n = Integer::from(1);
+                            let mut n = I::from(1);
                             for p in pf {
                                 n *= p.0.clone().pow((p.1 / if i == 1 { 2 } else { 3 }) as u32);
                                 recip /= p.0.pow((p.1 - (p.1 % if i == 1 { 2 } else { 3 })) as u32)
@@ -270,16 +276,19 @@ pub fn fraction(value: Float, options: Options, colors: &Colors, n: usize) -> St
     }
     String::new()
 }
-pub fn rationalize(value: Float, options: Options) -> Option<(Integer, Integer)> {
+pub fn rationalize<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
+    value: T,
+    options: Options,
+) -> Option<(I, I)> {
     if !value.is_finite() || value.is_zero() {
         return None;
     }
     if value.clone().fract().is_zero() {
-        return Some((value.to_integer().unwrap_or_default(), Integer::from(1)));
+        return Some((value.to_integer().unwrap_or_default(), I::from(1)));
     }
     let mut number = value.clone().fract();
-    let mut mult = Float::with_val(options.prec, 1);
-    let mut first: Float = Float::new(options.prec);
+    let mut mult = T::with_val(options.prec, 1);
+    let mut first = T::new(options.prec);
     for j in 0..256 {
         let mut recip = number.clone().recip();
         let fract = recip.clone().fract();
@@ -293,7 +302,7 @@ pub fn rationalize(value: Float, options: Options) -> Option<(Integer, Integer)>
             recip *= mult.clone();
             let last = recip.clone() / if j == 0 { &recip } else { &first };
             let recip = recip.to_integer()?;
-            let last = (last + recip.clone() * value.trunc())
+            let last = (last + value.trunc() * recip.clone())
                 .to_integer()
                 .unwrap_or_default();
             return if recip == 1 || last == 0 {
@@ -305,7 +314,10 @@ pub fn rationalize(value: Float, options: Options) -> Option<(Integer, Integer)>
     }
     None
 }
-pub fn c_to_rational(value: Complex, options: Options) -> Vec<Number> {
+pub fn c_to_rational<I: Integer<T, D>, T: Float1<I, D>, D: Float2<I, T>>(
+    value: D,
+    options: Options,
+) -> Vec<Number<I, T, D>> {
     let sign_re = value.real().is_sign_positive();
     let sign_im = value.real().is_sign_positive();
     let re = rationalize(value.real().clone().abs(), options);
@@ -313,20 +325,20 @@ pub fn c_to_rational(value: Complex, options: Options) -> Vec<Number> {
     let mut vec = Vec::new();
     if let Some(n) = re {
         vec.push(Number::from(
-            Complex::with_val(options.prec, if sign_re { n.0 } else { -n.0 }),
+            D::with_val(options.prec, if sign_re { n.0 } else { -n.0 }),
             None,
         ));
-        vec.push(Number::from(Complex::with_val(options.prec, n.1), None));
+        vec.push(Number::from(D::with_val(options.prec, n.1), None));
     } else {
-        vec.push(Number::from(Complex::new(options.prec), None));
-        vec.push(Number::from(Complex::with_val(options.prec, 1), None));
+        vec.push(Number::from(D::new(options.prec), None));
+        vec.push(Number::from(D::with_val(options.prec, 1), None));
     }
     if let Some(n) = im {
         vec.push(Number::from(
-            Complex::with_val(options.prec, if sign_im { n.0 } else { -n.0 }),
+            D::with_val(options.prec, if sign_im { n.0 } else { -n.0 }),
             None,
         ));
-        vec.push(Number::from(Complex::with_val(options.prec, n.1), None));
+        vec.push(Number::from(D::with_val(options.prec, n.1), None));
     }
     vec
 }

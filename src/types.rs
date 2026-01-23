@@ -1,141 +1,107 @@
-mod cdecimal;
-mod cf32;
-mod cf64;
-mod complex;
-mod decimal;
-mod float;
-mod integer;
-
-pub use cdecimal::CDecimal;
-pub use cf32::CF32;
-pub use cf64::CF64;
-pub use complex::Complex;
-pub use decimal::Decimal;
-pub use float::Float;
-pub use integer::Integer;
-
-use rug::ops::Pow as RugPow;
-
-//TODO malachite num maybe
-//TODO make real only an option
-
-#[derive(PartialEq)]
-pub enum IsPrime {
-    No,
-    Probably,
-    Yes,
+pub mod rug;
+use std::fmt::Display;
+use std::ops::*;
+pub trait Float2<I: Integer<F, Self>, F: Float1<I, Self>>:
+    Float<I, F, Self> + WithVal<(usize, usize)> + WithVal<(f64, f64)> + Display
+{
+    fn real(&self) -> &F;
+    fn imag(&self) -> &F;
 }
-impl From<rug::integer::IsPrime> for IsPrime {
-    fn from(value: rug::integer::IsPrime) -> Self {
-        match value {
-            rug::integer::IsPrime::No => IsPrime::No,
-            rug::integer::IsPrime::Probably => IsPrime::Probably,
-            rug::integer::IsPrime::Yes => IsPrime::Yes,
-        }
-    }
+pub trait Float1<I: Integer<Self, F>, F: Float2<I, Self>>:
+    Float<I, Self, F> + PartialOrd<f64> + Compare
+{
+    fn is_finite(&self) -> bool;
+    fn is_sign_negative(&self) -> bool;
+    fn is_sign_positive(&self) -> bool;
+    fn fract(self) -> Self;
+    fn trunc(self) -> Self;
+    fn to_integer(&self) -> Option<I>;
 }
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Type {
-    Rug,
-    Fastnum,
-    F64,
-    F32,
-}
-
-pub enum Special {
-    Pi,
-    Nan,
-    Infinity,
-}
-
-pub trait Prec {
-    fn prec(&self) -> u32;
-    fn set_prec(&mut self, new_prec: u32);
-}
-pub trait DivFloor {
-    fn div_floor(self, rhs: f64) -> Self;
-}
-impl DivFloor for f64 {
-    fn div_floor(self, rhs: f64) -> Self {
-        (self / rhs).floor()
-    }
-}
-pub trait Parse<T> {
-    fn parse(prec: u32, s: T) -> Option<Self>
-    where
-        Self: Sized;
-    fn parse_radix(prec: u32, s: T, base: i32) -> Option<Self>
-    where
-        Self: Sized;
-}
-pub trait ParseU<T> {
-    fn parse(t: Type, prec: u32, s: T) -> Option<Self>
-    where
-        Self: Sized;
-    fn parse_radix(t: Type, prec: u32, s: T, base: i32) -> Option<Self>
-    where
-        Self: Sized;
-}
-pub trait WithVal<T> {
-    fn with_val(obj: Type, prec: u32, val: T) -> Self;
-}
-pub trait NewVal {
-    fn new(obj: Type, prec: u32) -> Self;
-}
-pub trait WithValDeci<T> {
-    fn with_val(prec: u32, val: T) -> Self;
-}
-pub trait NewDeciVal {
+pub trait Float<I: Integer<F, D>, F: Float1<I, D>, D: Float2<I, F>>:
+    Shared
+    + Pow<usize>
+    + Pow<f64>
+    + WithVal<usize>
+    + WithVal<f64>
+    + WithVal<I>
+    + WithVal<Constant>
+    + Display
+    + OperatorsOwned<I>
+    + OperatorsOwned<f64>
+{
+    fn exp(self) -> Self;
     fn new(prec: u32) -> Self;
+    fn is_zero(&self) -> bool;
+    fn abs(self) -> Self;
+    fn recip(self) -> Self;
+    fn prec(&self) -> u32;
+    fn set_prec(&mut self, prec: u32);
 }
-pub trait Pow<T> {
-    fn pow(self, val: T) -> Self;
+pub enum Constant {
+    Pi,
+    E,
+    Infinity,
+    NegInfinity,
 }
-pub trait Rt<T> {
-    fn root(self, val: T) -> Self;
+pub trait Integer<F: Float1<Self, D>, D: Float2<Self, F>>:
+    Shared + From<usize> + Pow<u32> + Display + Default + Compare
+{
+    fn div_rem(self, rhs: Self) -> (Self, Self);
+    fn next_prime(self) -> Self;
 }
-pub trait SinhCosh {
-    fn sinh_cosh(self) -> (Self, Self)
-    where
-        Self: Sized;
+pub trait Shared: Operators + Clone {}
+impl<T> Shared for T where T: Operators + Clone {}
+pub trait Operators:
+    OperatorsOwned<Self>
+    + OperatorsOwned<usize>
+    + for<'a> OperatorsOwned<&'a Self>
+    + Neg<Output = Self>
+    + Sized
+{
 }
-pub trait SpecialValuesDeci {
-    fn pi(prec: u32) -> Self;
-    fn nan(prec: u32) -> Self;
-    fn inf(prec: u32) -> Self;
+impl<T> Operators for T where
+    T: OperatorsOwned<T>
+        + OperatorsOwned<usize>
+        + for<'a> OperatorsOwned<&'a T>
+        + Neg<Output = T>
+        + Sized
+{
 }
-pub trait SpecialValues {
-    fn pi(t: Type, prec: u32) -> Self;
-    fn nan(t: Type, prec: u32) -> Self;
-    fn inf(t: Type, prec: u32) -> Self;
+pub trait OperatorsOut<T>:
+    Mul<T, Output = T> + Add<T, Output = T> + Sub<T, Output = T> + Div<T, Output = T>
+{
 }
-
-impl SpecialValuesDeci for f64 {
-    fn pi(_: u32) -> Self {
-        std::f64::consts::PI
-    }
-    fn nan(_: u32) -> Self {
-        f64::NAN
-    }
-    fn inf(_: u32) -> Self {
-        f64::INFINITY
-    }
+impl<K, T> OperatorsOut<T> for K where
+    K: Mul<T, Output = T> + Add<T, Output = T> + Sub<T, Output = T> + Div<T, Output = T>
+{
 }
-impl SpecialValuesDeci for f32 {
-    fn pi(_: u32) -> Self {
-        std::f32::consts::PI
-    }
-    fn nan(_: u32) -> Self {
-        f32::NAN
-    }
-    fn inf(_: u32) -> Self {
-        f32::INFINITY
-    }
+pub trait OperatorsOwned<T>:
+    Mul<T, Output = Self>
+    + Add<T, Output = Self>
+    + Sub<T, Output = Self>
+    + Div<T, Output = Self>
+    + MulAssign<T>
+    + AddAssign<T>
+    + SubAssign<T>
+    + DivAssign<T>
+{
 }
-use crate::macros::impls::*;
-impl_types!(f64, f32, i32, u64); //u128
-impl_sinh_cosh!(f64, f32, fastnum::decimal::D512, fastnum::decimal::D256);
+impl<K, T> OperatorsOwned<T> for K where
+    K: Mul<T, Output = Self>
+        + Add<T, Output = Self>
+        + Sub<T, Output = Self>
+        + Div<T, Output = Self>
+        + MulAssign<T>
+        + AddAssign<T>
+        + SubAssign<T>
+        + DivAssign<T>
+{
+}
+pub trait Compare: PartialOrd + PartialEq + PartialOrd<usize> + Sized {}
+impl<T> Compare for T where T: PartialOrd + PartialEq + PartialOrd<usize> + PartialOrd<f64> + Sized {}
+pub trait WithVal<From> {
+    fn with_val(prec: u32, val: From) -> Self;
+}
+pub trait Pow<Rhs> {
+    fn pow(self, rhs: Rhs) -> Self;
+}

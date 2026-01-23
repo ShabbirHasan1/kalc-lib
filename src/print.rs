@@ -1587,7 +1587,11 @@ pub fn print_answer(num: NumStr, options: Options, colors: &Colors) {
         _ => {}
     }
 }
-pub fn custom_units(mut number: Number, options: Options, colors: &Colors) -> Number {
+pub fn custom_units(
+    mut number: Number<rug::Integer, rug::Float, rug::Complex>,
+    options: Options,
+    colors: &Colors,
+) -> Number<rug::Integer, rug::Float, rug::Complex> {
     if !colors.default_units.is_empty() {
         let mut meter = Complex::with_val(options.prec, 1);
         let mut second = Complex::with_val(options.prec, 1);
@@ -1673,7 +1677,7 @@ pub fn custom_units(mut number: Number, options: Options, colors: &Colors) -> Nu
 pub fn get_output(
     options: Options,
     colors: &Colors,
-    number: &Number,
+    number: &Number<rug::Integer, rug::Float, rug::Complex>,
 ) -> (String, String, Option<String>) {
     let num = number.number.clone();
     let units = number.units;
