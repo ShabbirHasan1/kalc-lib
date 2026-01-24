@@ -229,6 +229,9 @@ impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
     fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
         Some(Self::parse_radix(src, radix).ok()?.complete(prec))
     }
+    fn parse(prec: u32, src: impl AsRef<[u8]>) -> Option<Self> {
+        Some(Self::parse(src).ok()?.complete(prec))
+    }
     fn exp(self) -> Self {
         self.exp()
     }
@@ -383,6 +386,9 @@ impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
     }
     fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
         Some(Self::parse_radix(src, radix).ok()?.complete((prec, prec)))
+    }
+    fn parse(prec: u32, src: impl AsRef<[u8]>) -> Option<Self> {
+        Some(Self::parse(src).ok()?.complete((prec, prec)))
     }
     fn exp(self) -> Self {
         self.exp()

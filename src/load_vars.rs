@@ -1,14 +1,18 @@
 use crate::complex::NumStr;
+use crate::types::Constant;
 use crate::{
     math::do_math,
     options::set_commands,
     parse::input_var,
     units::{Colors, Number, Options, Variable},
 };
-use rug::{Complex, Float, Integer, float::Constant::Pi};
-pub fn get_file_vars(
+pub fn get_file_vars<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: Options,
-    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
+    vars: &mut Vec<Variable<Integer, Float, Complex>>,
     lines: Vec<String>,
     r: &str,
     blacklist: &mut Vec<String>,
@@ -67,17 +71,21 @@ pub fn get_file_vars(
         }
     }
 }
-fn get_preset_vars(
+fn get_preset_vars<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: Options,
     args: &str,
-    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
+    vars: &mut Vec<Variable<Integer, Float, Complex>>,
     blacklist: &mut Vec<String>,
 ) {
     {
         let phi1 = args.contains("phi") && !blacklist.contains(&"phi".to_string());
         let phi2 = args.contains('φ') && !blacklist.contains(&"φ".to_string());
         if phi1 || phi2 {
-            let phi: Float = (1 + Float::with_val(options.prec, 5).sqrt()) / 2;
+            let phi: Float = (Float::with_val(options.prec, 5).sqrt() + 1) / 2;
             if phi1 {
                 blacklist.push("phi".to_string());
                 vars.insert(
@@ -107,7 +115,7 @@ fn get_preset_vars(
         let tau1 = args.contains("tau") && !blacklist.contains(&"tau".to_string());
         let tau2 = args.contains('τ') && !blacklist.contains(&"τ".to_string());
         if pi1 || pi2 || tau1 || tau2 {
-            let pi = Float::with_val(options.prec, Pi);
+            let pi = Float::with_val(options.prec, Constant::Pi);
             if pi1 {
                 blacklist.push("pi".to_string());
                 vars.insert(
@@ -166,10 +174,14 @@ fn get_preset_vars(
         });
     }
 }
-pub fn get_cli_vars(
+pub fn get_cli_vars<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: Options,
     args: String,
-    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
+    vars: &mut Vec<Variable<Integer, Float, Complex>>,
 ) {
     if args.chars().all(|c| !c.is_alphabetic()) {
         return;
@@ -178,7 +190,7 @@ pub fn get_cli_vars(
         let phi1 = args.contains("phi");
         let phi2 = args.contains('φ');
         if phi1 || phi2 {
-            let phi: Float = (1 + Float::with_val(options.prec, 5).sqrt()) / 2;
+            let phi: Float = (Float::with_val(options.prec, 5).sqrt() + 1) / 2;
             if phi1 {
                 vars.insert(
                     0,
@@ -206,7 +218,7 @@ pub fn get_cli_vars(
         let tau1 = args.contains("tau");
         let tau2 = args.contains('τ');
         if pi1 || pi2 || tau1 || tau2 {
-            let pi = Float::with_val(options.prec, Pi);
+            let pi = Float::with_val(options.prec, Constant::Pi);
             if pi1 {
                 vars.insert(
                     vars.iter().position(|c| c.name.len() != 3).unwrap_or(0),
@@ -260,10 +272,16 @@ pub fn get_cli_vars(
         });
     }
 }
-pub fn get_vars(options: Options) -> Vec<Variable<rug::Integer, rug::Float, rug::Complex>> {
-    let pi = Float::with_val(options.prec, Pi);
+pub fn get_vars<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    options: Options,
+) -> Vec<Variable<Integer, Float, Complex>> {
+    let pi = Float::with_val(options.prec, Constant::Pi);
     let tau: Float = pi.clone() * 2;
-    let phi: Float = (1 + Float::with_val(options.prec, 5).sqrt()) / 2;
+    let phi: Float = (Float::with_val(options.prec, 5).sqrt() + 1) / 2;
     let e = Float::with_val(options.prec, 1).exp();
     vec![
         Variable {
@@ -311,11 +329,15 @@ pub fn get_vars(options: Options) -> Vec<Variable<rug::Integer, rug::Float, rug:
     ]
 }
 #[allow(clippy::too_many_arguments)]
-pub fn add_var(
+pub fn add_var<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     l: Vec<char>,
     mut r: &str,
     i: usize,
-    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
+    vars: &mut Vec<Variable<Integer, Float, Complex>>,
     options: Options,
     redef: bool,
     replace: bool,
@@ -582,7 +604,11 @@ pub fn add_var(
     }
     Ok(())
 }
-pub fn set_commands_or_vars(
+pub fn set_commands_or_vars<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     colors: &mut Colors<Integer, Float, Complex>,
     options: &mut Options,
     vars: &mut Vec<Variable<Integer, Float, Complex>>,

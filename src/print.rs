@@ -20,15 +20,18 @@ use crate::{
         Variable,
     },
 };
-use rug::{Complex, Float, float::Constant::Pi, ops::CompleteRound};
 use std::cmp::Ordering;
 #[allow(clippy::too_many_arguments)]
-pub fn print_concurrent(
+pub fn print_concurrent<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     unmodified_input: &[char],
     last: &[char],
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     mut options: Options,
-    mut colors: Colors<rug::Integer, rug::Float, rug::Complex>,
+    mut colors: Colors<Integer, Float, Complex>,
     start: usize,
     end: usize,
     long_output: bool,
@@ -980,9 +983,15 @@ pub fn print_concurrent(
                 v = to_polar(
                     v,
                     match options.angle {
-                        AngleType::Degrees => 180 / Complex::with_val(options.prec, Pi),
+                        AngleType::Degrees => {
+                            Float::with_val(options.prec, 180)
+                                / Complex::with_val(options.prec, Constant::Pi)
+                        }
                         AngleType::Radians => Complex::with_val(options.prec, 1),
-                        AngleType::Gradians => 200 / Complex::with_val(options.prec, Pi),
+                        AngleType::Gradians => {
+                            Float::with_val(options.prec, 200)
+                                / Complex::with_val(options.prec, Constant::Pi)
+                        }
                     },
                 );
             }
@@ -1796,12 +1805,15 @@ pub fn get_output<
                     String::new()
                 } else {
                     if options.comma {
-                        add_commas(&remove_trailing_zeros(
+                        add_commas(&remove_trailing_zeros::<Integer, Float, Complex>(
                             &format!("{:e}", num.real()),
                             options,
                         ))
                     } else {
-                        remove_trailing_zeros(&format!("{:e}", num.real()), options)
+                        remove_trailing_zeros::<Integer, Float, Complex>(
+                            &format!("{:e}", num.real()),
+                            options,
+                        )
                     }
                     .replace("e0", "")
                     .replace('e', &notate(options, colors))
@@ -1828,10 +1840,17 @@ pub fn get_output<
                 } else {
                     if options.comma {
                         add_commas(
-                            &(sign + &remove_trailing_zeros(&format!("{:e}", num.imag()), options)),
+                            &(sign
+                                + &remove_trailing_zeros::<Integer, Float, Complex>(
+                                    &format!("{:e}", num.imag()),
+                                    options,
+                                )),
                         )
                     } else {
-                        sign + &remove_trailing_zeros(&format!("{:e}", num.imag()), options)
+                        sign + &remove_trailing_zeros::<Integer, Float, Complex>(
+                            &format!("{:e}", num.imag()),
+                            options,
+                        )
                     }
                     .replace("e0", "")
                     .replace('e', &notate(options, colors))
@@ -2130,7 +2149,14 @@ fn add_commas(input: &str) -> String {
     }
     result.chars().rev().collect::<String>()
 }
-fn remove_trailing_zeros(input: &str, options: Options) -> String {
+fn remove_trailing_zeros<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    input: &str,
+    options: Options,
+) -> String {
     let pos = match input.find('e') {
         Some(n) => n,
         None => {
@@ -2201,9 +2227,8 @@ fn remove_trailing_zeros(input: &str, options: Options) -> String {
             }
         } else {
             num.insert(dec, '.');
-            num = Float::parse(num)
+            num = Float::parse(options.prec, num)
                 .unwrap()
-                .complete(options.prec)
                 .to_integer()
                 .unwrap()
                 .to_string();

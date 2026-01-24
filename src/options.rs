@@ -1,5 +1,6 @@
 use crate::complex::NumStr;
 use crate::help::man;
+use crate::types::Constant;
 use crate::{
     complex::NumStr::{Matrix, Num, Vector},
     help::{help, help_for},
@@ -20,13 +21,16 @@ use crossterm::{
     execute, terminal,
     terminal::{Clear, ClearType},
 };
-use rug::{Complex, Float, Integer, float::Special::Nan};
 use std::{
     fs::File,
     io::{BufRead, BufReader, Stdout, Write},
     process,
 };
-pub fn arg_opts(
+pub fn arg_opts<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: &mut Options,
     colors: &mut Colors<Integer, Float, Complex>,
     args: &mut Vec<String>,
@@ -116,7 +120,11 @@ pub fn arg_opts(
     }
     Ok(default)
 }
-pub fn file_opts(
+pub fn file_opts<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: &mut Options,
     colors: &mut Colors<Integer, Float, Complex>,
     file_path: &String,
@@ -172,10 +180,14 @@ pub fn file_opts(
     }
     Ok(err)
 }
-pub fn set_commands(
+pub fn set_commands<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: &mut Options,
-    colors: &mut Colors<rug::Integer, rug::Float, rug::Complex>,
-    vars: &mut [Variable<rug::Integer, rug::Float, rug::Complex>],
+    colors: &mut Colors<Integer, Float, Complex>,
+    vars: &mut [Variable<Integer, Float, Complex>],
     l: &str,
     o: &str,
 ) -> Result<(), &'static str> {
@@ -280,7 +292,7 @@ pub fn set_commands(
             if r == "null" {
                 colors.default_units.clear()
             } else {
-                let n = Number::from(Complex::with_val(options.prec, Nan), None);
+                let n = Number::from(Complex::with_val(options.prec, Constant::Nan), None);
                 colors.default_units = r
                     .split(',')
                     .map(|a| {
@@ -897,7 +909,16 @@ pub fn silent_commands(options: &mut Options, input: &[char]) -> bool {
     true
 }
 #[allow(clippy::too_many_arguments)]
-pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout: &mut Stdout) {
+pub fn commands<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    options: &mut Options,
+    lines: &[String],
+    input: &[char],
+    stdout: &mut Stdout,
+) {
     match input.iter().collect::<String>().trim_start().trim_end() {
         "graphcli" => {
             print!("\x1b[G\x1b[A\x1b[K");
@@ -1153,7 +1174,11 @@ pub fn list_vars<
     }
     out
 }
-pub fn equal_to(
+pub fn equal_to<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: Options,
     colors: &Colors<Integer, Float, Complex>,
     vars: &[Variable<Integer, Float, Complex>],

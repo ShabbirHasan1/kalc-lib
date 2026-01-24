@@ -125,6 +125,7 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     fn acosh(self) -> Self;
     fn atanh(self) -> Self;
     fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self>;
+    fn parse(prec: u32, src: impl AsRef<[u8]>) -> Option<Self>;
     fn exp(self) -> Self;
     fn new(prec: u32) -> Self;
     fn is_zero(&self) -> bool;
