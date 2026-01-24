@@ -3,8 +3,6 @@ use crate::{
     complex::NumStr,
     units::{AngleType::Radians, Notation::Normal},
 };
-#[cfg(feature = "bin-deps")]
-use rug::ops::CompleteRound;
 use rug::ops::DivRounding;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -1757,9 +1755,8 @@ pub fn to_unit<
                 {
                     if l.starts_with(&unit) {
                         units.usd = 1.0;
-                        num *= Float::parse(l.split(' ').next_back().unwrap())
-                            .unwrap()
-                            .complete(options.prec);
+                        num *=
+                            Float::parse(options.prec, l.split(' ').next_back().unwrap()).unwrap();
                     }
                 }
             }

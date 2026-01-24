@@ -3,6 +3,7 @@
 use crate::misc::get_terminal_dimensions;
 #[cfg(unix)]
 use crate::misc::get_terminal_dimensions_pixel;
+use crate::types::Constant;
 use crate::{
     complex::{
         NumStr,
@@ -20,7 +21,6 @@ use crate::{
         HowGraphing, Number, Options, Variable,
     },
 };
-use rug::{Complex, Float, float::Constant::Pi, ops::Pow};
 use std::{
     fs,
     fs::File,
@@ -31,12 +31,16 @@ use std::{
     time::Instant,
 };
 #[allow(clippy::type_complexity)]
-pub fn graph(
+pub fn graph<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     mut input: Vec<String>,
-    mut vars: Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
+    mut vars: Vec<Variable<Integer, Float, Complex>>,
     mut options: Options,
     watch: Option<Instant>,
-    mut colors: Colors,
+    mut colors: Colors<Integer, Float, Complex>,
     cli: bool,
 ) -> JoinHandle<()> {
     thread::spawn(move || {
@@ -508,10 +512,14 @@ pub fn graph(
     })
 }
 #[allow(clippy::type_complexity)]
-pub fn get_list_2d(
+pub fn get_list_2d<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     func: (
-        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+        Vec<NumStr<Integer, Float, Complex>>,
+        Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
         Options,
         HowGraphing,
     ),
@@ -854,7 +862,10 @@ pub fn get_list_2d(
         let t = func.2.samples_2d + 1;
         print!("\x1b[G\x1b[K{t}/{t}=100.0%");
         if func.2.interactive {
-            print!("\x1b[G\n\x1b[K{}", prompt(func.2, &Colors::default()))
+            print!(
+                "\x1b[G\n\x1b[K{}",
+                prompt::<Integer, Float, Complex>(func.2, &Colors::default())
+            )
         } else {
             println!();
         }
@@ -896,10 +907,14 @@ pub fn get_list_2d(
     (zero, d3, rec_re, rec_im)
 }
 #[allow(clippy::type_complexity)]
-pub fn get_list_3d(
+pub fn get_list_3d<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     func: (
-        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+        Vec<NumStr<Integer, Float, Complex>>,
+        Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
         Options,
         HowGraphing,
     ),
@@ -916,8 +931,8 @@ pub fn get_list_3d(
     }
     let den_x_range = (func.2.xr.1 - func.2.xr.0) / func.2.samples_3d.0 as f64;
     let den_y_range = (func.2.yr.1 - func.2.yr.0) / func.2.samples_3d.1 as f64;
-    let mut modified: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>;
-    let mut modifiedvars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>;
+    let mut modified: Vec<NumStr<Integer, Float, Complex>>;
+    let mut modifiedvars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>;
     let mut zero = (false, false);
     let mut nan = true;
     let list = func.0.iter().any(|c| match c {
@@ -962,7 +977,7 @@ pub fn get_list_3d(
     let mut no_opt_re = false;
     let mut no_opt_im = false;
     let pi: Float = if func.2.graphtype == Domain || func.2.graphtype == DomainAlt {
-        Float::with_val(func.2.prec, Pi)
+        Float::with_val(func.2.prec, Constant::Pi)
     } else {
         Float::new(func.2.prec)
     };
@@ -986,8 +1001,8 @@ pub fn get_list_3d(
                     if func.2.graphtype == Domain {
                         let abs = num.clone().abs().real().clone();
                         if abs.clone().log2() < abs.prec() - 16 {
-                            let hue: Float = 1 + (-num.clone()).arg().real().clone() / &pi;
-                            let sat: Float = (1 + abs.fract()) / 2;
+                            let hue: Float = (-num.clone()).arg().real().clone() / &pi + 1;
+                            let sat: Float = (abs.fract() + 1) / 2;
                             let val: Float = {
                                 let (r, i) = (num * &pi).into_real_imag();
                                 let t1: Float = r.sin();
@@ -1005,7 +1020,7 @@ pub fn get_list_3d(
                     } else if func.2.graphtype == DomainAlt {
                         let abs = num.clone().abs().real().clone();
                         if abs.clone().log2() < abs.prec() - 16 {
-                            let hue: Float = 1 + (-num.clone()).arg().real().clone() / &pi;
+                            let hue: Float = (-num.clone()).arg().real().clone() / &pi + 1;
                             let sat: Float = {
                                 let t3: Float = (abs.clone() * &pi).sin();
                                 t3.abs().pow(0.125)
@@ -1018,12 +1033,12 @@ pub fn get_list_3d(
                                 let n2: Float = t2.clone() / (t2 + 1);
                                 let n3: Float = (n1 * n2).abs().pow(0.0625);
                                 let n4 = abs.atan() * 2 / &pi;
-                                0.8 * (n3 * (n4 - 0.5) + 0.5)
+                                (n3 * (n4 - 0.5) + 0.5) * 0.8
                             };
                             let v: Float = if lig < 0.5 {
-                                lig.clone() * (1 + sat)
+                                lig.clone() * (sat + 1)
                             } else {
-                                lig.clone() * (1 - sat.clone()) + sat
+                                lig.clone() * (-sat.clone() + 1) + sat
                             };
                             let hue: Float = hue * 3;
                             real.write_all(
@@ -1032,7 +1047,7 @@ pub fn get_list_3d(
                                     if v.is_zero() {
                                         0.0
                                     } else {
-                                        let sat: Float = 2 - 2 * lig / &v;
+                                        let sat: Float = -lig / &v * 2 + 2;
                                         sat.to_f64()
                                     },
                                     v.to_f64(),
@@ -1277,7 +1292,10 @@ pub fn get_list_3d(
         let t = (func.2.samples_3d.0 + 1) * (func.2.samples_3d.1 + 1);
         print!("\x1b[G\x1b[K{t}/{t}=100.0%");
         if func.2.interactive {
-            print!("\x1b[G\n\x1b[K{}", prompt(func.2, &Colors::default()))
+            print!(
+                "\x1b[G\n\x1b[K{}",
+                prompt::<Integer, Float, Complex>(func.2, &Colors::default())
+            )
         } else {
             println!();
         }
@@ -1322,7 +1340,15 @@ pub fn get_list_3d(
     }
     (zero, d2, rec_re, rec_im)
 }
-fn fail(options: Options, colors: &Colors, input: String) {
+fn fail<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    options: Options,
+    colors: &Colors<Integer, Float, Complex>,
+    input: String,
+) {
     print!(
         "\x1b[G\x1b[KNo data to plot for {}\x1b[G\n{}",
         input,
@@ -1331,11 +1357,15 @@ fn fail(options: Options, colors: &Colors, input: String) {
     stdout().flush().unwrap();
 }
 #[allow(clippy::type_complexity)]
-fn get_data(
-    colors: Colors,
+fn get_data<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    colors: Colors<Integer, Float, Complex>,
     func: (
-        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+        Vec<NumStr<Integer, Float, Complex>>,
+        Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
         Options,
         HowGraphing,
     ),

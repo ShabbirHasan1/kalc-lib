@@ -538,10 +538,14 @@ pub fn prompt<
     }
 }
 #[allow(clippy::type_complexity)]
-pub fn place_funcvarxy(
-    mut funcvar: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
-    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
-) -> Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)> {
+pub fn place_funcvarxy<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut funcvar: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
+    num: NumStr<Integer, Float, Complex>,
+) -> Vec<(String, Vec<NumStr<Integer, Float, Complex>>)> {
     for i in funcvar.iter_mut() {
         if !i.0.contains('(') {
             let mut sum: Vec<(usize, String)> = Vec::new();
@@ -613,10 +617,14 @@ pub fn place_funcvarxy(
     }
     funcvar
 }
-pub fn place_varxy(
-    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
-) -> Vec<NumStr<rug::Integer, rug::Float, rug::Complex>> {
+pub fn place_varxy<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut func: Vec<NumStr<Integer, Float, Complex>>,
+    num: NumStr<Integer, Float, Complex>,
+) -> Vec<NumStr<Integer, Float, Complex>> {
     let mut sum: Vec<(usize, String)> = Vec::new();
     let mut bracket = 0;
     let mut i = 0;

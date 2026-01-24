@@ -182,8 +182,8 @@ pub enum IsPrime {
     No,
     Probably,
 }
-pub trait Shared: Operators + Clone + Send + Sync {}
-impl<T> Shared for T where T: Operators + Clone + Send + Sync {}
+pub trait Shared: Operators + Clone + Send + Sync + 'static {}
+impl<T> Shared for T where T: Operators + Clone + Send + Sync + 'static {}
 pub trait Operators:
     Ops<Self>
     + Ops<usize>
