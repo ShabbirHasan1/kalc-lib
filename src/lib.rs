@@ -11,6 +11,7 @@ pub mod misc;
 pub mod options;
 pub mod parse;
 pub mod print;
+pub use rug;
 #[cfg(test)]
 mod tests;
 pub mod types;

@@ -106,6 +106,7 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     + WithVal<u32>
     + WithVal<bool>
     + WithVal<I>
+    + for<'a> WithVal<&'a I>
     + WithVal<Constant>
     + Display
     + Ops<I>

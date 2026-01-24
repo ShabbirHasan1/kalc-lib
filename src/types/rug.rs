@@ -83,6 +83,7 @@ with_val!(
     usize,
     isize,
     rug::Integer,
+    &rug::Integer,
     i128,
     u128
 );
