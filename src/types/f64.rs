@@ -1,6 +1,8 @@
-use crate::types::{Pow, WithVal, WithValImag};
+use crate::types::{Constant, Pow, WithVal, WithValImag};
 use std::cmp::Ordering;
+use std::f64::consts::{E, PI, TAU};
 use std::ops::*;
+use crate::types;
 #[derive(Clone, Copy)]
 pub struct Complex {
     pub real: Float,
@@ -297,6 +299,70 @@ impl MulAssign<Complex> for Complex {
         self.imag = imag;
     }
 }
+impl Add<Complex> for Complex {
+    type Output = Complex;
+    fn add(mut self, rhs: Complex) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+impl AddAssign<Complex> for Complex {
+    fn add_assign(&mut self, rhs: Complex) {
+        self.real += rhs.real;
+        self.imag += rhs.imag;
+    }
+}
+impl Sub<Complex> for Complex {
+    type Output = Complex;
+    fn sub(mut self, rhs: Complex) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+impl SubAssign<Complex> for Complex {
+    fn sub_assign(&mut self, rhs: Complex) {
+        self.real -= rhs.real;
+        self.imag -= rhs.imag;
+    }
+}
+impl Div<Complex> for Complex {
+    type Output = Complex;
+    fn div(mut self, rhs: Complex) -> Self::Output {
+        self /= rhs;
+        self
+    }
+}
+impl DivAssign<Complex> for Complex {
+    fn div_assign(&mut self, rhs: Complex) {
+        let r = rhs.abs_sqr();
+        let real = self.real * rhs.real + self.imag * rhs.imag;
+        let imag = self.imag * rhs.real - self.real * rhs.imag;
+        self.real = real / r;
+        self.imag = imag / r;
+    }
+}
+impl Neg for Complex {
+    type Output = Complex;
+    fn neg(mut self) -> Self::Output {
+        self.real = -self.real;
+        self.imag = -self.imag;
+        self
+    }
+}
+impl Neg for Float {
+    type Output = Float;
+    fn neg(mut self) -> Self::Output {
+        self.0 = -self.0;
+        self
+    }
+}
+impl Neg for Integer {
+    type Output = Integer;
+    fn neg(mut self) -> Self::Output {
+        self.0 = -self.0;
+        self
+    }
+}
 impl Mul<Complex> for Float {
     type Output = Complex;
     fn mul(self, mut rhs: Complex) -> Self::Output {
@@ -336,6 +402,47 @@ with_val_complex!(
     (Float, Float),
     (&Float, &Float)
 );
+impl WithVal<Constant> for Complex {
+    fn with_val(prec: u32, val: Constant) -> Self {
+        match val {
+            Constant::Pi => Self::with_val(prec, PI),
+            Constant::E => Self::with_val(prec, E),
+            Constant::Infinity => Self::with_val(prec, f64::INFINITY),
+            Constant::NegInfinity => Self::with_val(prec, f64::NEG_INFINITY),
+            Constant::Nan => Self::with_val(prec, f64::NAN),
+            Constant::Tau => Self::with_val(prec, TAU),
+        }
+    }
+}
+impl WithVal<(Constant, Constant)> for Complex {
+    fn with_val(prec: u32, val: (Constant, Constant)) -> Self {
+        <Self as WithVal<Constant>>::with_val(prec, val.0) + Self::with_val_imag(prec, val.1)
+    }
+}
+impl WithValImag<Constant> for Complex {
+    fn with_val_imag(prec: u32, val: Constant) -> Self {
+        match val {
+            Constant::Pi => Self::with_val_imag(prec, PI),
+            Constant::E => Self::with_val_imag(prec, E),
+            Constant::Infinity => Self::with_val_imag(prec, f64::INFINITY),
+            Constant::NegInfinity => Self::with_val_imag(prec, f64::NEG_INFINITY),
+            Constant::Nan => Self::with_val_imag(prec, f64::NAN),
+            Constant::Tau => Self::with_val_imag(prec, TAU),
+        }
+    }
+}
+impl WithVal<Constant> for Float {
+    fn with_val(prec: u32, val: Constant) -> Self {
+        match val {
+            Constant::Pi => Self::with_val(prec, PI),
+            Constant::E => Self::with_val(prec, E),
+            Constant::Infinity => Self::with_val(prec, f64::INFINITY),
+            Constant::NegInfinity => Self::with_val(prec, f64::NEG_INFINITY),
+            Constant::Nan => Self::with_val(prec, f64::NAN),
+            Constant::Tau => Self::with_val(prec, TAU),
+        }
+    }
+}
 #[allow(unused_variables)]
 impl WithVal<bool> for Float {
     fn with_val(prec: u32, val: bool) -> Self {
