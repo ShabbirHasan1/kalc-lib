@@ -30,7 +30,7 @@ pub fn arg_opts(
     options: &mut Options,
     colors: &mut Colors,
     args: &mut Vec<String>,
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     soft: bool,
 ) -> Result<bool, &'static str> {
     let mut default = false;
@@ -120,7 +120,7 @@ pub fn file_opts(
     options: &mut Options,
     colors: &mut Colors,
     file_path: &String,
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     check: Vec<usize>,
     soft: bool,
 ) -> Result<Vec<usize>, &'static str> {
@@ -175,7 +175,7 @@ pub fn file_opts(
 pub fn set_commands(
     options: &mut Options,
     colors: &mut Colors,
-    vars: &mut [Variable],
+    vars: &mut [Variable<rug::Integer, rug::Float, rug::Complex>],
     l: &str,
     o: &str,
 ) -> Result<(), &'static str> {
@@ -1059,7 +1059,11 @@ pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout:
         }
     }
 }
-pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> String {
+pub fn list_vars(
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    options: &Options,
+    colors: &Colors,
+) -> String {
     let mut out = String::new();
     for v in vars.iter() {
         if !v.unparsed.is_empty() {
@@ -1148,7 +1152,7 @@ pub fn list_vars(vars: &[Variable], options: &Options, colors: &Colors) -> Strin
 pub fn equal_to(
     options: Options,
     colors: &Colors,
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     l: &str,
     last: &str,
 ) -> String {

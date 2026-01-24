@@ -24,11 +24,16 @@ use std::{
 };
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Variable {
+#[allow(clippy::type_complexity)]
+pub struct Variable<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+> {
     pub name: Vec<char>,
-    pub parsed: Vec<NumStr>,
+    pub parsed: Vec<NumStr<I, F, C>>,
     pub unparsed: String,
-    pub funcvars: Vec<(String, Vec<NumStr>)>,
+    pub funcvars: Vec<(String, Vec<NumStr<I, F, C>>)>,
 }
 #[derive(Clone, PartialEq, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -47,15 +52,19 @@ pub struct Units {
 }
 #[derive(Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Number<I: Integer<F, D>, F: crate::types::Float<I, D>, D: crate::types::Complex<I, F>> {
-    pub number: D,
+pub struct Number<I: Integer<F, C>, F: crate::types::Float<I, C>, C: crate::types::Complex<I, F>> {
+    pub number: C,
     pub units: Option<Units>,
     pub phantom: PhantomData<(I, F)>,
 }
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Data {
-    pub vars: Vec<Variable>,
+pub struct Data<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+> {
+    pub vars: Vec<Variable<I, F, C>>,
     pub options: Options,
     pub colors: Colors,
 }

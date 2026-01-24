@@ -308,7 +308,7 @@ pub fn write(
 }
 pub fn clearln(
     input: &[char],
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     start: usize,
     end: usize,
     options: Options,
@@ -332,7 +332,7 @@ pub fn clearln(
 }
 pub fn clear(
     input: &[char],
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     start: usize,
     end: usize,
     options: Options,
@@ -354,7 +354,12 @@ pub fn clear(
         }
     );
 }
-pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors) -> String {
+pub fn to_output(
+    input: &[char],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    color: bool,
+    colors: &Colors,
+) -> String {
     if color {
         let mut count: isize = (input
             .iter()
@@ -460,7 +465,7 @@ pub fn to_output(input: &[char], vars: &[Variable], color: bool, colors: &Colors
 }
 pub fn handle_err(
     err: &str,
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     input: &[char],
     options: Options,
     colors: &Colors,
@@ -509,10 +514,11 @@ pub fn prompt(options: Options, colors: &Colors) -> String {
         String::new()
     }
 }
+#[allow(clippy::type_complexity)]
 pub fn place_funcvarxy(
-    mut funcvar: Vec<(String, Vec<NumStr>)>,
-    num: NumStr,
-) -> Vec<(String, Vec<NumStr>)> {
+    mut funcvar: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
+) -> Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)> {
     for i in funcvar.iter_mut() {
         if !i.0.contains('(') {
             let mut sum: Vec<(usize, String)> = Vec::new();
@@ -584,7 +590,10 @@ pub fn place_funcvarxy(
     }
     funcvar
 }
-pub fn place_varxy(mut func: Vec<NumStr>, num: NumStr) -> Vec<NumStr> {
+pub fn place_varxy(
+    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
+) -> Vec<NumStr<rug::Integer, rug::Float, rug::Complex>> {
     let mut sum: Vec<(usize, String)> = Vec::new();
     let mut bracket = 0;
     let mut i = 0;
@@ -651,11 +660,12 @@ pub fn place_varxy(mut func: Vec<NumStr>, num: NumStr) -> Vec<NumStr> {
     }
     func
 }
+#[allow(clippy::type_complexity)]
 pub fn place_funcvar(
-    mut funcvar: Vec<(String, Vec<NumStr>)>,
+    mut funcvar: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
     var: &str,
-    num: NumStr,
-) -> Vec<(String, Vec<NumStr>)> {
+    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
+) -> Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)> {
     if !var.is_empty() {
         for i in funcvar.iter_mut() {
             if !i.0.contains('(') {
@@ -705,7 +715,11 @@ pub fn place_funcvar(
     }
     funcvar
 }
-pub fn place_var(mut func: Vec<NumStr>, var: &str, num: NumStr) -> Vec<NumStr> {
+pub fn place_var(
+    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+    var: &str,
+    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
+) -> Vec<NumStr<rug::Integer, rug::Float, rug::Complex>> {
     if !var.is_empty() {
         let mut sum = Vec::new();
         let mut bracket = 0;
@@ -748,23 +762,25 @@ pub fn place_var(mut func: Vec<NumStr>, var: &str, num: NumStr) -> Vec<NumStr> {
     }
     func
 }
+#[allow(clippy::type_complexity)]
 pub fn do_math_with_var(
-    function: Vec<NumStr>,
+    function: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
     options: Options,
-    func_vars: Vec<(String, Vec<NumStr>)>,
+    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
     var: &str,
-    num: NumStr,
-) -> Result<NumStr, &'static str> {
+    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
+) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     do_math(
         place_var(function, var, num.clone()),
         options,
         place_funcvar(func_vars, var, num),
     )
 }
+#[allow(clippy::type_complexity)]
 pub fn parsed_to_string(
-    mut input: Vec<NumStr>,
-    vars: &[Variable],
-    func_vars: Vec<(String, Vec<NumStr>)>,
+    mut input: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
     options: &Options,
     colors: &Colors,
 ) -> String {
@@ -946,7 +962,11 @@ pub fn insert_last(input: &[char], last: &str) -> String {
     }
     output
 }
-pub fn get_word_bank(word: &str, vars: &[Variable], options: Options) -> Vec<String> {
+pub fn get_word_bank(
+    word: &str,
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    options: Options,
+) -> Vec<String> {
     let mut bank: Vec<String> = vars
         .iter()
         .filter_map(|v| {

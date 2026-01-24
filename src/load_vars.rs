@@ -8,7 +8,7 @@ use crate::{
 use rug::{Float, float::Constant::Pi};
 pub fn get_file_vars(
     options: Options,
-    vars: &mut Vec<Variable>,
+    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
     lines: Vec<String>,
     r: &str,
     blacklist: &mut Vec<String>,
@@ -70,7 +70,7 @@ pub fn get_file_vars(
 fn get_preset_vars(
     options: Options,
     args: &str,
-    vars: &mut Vec<Variable>,
+    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
     blacklist: &mut Vec<String>,
 ) {
     {
@@ -166,7 +166,11 @@ fn get_preset_vars(
         });
     }
 }
-pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
+pub fn get_cli_vars(
+    options: Options,
+    args: String,
+    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
+) {
     if args.chars().all(|c| !c.is_alphabetic()) {
         return;
     }
@@ -256,7 +260,7 @@ pub fn get_cli_vars(options: Options, args: String, vars: &mut Vec<Variable>) {
         });
     }
 }
-pub fn get_vars(options: Options) -> Vec<Variable> {
+pub fn get_vars(options: Options) -> Vec<Variable<rug::Integer, rug::Float, rug::Complex>> {
     let pi = Float::with_val(options.prec, Pi);
     let tau: Float = pi.clone() * 2;
     let phi: Float = (1 + Float::with_val(options.prec, 5).sqrt()) / 2;
@@ -311,7 +315,7 @@ pub fn add_var(
     l: Vec<char>,
     mut r: &str,
     i: usize,
-    vars: &mut Vec<Variable>,
+    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
     options: Options,
     redef: bool,
     replace: bool,
@@ -581,7 +585,7 @@ pub fn add_var(
 pub fn set_commands_or_vars(
     colors: &mut Colors,
     options: &mut Options,
-    vars: &mut Vec<Variable>,
+    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
     input: &[char],
 ) -> Result<(), &'static str> {
     let n = input.iter().collect::<String>();

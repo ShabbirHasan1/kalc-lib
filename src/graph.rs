@@ -33,7 +33,7 @@ use std::{
 #[allow(clippy::type_complexity)]
 pub fn graph(
     mut input: Vec<String>,
-    mut vars: Vec<Variable>,
+    mut vars: Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
     mut options: Options,
     watch: Option<Instant>,
     mut colors: Colors,
@@ -510,8 +510,8 @@ pub fn graph(
 #[allow(clippy::type_complexity)]
 pub fn get_list_2d(
     func: (
-        Vec<NumStr>,
-        Vec<(String, Vec<NumStr>)>,
+        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
         Options,
         HowGraphing,
     ),
@@ -898,8 +898,8 @@ pub fn get_list_2d(
 #[allow(clippy::type_complexity)]
 pub fn get_list_3d(
     func: (
-        Vec<NumStr>,
-        Vec<(String, Vec<NumStr>)>,
+        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
         Options,
         HowGraphing,
     ),
@@ -916,8 +916,8 @@ pub fn get_list_3d(
     }
     let den_x_range = (func.2.xr.1 - func.2.xr.0) / func.2.samples_3d.0 as f64;
     let den_y_range = (func.2.yr.1 - func.2.yr.0) / func.2.samples_3d.1 as f64;
-    let mut modified: Vec<NumStr>;
-    let mut modifiedvars: Vec<(String, Vec<NumStr>)>;
+    let mut modified: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>;
+    let mut modifiedvars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>;
     let mut zero = (false, false);
     let mut nan = true;
     let list = func.0.iter().any(|c| match c {
@@ -1334,8 +1334,8 @@ fn fail(options: Options, colors: &Colors, input: String) {
 fn get_data(
     colors: Colors,
     func: (
-        Vec<NumStr>,
-        Vec<(String, Vec<NumStr>)>,
+        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
         Options,
         HowGraphing,
     ),

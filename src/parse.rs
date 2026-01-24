@@ -26,7 +26,7 @@ use rug::{
 #[allow(clippy::too_many_arguments)]
 pub fn input_var(
     input: &str,
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     sumrec: &mut Vec<(isize, String)>,
     bracket: &mut isize,
     options: Options,
@@ -39,8 +39,8 @@ pub fn input_var(
     ison: Option<usize>,
 ) -> Result<
     (
-        Vec<NumStr>,
-        Vec<(String, Vec<NumStr>)>,
+        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
         HowGraphing,
         bool,
         Option<String>,
@@ -93,7 +93,7 @@ pub fn input_var(
         }
     }
     let mut sarea = 0;
-    let mut output: Vec<NumStr> = Vec::new();
+    let mut output: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
     let mut stack_end = Vec::new();
     let mut stack_start = Vec::new();
     let mut i = 0;
@@ -2991,7 +2991,9 @@ pub fn input_var(
                 _ => {}
             }
         }
-        let arg = output.drain(n + 6..n + 6 + end).collect::<Vec<NumStr>>();
+        let arg = output
+            .drain(n + 6..n + 6 + end)
+            .collect::<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>>();
         output.insert(n + 6, Func("@p".to_string() + &n.to_string()));
         output.insert(n + 6 + last - end, RightBracket);
         if nth != 1 {
@@ -3165,7 +3167,11 @@ pub fn input_var(
     }
     Ok((output, funcvars, graph, false, sumvar))
 }
-fn place_multiplier(output: &mut Vec<NumStr>, sumrec: &[(isize, String)], sumvar: &Option<String>) {
+fn place_multiplier(
+    output: &mut Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+    sumrec: &[(isize, String)],
+    sumvar: &Option<String>,
+) {
     match output.last() {
         Some(RightCurlyBracket) | Some(RightBracket) => output.push(Multiplication),
         Some(Func(s))
@@ -3181,7 +3187,10 @@ fn place_multiplier(output: &mut Vec<NumStr>, sumrec: &[(isize, String)], sumvar
         _ => {}
     }
 }
-fn can_abs(output: &[NumStr], vars: &[Variable]) -> bool {
+fn can_abs(
+    output: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+) -> bool {
     if let Some(Func(s)) = output.last() {
         !(functions().contains(s.as_str())
             || vars.iter().any(|c| c.name.iter().collect::<String>() == *s))
@@ -3192,9 +3201,10 @@ fn can_abs(output: &[NumStr], vars: &[Variable]) -> bool {
 fn is_digit(char: char, base: i32) -> bool {
     char.is_ascii_digit() || (base > 10 && (97..=97 + (base as u8 - 11)).contains(&(char as u8)))
 }
+#[allow(clippy::type_complexity)]
 pub fn simplify(
-    output: &mut Vec<NumStr>,
-    funcvars: &mut Vec<(String, Vec<NumStr>)>,
+    output: &mut Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+    funcvars: &mut Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
     options: Options,
 ) {
     let mut i = 0;

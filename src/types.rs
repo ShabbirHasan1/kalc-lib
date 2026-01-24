@@ -22,6 +22,7 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     + WithValImag<I>
     + WithValImag<F>
     + WithValImag<Constant>
+    + Equiv
     + Ops<F>
     + for<'a> Ops<&'a F>
     + From<F>
@@ -35,8 +36,10 @@ pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
     FloatShared<I, Self, C> + PartialOrd<f64> + Compare + OperatorsOut<C, C> + Pow<Self>
 {
     fn is_finite(&self) -> bool;
+    fn is_infinite(&self) -> bool;
     fn is_sign_negative(&self) -> bool;
     fn is_sign_positive(&self) -> bool;
+    fn to_f64(&self) -> f64;
     fn fract(self) -> Self;
     fn trunc(self) -> Self;
     fn gamma(self) -> Self;
@@ -77,6 +80,7 @@ pub enum Constant {
     E,
     Infinity,
     NegInfinity,
+    Nan,
 }
 pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
     Shared + From<usize> + From<isize> + From<i32> + Pow<u32> + Display + Default + Compare
@@ -148,9 +152,17 @@ impl<K, T> Ops<T> for K where
         + DivAssign<T>
 {
 }
+pub trait Equiv:
+    PartialEq + PartialEq<usize> + PartialEq<isize> + PartialEq<u32> + PartialEq<i32> + Sized
+{
+}
+impl<T> Equiv for T where
+    T: PartialEq + PartialEq<usize> + PartialEq<isize> + PartialEq<u32> + PartialEq<i32> + Sized
+{
+}
 pub trait Compare:
-    PartialOrd
-    + PartialEq
+    Equiv
+    + PartialOrd
     + PartialOrd<usize>
     + PartialOrd<isize>
     + PartialOrd<u32>
@@ -159,8 +171,8 @@ pub trait Compare:
 {
 }
 impl<T> Compare for T where
-    T: PartialOrd
-        + PartialEq
+    T: Equiv
+        + PartialOrd
         + PartialOrd<usize>
         + PartialOrd<isize>
         + PartialOrd<u32>

@@ -29,7 +29,7 @@ use std::cmp::Ordering;
 pub fn print_concurrent(
     unmodified_input: &[char],
     last: &[char],
-    vars: &[Variable],
+    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     mut options: Options,
     mut colors: Colors,
     start: usize,
@@ -1441,7 +1441,11 @@ pub fn print_concurrent(
     }
     (frac + 1, HowGraphing::default(), long, var)
 }
-pub fn print_answer(num: NumStr, options: Options, colors: &Colors) {
+pub fn print_answer(
+    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
+    options: Options,
+    colors: &Colors,
+) {
     match num {
         Num(n) => {
             let n = custom_units(*n, options, colors);

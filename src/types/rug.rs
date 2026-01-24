@@ -73,6 +73,7 @@ impl WithVal<Constant> for rug::Complex {
             Constant::E => Self::with_val(prec, 1).exp(),
             Constant::Infinity => Self::with_val(prec, rug::float::Special::Infinity),
             Constant::NegInfinity => Self::with_val(prec, rug::float::Special::NegInfinity),
+            Constant::Nan => Self::with_val(prec, rug::float::Special::Nan),
         }
     }
 }
@@ -83,6 +84,7 @@ impl WithValImag<Constant> for rug::Complex {
             Constant::E => Self::with_val(prec, 1).exp().mul_i(false),
             Constant::Infinity => Self::with_val(prec, (0, rug::float::Special::Infinity)),
             Constant::NegInfinity => Self::with_val(prec, (0, rug::float::Special::NegInfinity)),
+            Constant::Nan => Self::with_val(prec, rug::float::Special::Nan),
         }
     }
 }
@@ -93,6 +95,7 @@ impl WithVal<Constant> for rug::Float {
             Constant::E => Self::with_val(prec, 1).exp(),
             Constant::Infinity => Self::with_val(prec, rug::float::Special::Infinity),
             Constant::NegInfinity => Self::with_val(prec, rug::float::Special::NegInfinity),
+            Constant::Nan => Self::with_val(prec, rug::float::Special::Nan),
         }
     }
 }
@@ -161,11 +164,17 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     fn is_finite(&self) -> bool {
         self.is_finite()
     }
+    fn is_infinite(&self) -> bool {
+        self.is_infinite()
+    }
     fn is_sign_negative(&self) -> bool {
         self.is_sign_negative()
     }
     fn is_sign_positive(&self) -> bool {
         self.is_sign_positive()
+    }
+    fn to_f64(&self) -> f64 {
+        self.to_f64()
     }
     fn fract(self) -> Self {
         self.fract()

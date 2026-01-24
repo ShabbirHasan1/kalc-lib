@@ -38,11 +38,12 @@ use rug::{
 #[cfg(feature = "fastrand")]
 use std::ops::Rem;
 use std::{cmp::Ordering, time::SystemTime};
+#[allow(clippy::type_complexity)]
 pub fn do_math(
-    mut function: Vec<NumStr>,
+    mut function: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
     options: Options,
-    mut func_vars: Vec<(String, Vec<NumStr>)>,
-) -> Result<NumStr, &'static str> {
+    mut func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     if function.is_empty() {
         return Err(" ");
     }
@@ -249,7 +250,9 @@ pub fn do_math(
                         ) {
                             function.remove(j - 1);
                             function.remove(i);
-                            let v = function.drain(i..j - 2).collect::<Vec<NumStr>>();
+                            let v = function
+                                .drain(i..j - 2)
+                                .collect::<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>>();
                             count = 0;
                             let mut place = Vec::new();
                             for (f, n) in v.iter().enumerate() {
@@ -327,7 +330,7 @@ pub fn do_math(
                                 vec![
                                     function[i - 1].clone(),
                                     do_math(
-                                        function.drain(i..j - 2).collect::<Vec<NumStr>>(),
+                                        function.drain(i..j - 2).collect::<Vec<NumStr<rug::Integer,rug::Float,rug::Complex>>>(),
                                         options,
                                         func_vars.clone(),
                                     )?,
@@ -341,7 +344,9 @@ pub fn do_math(
                 }
                 function.remove(j - 1);
                 function[i] = do_math(
-                    function.drain(i + 1..j - 1).collect::<Vec<NumStr>>(),
+                    function
+                        .drain(i + 1..j - 1)
+                        .collect::<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>>(),
                     options,
                     func_vars.clone(),
                 )?;
@@ -844,7 +849,7 @@ pub fn do_math(
                                 Ok(function.remove(i + 1).clone())
                             } else {
                                 do_math(
-                                    function.drain(i + 1..=place[0]).collect::<Vec<NumStr>>(),
+                                    function.drain(i + 1..=place[0]).collect::<Vec<NumStr<rug::Integer,rug::Float,rug::Complex>>>(),
                                     options,
                                     func_vars.clone(),
                                 )
@@ -872,7 +877,7 @@ pub fn do_math(
                                 Ok(function.remove(i + 1).clone())
                             } else {
                                 do_math(
-                                    function.drain(i + 1..=place[0]).collect::<Vec<NumStr>>(),
+                                    function.drain(i + 1..=place[0]).collect::<Vec<NumStr<rug::Integer,rug::Float,rug::Complex>>>(),
                                     options,
                                     func_vars.clone(),
                                 )
@@ -3771,13 +3776,13 @@ pub fn do_math(
     }
 }
 fn do_functions(
-    a: NumStr,
+    a: NumStr<rug::Integer, rug::Float, rug::Complex>,
     options: Options,
-    function: &mut Vec<NumStr>,
+    function: &mut Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
     k: usize,
     to_deg: &Complex,
     s: &str,
-) -> Result<NumStr, &'static str> {
+) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     if function.len() > k + 1 {
         match (a.clone(), function[k + 1].clone()) {
             (Num(a), Num(b)) => {
@@ -4693,10 +4698,11 @@ fn functions(
         Ok(n)
     }
 }
+#[allow(clippy::type_complexity)]
 pub fn compute_funcvars(
-    function: &mut [NumStr],
+    function: &mut [NumStr<rug::Integer, rug::Float, rug::Complex>],
     options: Options,
-    func_vars: &mut Vec<(String, Vec<NumStr>)>,
+    func_vars: &mut Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
 ) {
     let mut i = 0;
     while i < func_vars.len() {

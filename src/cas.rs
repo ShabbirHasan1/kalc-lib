@@ -214,9 +214,9 @@ impl Polynomial {
         Ok(self.div_checked()?.0)
     }
     fn get_polynomial(
-        func: &[NumStr],
+        func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
         options: &Options,
-        var: &[NumStr],
+        var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
     ) -> Result<Self, &'static str> {
         if is_interior(func) {
             return Self::get_polynomial(&func[1..func.len() - 1], options, var);
@@ -332,7 +332,14 @@ impl Polynomial {
         Err("not poly")
     }
 }
-fn is_poly(func: &[NumStr], var: &[NumStr]) -> bool {
+fn is_poly<
+    I: crate::types::Integer<F, C>,
+    F: crate::types::Float<I, C>,
+    C: crate::types::Complex<I, F>,
+>(
+    func: &[NumStr<I, F, C>],
+    var: &[NumStr<I, F, C>],
+) -> bool {
     let a = func.len();
     let b = var.len();
     if a >= b {
@@ -378,9 +385,9 @@ fn is_poly(func: &[NumStr], var: &[NumStr]) -> bool {
 }
 fn poly_mul(
     options: &Options,
-    var: &[NumStr],
+    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
     arr: &mut Polynomial,
-    p: &[NumStr],
+    p: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
 ) -> Result<(), &'static str> {
     if is_constant(p, var) {
         *arr *= do_math(p.to_vec(), *options, Vec::new())?.num()?.number
@@ -392,9 +399,9 @@ fn poly_mul(
 }
 fn poly_add(
     options: &Options,
-    var: &[NumStr],
+    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
     arr: &mut Polynomial,
-    p: &[NumStr],
+    p: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
 ) -> Result<(), &'static str> {
     if is_constant(p, var) {
         *arr += do_math(p.to_vec(), *options, Vec::new())?.num()?.number
@@ -404,7 +411,11 @@ fn poly_add(
     }
     Ok(())
 }
-fn place<'a>(func: &'a [NumStr], target: &'a NumStr, once: bool) -> Vec<&'a [NumStr]> {
+fn place<'a>(
+    func: &'a [NumStr<rug::Integer, rug::Float, rug::Complex>],
+    target: &'a NumStr<rug::Integer, rug::Float, rug::Complex>,
+    once: bool,
+) -> Vec<&'a [NumStr<rug::Integer, rug::Float, rug::Complex>]> {
     let mut b = 0;
     let mut l = 0;
     let mut vec = Vec::new();
@@ -435,7 +446,7 @@ fn place<'a>(func: &'a [NumStr], target: &'a NumStr, once: bool) -> Vec<&'a [Num
     }
     vec
 }
-fn is_interior(func: &[NumStr]) -> bool {
+fn is_interior(func: &[NumStr<rug::Integer, rug::Float, rug::Complex>]) -> bool {
     let mut b = 0;
     if func[0] == LeftBracket && func[func.len() - 1] == RightBracket {
         for n in func {
@@ -451,7 +462,10 @@ fn is_interior(func: &[NumStr]) -> bool {
         false
     }
 }
-fn is_constant(func: &[NumStr], var: &[NumStr]) -> bool {
+fn is_constant(
+    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+) -> bool {
     let a = func.len();
     let b = var.len();
     if a >= b {
@@ -465,7 +479,10 @@ fn is_constant(func: &[NumStr], var: &[NumStr]) -> bool {
     }
     true
 }
-fn get_var<'a>(func: &'a [NumStr], var: &'a [NumStr]) -> &'a [NumStr] {
+fn get_var<'a>(
+    func: &'a [NumStr<rug::Integer, rug::Float, rug::Complex>],
+    var: &'a [NumStr<rug::Integer, rug::Float, rug::Complex>],
+) -> &'a [NumStr<rug::Integer, rug::Float, rug::Complex>] {
     let a = func.len();
     let b = var.len();
     let mut values = Vec::new();
@@ -503,7 +520,9 @@ fn get_var<'a>(func: &'a [NumStr], var: &'a [NumStr]) -> &'a [NumStr] {
     }
     &func[values[0] - i..values[0] + j]
 }
-fn to_vec(a: NumStr) -> Vec<Number<Integer, Float, Complex>> {
+fn to_vec(
+    a: NumStr<rug::Integer, rug::Float, rug::Complex>,
+) -> Vec<Number<Integer, Float, Complex>> {
     match a {
         Num(a) => vec![*a],
         Vector(a) => a,
@@ -511,7 +530,7 @@ fn to_vec(a: NumStr) -> Vec<Number<Integer, Float, Complex>> {
     }
 }
 fn inverse(
-    func: &[NumStr],
+    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
     val: Vec<Number<Integer, Float, Complex>>,
     options: &Options,
 ) -> Result<Vec<Number<Integer, Float, Complex>>, &'static str> {
@@ -552,10 +571,10 @@ fn inverse(
     }
 }
 fn isolate_inner(
-    func: &[NumStr],
+    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
     options: &Options,
-    var: &[NumStr],
-) -> Result<Vec<NumStr>, &'static str> {
+    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+) -> Result<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>, &'static str> {
     if is_interior(func) {
         return isolate_inner(&func[1..func.len() - 1], options, var);
     }
@@ -685,12 +704,13 @@ fn isolate_inner(
     }
     Ok(v)
 }
+#[allow(clippy::type_complexity)]
 pub fn isolate(
-    func: &[NumStr],
-    func_vars: Vec<(String, Vec<NumStr>)>,
+    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
     options: Options,
     var: String,
-) -> Result<NumStr, &'static str> {
+) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
     if func.iter().all(|f| match f {
         Func(v) => v != &var,
         _ => true,
