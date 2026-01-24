@@ -2,6 +2,7 @@ use crate::types::{
     Complex, Constant, Float, FloatShared, Integer, IsPrime, Pow, WithVal, WithValImag,
 };
 use rug::ops::CompleteRound;
+use std::cmp::Ordering;
 macro_rules! with_val {
     ($ty:ty, $($v:ty),*) => {
         $(
@@ -58,7 +59,9 @@ with_val!(
     u32,
     bool,
     rug::Float,
+    &rug::Float,
     rug::Integer,
+    &rug::Integer,
     (f64, f64),
     (i32, i32),
     (u32, u32),
@@ -68,7 +71,8 @@ with_val!(
     (u128, u128),
     (rug::Float, rug::Float),
     (&rug::Float, &rug::Float),
-    (rug::Integer, rug::Integer)
+    (rug::Integer, rug::Integer),
+    (&rug::Integer, &rug::Integer)
 );
 with_val!(
     rug::Float,
@@ -97,6 +101,11 @@ impl WithVal<Constant> for rug::Complex {
         }
     }
 }
+impl WithVal<(Constant, Constant)> for rug::Complex {
+    fn with_val(prec: u32, val: (Constant, Constant)) -> Self {
+        <Self as WithVal<Constant>>::with_val(prec, val.0) + Self::with_val_imag(prec, val.1)
+    }
+}
 impl WithValImag<Constant> for rug::Complex {
     fn with_val_imag(prec: u32, val: Constant) -> Self {
         match val {
@@ -122,6 +131,9 @@ impl WithVal<Constant> for rug::Float {
     }
 }
 impl Integer<rug::Float, rug::Complex> for rug::Integer {
+    fn cmp0(&self) -> Ordering {
+        self.cmp0()
+    }
     fn div_rem(self, rhs: Self) -> (Self, Self) {
         self.div_rem(rhs)
     }
@@ -175,6 +187,45 @@ impl From<rug::integer::IsPrime> for IsPrime {
     }
 }
 impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
+    fn sin_cos(self, cos: Self) -> (Self, Self) {
+        self.sin_cos(cos)
+    }
+    fn sin(self) -> Self {
+        self.sin()
+    }
+    fn cos(self) -> Self {
+        self.cos()
+    }
+    fn tan(self) -> Self {
+        self.tan()
+    }
+    fn sinh(self) -> Self {
+        self.sinh()
+    }
+    fn cosh(self) -> Self {
+        self.cosh()
+    }
+    fn tanh(self) -> Self {
+        self.tanh()
+    }
+    fn asin(self) -> Self {
+        self.asin()
+    }
+    fn acos(self) -> Self {
+        self.acos()
+    }
+    fn atan(self) -> Self {
+        self.atan()
+    }
+    fn asinh(self) -> Self {
+        self.asinh()
+    }
+    fn acosh(self) -> Self {
+        self.acosh()
+    }
+    fn atanh(self) -> Self {
+        self.atanh()
+    }
     fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
         Some(Self::parse_radix(src, radix).ok()?.complete(prec))
     }
@@ -210,6 +261,36 @@ impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
     }
 }
 impl Float<rug::Integer, rug::Complex> for rug::Float {
+    fn erf(self) -> Self {
+        self.erf()
+    }
+    fn ai(self) -> Self {
+        self.ai()
+    }
+    fn digamma(self) -> Self {
+        self.digamma()
+    }
+    fn zeta(self) -> Self {
+        self.zeta()
+    }
+    fn next_up(&mut self) {
+        self.next_up()
+    }
+    fn next_down(&mut self) {
+        self.next_down()
+    }
+    fn next_toward(&mut self, to: &Self) {
+        self.next_toward(to)
+    }
+    fn erfc(self) -> Self {
+        self.erfc()
+    }
+    fn cmp0(&self) -> Option<Ordering> {
+        self.cmp0()
+    }
+    fn is_nan(&self) -> bool {
+        self.is_nan()
+    }
     fn is_finite(&self) -> bool {
         self.is_finite()
     }
@@ -240,6 +321,9 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     fn floor(self) -> Self {
         self.floor()
     }
+    fn ceil(self) -> Self {
+        self.ceil()
+    }
     fn to_sign_string_exp(
         &self,
         radix: i32,
@@ -258,6 +342,45 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     }
 }
 impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
+    fn sin_cos(self, cos: Self) -> (Self, Self) {
+        self.sin_cos(cos)
+    }
+    fn sin(self) -> Self {
+        self.sin()
+    }
+    fn cos(self) -> Self {
+        self.cos()
+    }
+    fn tan(self) -> Self {
+        self.tan()
+    }
+    fn sinh(self) -> Self {
+        self.sinh()
+    }
+    fn cosh(self) -> Self {
+        self.cosh()
+    }
+    fn tanh(self) -> Self {
+        self.tanh()
+    }
+    fn asin(self) -> Self {
+        self.asin()
+    }
+    fn acos(self) -> Self {
+        self.acos()
+    }
+    fn atan(self) -> Self {
+        self.atan()
+    }
+    fn asinh(self) -> Self {
+        self.asinh()
+    }
+    fn acosh(self) -> Self {
+        self.acosh()
+    }
+    fn atanh(self) -> Self {
+        self.atanh()
+    }
     fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
         Some(Self::parse_radix(src, radix).ok()?.complete((prec, prec)))
     }
@@ -293,6 +416,9 @@ impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
     }
 }
 impl Complex<rug::Integer, rug::Float> for rug::Complex {
+    fn total_cmp(&self, other: &Self) -> Ordering {
+        self.total_cmp(other)
+    }
     fn real(&self) -> &rug::Float {
         self.real()
     }

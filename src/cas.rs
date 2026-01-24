@@ -1,5 +1,6 @@
 use crate::complex::NumStr::Vector;
 use crate::complex::{NumStr, cubic, quadratic, quartic, unity};
+use crate::types::Constant;
 use crate::{
     complex::NumStr::{
         Division, Exponent, Func, InternalMultiplication, LeftBracket, LeftCurlyBracket, Minus,
@@ -8,22 +9,40 @@ use crate::{
     math::do_math,
     units::{Number, Options},
 };
-use rug::float::Constant;
-use rug::{Complex, Float, Integer};
 use std::cmp::Ordering;
+use std::marker::PhantomData;
 use std::ops::{AddAssign, DivAssign, MulAssign, SubAssign};
 #[derive(Clone, Default)]
-struct Polynomial {
+struct Polynomial<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> {
     quotient: Vec<Complex>,
     divisor: Vec<Complex>,
+    phantom: PhantomData<(Integer, Float)>,
 }
-fn mul(mut lhs: Vec<Complex>, rhs: Complex) -> Vec<Complex> {
+fn mul<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut lhs: Vec<Complex>,
+    rhs: Complex,
+) -> Vec<Complex> {
     lhs.iter_mut().for_each(|lhs| *lhs *= rhs.clone());
     lhs
 }
-fn mul_assign(lhs: &mut Vec<Complex>, rhs: &[Complex]) {
+fn mul_assign<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    lhs: &mut Vec<Complex>,
+    rhs: &[Complex],
+) {
     let v =
-        vec![Complex::new(rhs.first().map(|a| a.prec().0).unwrap_or(1)); rhs.len() + lhs.len() - 1];
+        vec![Complex::new(rhs.first().map(|a| a.prec()).unwrap_or(1)); rhs.len() + lhs.len() - 1];
     let q = std::mem::replace(lhs, v);
     for (j, b) in rhs.iter().enumerate() {
         if b.is_zero() {
@@ -33,12 +52,17 @@ fn mul_assign(lhs: &mut Vec<Complex>, rhs: &[Complex]) {
             if a.is_zero() {
                 continue;
             }
-            lhs[i + j] += a * b.clone()
+            lhs[i + j] += a.clone() * b
         }
     }
 }
 #[allow(clippy::suspicious_op_assign_impl)]
-impl SubAssign<Complex> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> SubAssign<Complex> for Polynomial<Integer, Float, Complex>
+{
     fn sub_assign(&mut self, rhs: Complex) {
         let prec = rhs.prec();
         let divisor = mul(self.divisor.clone(), rhs);
@@ -54,7 +78,12 @@ impl SubAssign<Complex> for Polynomial {
     }
 }
 #[allow(clippy::suspicious_op_assign_impl)]
-impl SubAssign<Self> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> SubAssign<Self> for Polynomial<Integer, Float, Complex>
+{
     fn sub_assign(&mut self, mut rhs: Self) {
         mul_assign(&mut self.quotient, rhs.divisor.as_slice());
         mul_assign(&mut rhs.quotient, self.divisor.as_slice());
@@ -72,7 +101,12 @@ impl SubAssign<Self> for Polynomial {
     }
 }
 #[allow(clippy::suspicious_op_assign_impl)]
-impl AddAssign<Complex> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> AddAssign<Complex> for Polynomial<Integer, Float, Complex>
+{
     fn add_assign(&mut self, rhs: Complex) {
         let prec = rhs.prec();
         let divisor = mul(self.divisor.clone(), rhs);
@@ -87,7 +121,12 @@ impl AddAssign<Complex> for Polynomial {
         self.simplify()
     }
 }
-impl AddAssign<Self> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> AddAssign<Self> for Polynomial<Integer, Float, Complex>
+{
     fn add_assign(&mut self, mut rhs: Self) {
         mul_assign(&mut self.quotient, rhs.divisor.as_slice());
         mul_assign(&mut rhs.quotient, self.divisor.as_slice());
@@ -104,53 +143,98 @@ impl AddAssign<Self> for Polynomial {
         self.simplify()
     }
 }
-impl DivAssign<Complex> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> DivAssign<Complex> for Polynomial<Integer, Float, Complex>
+{
     fn div_assign(&mut self, rhs: Complex) {
         self.divisor.iter_mut().for_each(|a| *a *= rhs.clone())
     }
 }
-impl MulAssign<Complex> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> MulAssign<Complex> for Polynomial<Integer, Float, Complex>
+{
     fn mul_assign(&mut self, rhs: Complex) {
         self.quotient.iter_mut().for_each(|a| *a *= rhs.clone())
     }
 }
-impl MulAssign<&Self> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> MulAssign<&Self> for Polynomial<Integer, Float, Complex>
+{
     fn mul_assign(&mut self, rhs: &Self) {
         mul_assign(&mut self.quotient, rhs.quotient.as_slice());
         mul_assign(&mut self.divisor, rhs.divisor.as_slice());
     }
 }
 #[allow(clippy::suspicious_op_assign_impl)]
-impl DivAssign<Self> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> DivAssign<Self> for Polynomial<Integer, Float, Complex>
+{
     fn div_assign(&mut self, rhs: Self) {
         *self *= &rhs.recip()
     }
 }
-impl From<Vec<Complex>> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> From<Vec<Complex>> for Polynomial<Integer, Float, Complex>
+{
     fn from(quotient: Vec<Complex>) -> Self {
         let prec = quotient[0].prec();
         let divisor = vec![Complex::with_val(prec, 1)];
-        Polynomial { quotient, divisor }
+        Polynomial {
+            quotient,
+            divisor,
+            phantom: PhantomData,
+        }
     }
 }
-impl From<(Vec<Complex>, Vec<Complex>)> for Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> From<(Vec<Complex>, Vec<Complex>)> for Polynomial<Integer, Float, Complex>
+{
     fn from(value: (Vec<Complex>, Vec<Complex>)) -> Self {
         let (quotient, divisor) = value;
-        Polynomial { quotient, divisor }
+        Polynomial {
+            quotient,
+            divisor,
+            phantom: PhantomData,
+        }
     }
 }
-impl Polynomial {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> Polynomial<Integer, Float, Complex>
+{
     fn new(prec: u32) -> Self {
         let divisor = vec![Complex::with_val(prec, 1)];
         Self {
             quotient: Vec::new(),
             divisor,
+            phantom: PhantomData,
         }
     }
     fn recip(self) -> Self {
         Polynomial {
             quotient: self.divisor,
             divisor: self.quotient,
+            phantom: PhantomData,
         }
     }
     fn simplify(&mut self) {
@@ -159,7 +243,13 @@ impl Polynomial {
         }
     }
     fn degree(&self) -> (Option<usize>, Option<usize>) {
-        fn last_non_zero(a: &[Complex]) -> Option<usize> {
+        fn last_non_zero<
+            I: crate::types::Integer<F, C>,
+            F: crate::types::Float<I, C>,
+            C: crate::types::Complex<I, F>,
+        >(
+            a: &[C],
+        ) -> Option<usize> {
             if a.is_empty() {
                 None
             } else {
@@ -202,7 +292,16 @@ impl Polynomial {
     }
     fn gcd(mut self) -> Result<Vec<Complex>, &'static str> {
         let mut d = self.divisor.clone();
-        while let Ok((_, Some(r))) = std::mem::take(&mut self).div_checked() {
+        while let Ok((_, Some(r))) = std::mem::replace(
+            &mut self,
+            Self {
+                quotient: Vec::new(),
+                divisor: Vec::new(),
+                phantom: PhantomData,
+            },
+        )
+        .div_checked()
+        {
             self.quotient = d;
             self.divisor = r.clone();
             d = r;
@@ -214,9 +313,9 @@ impl Polynomial {
         Ok(self.div_checked()?.0)
     }
     fn get_polynomial(
-        func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+        func: &[NumStr<Integer, Float, Complex>],
         options: &Options,
-        var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+        var: &[NumStr<Integer, Float, Complex>],
     ) -> Result<Self, &'static str> {
         if is_interior(func) {
             return Self::get_polynomial(&func[1..func.len() - 1], options, var);
@@ -304,7 +403,7 @@ impl Polynomial {
             let k = k.0.to_integer().unwrap_or_default();
             match k.cmp0() {
                 Ordering::Less => {
-                    let mut i = rug::Integer::from(1);
+                    let mut i = Integer::from(1);
                     let k = -k;
                     arr = p.clone();
                     while i < k {
@@ -318,7 +417,7 @@ impl Polynomial {
                 }
                 Ordering::Greater => {
                     arr = p.clone();
-                    let mut i = rug::Integer::from(1);
+                    let mut i = Integer::from(1);
                     while i < k {
                         arr *= &p;
                         i += 1;
@@ -383,11 +482,15 @@ fn is_poly<
         })
     }
 }
-fn poly_mul(
+fn poly_mul<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: &Options,
-    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
-    arr: &mut Polynomial,
-    p: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+    var: &[NumStr<Integer, Float, Complex>],
+    arr: &mut Polynomial<Integer, Float, Complex>,
+    p: &[NumStr<Integer, Float, Complex>],
 ) -> Result<(), &'static str> {
     if is_constant(p, var) {
         *arr *= do_math(p.to_vec(), *options, Vec::new())?.num()?.number
@@ -397,11 +500,15 @@ fn poly_mul(
     }
     Ok(())
 }
-fn poly_add(
+fn poly_add<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: &Options,
-    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
-    arr: &mut Polynomial,
-    p: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+    var: &[NumStr<Integer, Float, Complex>],
+    arr: &mut Polynomial<Integer, Float, Complex>,
+    p: &[NumStr<Integer, Float, Complex>],
 ) -> Result<(), &'static str> {
     if is_constant(p, var) {
         *arr += do_math(p.to_vec(), *options, Vec::new())?.num()?.number
@@ -411,11 +518,16 @@ fn poly_add(
     }
     Ok(())
 }
-fn place<'a>(
-    func: &'a [NumStr<rug::Integer, rug::Float, rug::Complex>],
-    target: &'a NumStr<rug::Integer, rug::Float, rug::Complex>,
+fn place<
+    'a,
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: &'a [NumStr<Integer, Float, Complex>],
+    target: &'a NumStr<Integer, Float, Complex>,
     once: bool,
-) -> Vec<&'a [NumStr<rug::Integer, rug::Float, rug::Complex>]> {
+) -> Vec<&'a [NumStr<Integer, Float, Complex>]> {
     let mut b = 0;
     let mut l = 0;
     let mut vec = Vec::new();
@@ -446,7 +558,13 @@ fn place<'a>(
     }
     vec
 }
-fn is_interior(func: &[NumStr<rug::Integer, rug::Float, rug::Complex>]) -> bool {
+fn is_interior<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: &[NumStr<Integer, Float, Complex>],
+) -> bool {
     let mut b = 0;
     if func[0] == LeftBracket && func[func.len() - 1] == RightBracket {
         for n in func {
@@ -462,9 +580,13 @@ fn is_interior(func: &[NumStr<rug::Integer, rug::Float, rug::Complex>]) -> bool 
         false
     }
 }
-fn is_constant(
-    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
-    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+fn is_constant<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: &[NumStr<Integer, Float, Complex>],
+    var: &[NumStr<Integer, Float, Complex>],
 ) -> bool {
     let a = func.len();
     let b = var.len();
@@ -479,10 +601,15 @@ fn is_constant(
     }
     true
 }
-fn get_var<'a>(
-    func: &'a [NumStr<rug::Integer, rug::Float, rug::Complex>],
-    var: &'a [NumStr<rug::Integer, rug::Float, rug::Complex>],
-) -> &'a [NumStr<rug::Integer, rug::Float, rug::Complex>] {
+fn get_var<
+    'a,
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: &'a [NumStr<Integer, Float, Complex>],
+    var: &'a [NumStr<Integer, Float, Complex>],
+) -> &'a [NumStr<Integer, Float, Complex>] {
     let a = func.len();
     let b = var.len();
     let mut values = Vec::new();
@@ -520,8 +647,12 @@ fn get_var<'a>(
     }
     &func[values[0] - i..values[0] + j]
 }
-fn to_vec(
-    a: NumStr<rug::Integer, rug::Float, rug::Complex>,
+fn to_vec<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: NumStr<Integer, Float, Complex>,
 ) -> Vec<Number<Integer, Float, Complex>> {
     match a {
         Num(a) => vec![*a],
@@ -529,8 +660,12 @@ fn to_vec(
         _ => unreachable!(),
     }
 }
-fn inverse(
-    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+fn inverse<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: &[NumStr<Integer, Float, Complex>],
     val: Vec<Number<Integer, Float, Complex>>,
     options: &Options,
 ) -> Result<Vec<Number<Integer, Float, Complex>>, &'static str> {
@@ -538,7 +673,7 @@ fn inverse(
         let Func(f) = &func[0] else { unreachable!() };
         let v = match f.as_str() {
             "sin" => {
-                let pi = Float::with_val(val[0].number.prec().0, Constant::Pi);
+                let pi = Float::with_val(val[0].number.prec(), Constant::Pi);
                 val.into_iter()
                     .flat_map(|a| {
                         let a = a.number.asin();
@@ -570,11 +705,15 @@ fn inverse(
         Ok(val)
     }
 }
-fn isolate_inner(
-    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
+fn isolate_inner<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: &[NumStr<Integer, Float, Complex>],
     options: &Options,
-    var: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
-) -> Result<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>, &'static str> {
+    var: &[NumStr<Integer, Float, Complex>],
+) -> Result<Vec<NumStr<Integer, Float, Complex>>, &'static str> {
     if is_interior(func) {
         return isolate_inner(&func[1..func.len() - 1], options, var);
     }
@@ -622,7 +761,7 @@ fn isolate_inner(
         let n = |c: Complex| Number::from(c, None);
         r.extend(match l {
             0 | 1 => vec![Number::from(
-                Complex::with_val(options.prec, rug::float::Special::Nan),
+                Complex::with_val(options.prec, Constant::Nan),
                 None,
             )],
             2 => {
@@ -705,12 +844,16 @@ fn isolate_inner(
     Ok(v)
 }
 #[allow(clippy::type_complexity)]
-pub fn isolate(
-    func: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn isolate<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: &[NumStr<Integer, Float, Complex>],
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: Options,
     var: String,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if func.iter().all(|f| match f {
         Func(v) => v != &var,
         _ => true,

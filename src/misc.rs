@@ -684,11 +684,15 @@ pub fn place_varxy(
     func
 }
 #[allow(clippy::type_complexity)]
-pub fn place_funcvar(
-    mut funcvar: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn place_funcvar<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut funcvar: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     var: &str,
-    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
-) -> Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)> {
+    num: NumStr<Integer, Float, Complex>,
+) -> Vec<(String, Vec<NumStr<Integer, Float, Complex>>)> {
     if !var.is_empty() {
         for i in funcvar.iter_mut() {
             if !i.0.contains('(') {
@@ -738,11 +742,15 @@ pub fn place_funcvar(
     }
     funcvar
 }
-pub fn place_var(
-    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+pub fn place_var<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut func: Vec<NumStr<Integer, Float, Complex>>,
     var: &str,
-    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
-) -> Vec<NumStr<rug::Integer, rug::Float, rug::Complex>> {
+    num: NumStr<Integer, Float, Complex>,
+) -> Vec<NumStr<Integer, Float, Complex>> {
     if !var.is_empty() {
         let mut sum = Vec::new();
         let mut bracket = 0;
@@ -786,13 +794,17 @@ pub fn place_var(
     func
 }
 #[allow(clippy::type_complexity)]
-pub fn do_math_with_var(
-    function: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+pub fn do_math_with_var<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    function: Vec<NumStr<Integer, Float, Complex>>,
     options: Options,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     var: &str,
-    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+    num: NumStr<Integer, Float, Complex>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     do_math(
         place_var(function, var, num.clone()),
         options,

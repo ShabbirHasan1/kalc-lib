@@ -1,6 +1,7 @@
 use crate::cas::isolate;
 #[cfg(feature = "fastrand")]
 use crate::complex::{rand_gamma, rand_norm};
+use crate::types::{Constant, IsPrime};
 use crate::{
     complex::{
         LimSide::{Both, Left, Right},
@@ -26,24 +27,19 @@ use crate::{
     misc::do_math_with_var,
     units::{AngleType, Number, Options, Units},
 };
-use rug::{
-    Complex, Float, Integer,
-    float::{
-        Constant::Pi,
-        Special::{Infinity, Nan},
-    },
-    integer::IsPrime,
-    ops::Pow,
-};
 #[cfg(feature = "fastrand")]
 use std::ops::Rem;
 use std::{cmp::Ordering, time::SystemTime};
 #[allow(clippy::type_complexity)]
-pub fn do_math(
-    mut function: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+pub fn do_math<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut function: Vec<NumStr<Integer, Float, Complex>>,
     options: Options,
-    mut func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+    mut func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if function.is_empty() {
         return Err(" ");
     }
@@ -71,7 +67,7 @@ pub fn do_math(
                 let mut single = 0;
                 let v = &function[i + 1..j - 1];
                 let mut vec = Vec::new();
-                let mut mat = Vec::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>::new();
+                let mut mat = Vec::<Vec<Number<Integer, Float, Complex>>>::new();
                 for (f, n) in v.iter().enumerate() {
                     match &n {
                         Comma if count == 0 => {
@@ -252,7 +248,7 @@ pub fn do_math(
                             function.remove(i);
                             let v = function
                                 .drain(i..j - 2)
-                                .collect::<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>>();
+                                .collect::<Vec<NumStr<Integer, Float, Complex>>>();
                             count = 0;
                             let mut place = Vec::new();
                             for (f, n) in v.iter().enumerate() {
@@ -330,7 +326,9 @@ pub fn do_math(
                                 vec![
                                     function[i - 1].clone(),
                                     do_math(
-                                        function.drain(i..j - 2).collect::<Vec<NumStr<rug::Integer,rug::Float,rug::Complex>>>(),
+                                        function
+                                            .drain(i..j - 2)
+                                            .collect::<Vec<NumStr<Integer, Float, Complex>>>(),
                                         options,
                                         func_vars.clone(),
                                     )?,
@@ -346,7 +344,7 @@ pub fn do_math(
                 function[i] = do_math(
                     function
                         .drain(i + 1..j - 1)
-                        .collect::<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>>(),
+                        .collect::<Vec<NumStr<Integer, Float, Complex>>>(),
                     options,
                     func_vars.clone(),
                 )?;
@@ -366,9 +364,13 @@ pub fn do_math(
     }
     i = 0;
     let to_deg = match options.angle {
-        AngleType::Degrees => 180 / Complex::with_val(options.prec, Pi),
+        AngleType::Degrees => {
+            Float::with_val(options.prec, 180) / Complex::with_val(options.prec, Constant::Pi)
+        }
         AngleType::Radians => Complex::with_val(options.prec, 1),
-        AngleType::Gradians => 200 / Complex::with_val(options.prec, Pi),
+        AngleType::Gradians => {
+            Float::with_val(options.prec, 200) / Complex::with_val(options.prec, Constant::Pi)
+        }
     };
     while i < function.len().saturating_sub(1) {
         if let Func(s) = &function[i].clone() {
@@ -781,7 +783,7 @@ pub fn do_math(
                                 n
                             } else {
                                 NumStr::new(Number::from(
-                                    Complex::with_val(options.prec, Nan),
+                                    Complex::with_val(options.prec, Constant::Nan),
                                     None,
                                 ))
                             };
@@ -849,7 +851,9 @@ pub fn do_math(
                                 Ok(function.remove(i + 1).clone())
                             } else {
                                 do_math(
-                                    function.drain(i + 1..=place[0]).collect::<Vec<NumStr<rug::Integer,rug::Float,rug::Complex>>>(),
+                                    function
+                                        .drain(i + 1..=place[0])
+                                        .collect::<Vec<NumStr<Integer, Float, Complex>>>(),
                                     options,
                                     func_vars.clone(),
                                 )
@@ -877,7 +881,9 @@ pub fn do_math(
                                 Ok(function.remove(i + 1).clone())
                             } else {
                                 do_math(
-                                    function.drain(i + 1..=place[0]).collect::<Vec<NumStr<rug::Integer,rug::Float,rug::Complex>>>(),
+                                    function
+                                        .drain(i + 1..=place[0])
+                                        .collect::<Vec<NumStr<Integer, Float, Complex>>>(),
                                     options,
                                     func_vars.clone(),
                                 )
@@ -920,21 +926,24 @@ pub fn do_math(
                                 let x3 = &a[2][0].number;
                                 let y3 = &a[2][1].number;
                                 let z3 = &a[2][2].number;
-                                let t1 = z2 - z3.clone() * y2 / y3;
-                                let t2 = x2 - x3.clone() * y2 / y3;
+                                let t1 = -z3.clone() * y2 / y3 + z2;
+                                let t2 = -x3.clone() * y2 / y3 + x2;
                                 let t3 = t1 / t2.clone();
-                                let c1 = z1 - x1 * t3.clone() - y1.clone() / y3 * (z3 - x3 * t3);
-                                let c2 = 1 - x1 / t2.clone() + x1.clone() * y2 / y3 / t2.clone()
+                                let c1 = -t3.clone() * x1 - y1.clone() / y3 * (-t3 * x3 + z3) + z1;
+                                let c2 = -x1.clone() / t2.clone()
+                                    + x1.clone() * y2 / y3 / t2.clone()
                                     - y1.clone() / y3
                                     + x3.clone() * y1 / y3 / t2.clone()
-                                    - x3.clone() * y1 * y2 / y3 / y3 / t2.clone();
+                                    - x3.clone() * y1 * y2 / y3 / y3 / t2.clone()
+                                    + 1;
                                 let c: Complex = c1 / c2;
-                                let b = (z3
-                                    - c.clone()
-                                    - x3 * (z2 - c.clone() - y2.clone() / y3 * (z3 - c.clone()))
-                                        / t2)
+                                let b = (-c.clone()
+                                    - ((-c.clone() + z2 - y2.clone() / y3 * (-c.clone() + z3))
+                                        * x3)
+                                        / t2
+                                    + z3)
                                     / y3;
-                                let a = (z2 - c.clone() - b.clone() * y2) / x2;
+                                let a = (-c.clone() + z2 - b.clone() * y2) / x2;
                                 if function.len() > i + 2 {
                                     let x = function.remove(i + 1).num()?.number;
                                     let y = function.remove(i + 1).num()?.number;
@@ -963,8 +972,8 @@ pub fn do_math(
                                     xxsum += sqr(x.clone());
                                     xysum += x * y;
                                 }
-                                let m: Complex = (a.len() * xysum - xsum.clone() * ysum.clone())
-                                    / (a.len() * xxsum - sqr(xsum.clone()));
+                                let m: Complex = (xysum * a.len() - xsum.clone() * ysum.clone())
+                                    / (xxsum * a.len() - sqr(xsum.clone()));
                                 let b = (ysum - m.clone() * xsum) / a.len();
                                 if function.len() > i + 1 {
                                     let x = function.remove(i + 1).num()?.number;
@@ -1024,7 +1033,11 @@ pub fn do_math(
                                 }
                                 Vector(vec)
                             }
-                            "flatten" => Vector(a.into_iter().flatten().collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>()),
+                            "flatten" => Vector(
+                                a.into_iter()
+                                    .flatten()
+                                    .collect::<Vec<Number<Integer, Float, Complex>>>(),
+                            ),
                             "cofactor" | "cofactors" | "cof" => Matrix(cofactor(&a)?),
                             "minor" | "minors" => Matrix(minors(&a)?),
                             "adjugate" | "adj" => Matrix(transpose(&cofactor(&a)?)),
@@ -1062,7 +1075,7 @@ pub fn do_math(
                                                     Vector(
                                                         a.iter()
                                                             .map(|a| a[n2].clone())
-                                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
+                                                            .collect::<Vec<Number<Integer,Float,Complex>>>(),
                                                     )
                                                 } else {
                                                     return Err("out of range");
@@ -1094,7 +1107,10 @@ pub fn do_math(
                                                         mat.push(
                                                             a.iter()
                                                                 .map(|a| a[n].clone())
-                                                                .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
+                                                                .collect::<Vec<
+                                                                    Number<Integer, Float, Complex>,
+                                                                >>(
+                                                                ),
                                                         )
                                                     } else {
                                                         return Err("out of range");
@@ -1270,7 +1286,12 @@ pub fn do_math(
                                 }
                             }
                             "median" => {
-                                let a = sort(a.iter().flatten().cloned().collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>());
+                                let a = sort(
+                                    a.iter()
+                                        .flatten()
+                                        .cloned()
+                                        .collect::<Vec<Number<Integer, Float, Complex>>>(),
+                                );
                                 if a.len() % 2 == 0 {
                                     Vector(vec![a[a.len() / 2 - 1].clone(), a[a.len() / 2].clone()])
                                 } else {
@@ -1285,7 +1306,7 @@ pub fn do_math(
                                     }
                                 }
                                 NumStr::new(Number::from(
-                                    Complex::with_val(options.prec, res as u8),
+                                    Complex::with_val(options.prec, res),
                                     None,
                                 ))
                             }
@@ -1297,7 +1318,7 @@ pub fn do_math(
                                     }
                                 }
                                 NumStr::new(Number::from(
-                                    Complex::with_val(options.prec, res as u8),
+                                    Complex::with_val(options.prec, res),
                                     None,
                                 ))
                             }
@@ -1338,7 +1359,7 @@ pub fn do_math(
                                     {
                                         change_basis(a, &beta, &function.remove(i + 1).mat()?)?
                                     } else {
-                                        let i = identity(a.len(), a[0][0].number.prec().0);
+                                        let i = identity(a.len(), a[0][0].number.prec());
                                         change_basis(a, &i, &beta)?
                                     }
                                 } else {
@@ -1387,7 +1408,11 @@ pub fn do_math(
                                 if a.is_empty() {
                                     return Err("bad list");
                                 }
-                                let mut a = sort(a.into_iter().flatten().collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>());
+                                let mut a = sort(
+                                    a.into_iter()
+                                        .flatten()
+                                        .collect::<Vec<Number<Integer, Float, Complex>>>(),
+                                );
                                 let mut last = a[0].clone();
                                 let mut count = 1;
                                 a.remove(0);
@@ -1431,8 +1456,10 @@ pub fn do_math(
                                     rnd = fastrand::u128(..);
                                 }
                                 rnd = rnd.rem(n) + 1;
-                                let mut num =
-                                    Number::from(Complex::with_val(options.prec, Nan), None);
+                                let mut num = Number::from(
+                                    Complex::with_val(options.prec, Constant::Nan),
+                                    None,
+                                );
                                 for i in &a {
                                     rnd = rnd.saturating_sub(
                                         i[1].number
@@ -1546,7 +1573,7 @@ pub fn do_math(
                                                     None,
                                                 )
                                             })
-                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
+                                            .collect::<Vec<Number<Integer, Float, Complex>>>(),
                                     )
                                 }
                             }
@@ -1694,7 +1721,7 @@ pub fn do_math(
                                                     None,
                                                 )
                                             })
-                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
+                                            .collect::<Vec<Number<Integer, Float, Complex>>>(),
                                     )
                                 } else {
                                     let mut current = Vec::new();
@@ -1718,7 +1745,7 @@ pub fn do_math(
                                                     None,
                                                 )
                                             })
-                                            .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
+                                            .collect::<Vec<Number<Integer, Float, Complex>>>(),
                                     )
                                 }
                             }
@@ -1814,7 +1841,7 @@ pub fn do_math(
                                     }
                                 }
                                 NumStr::new(Number::from(
-                                    100 * (cf + Complex::with_val(options.prec, f) / 2) / a.len(),
+                                    (Complex::with_val(options.prec, f) / 2 + cf) / a.len() * 100,
                                     None,
                                 ))
                             }
@@ -1848,7 +1875,13 @@ pub fn do_math(
                                 Matrix(mat)
                             }
                             "kurtosis" => {
-                                fn quar(z: Complex) -> Complex {
+                                fn quar<
+                                    I: crate::types::Integer<F, C>,
+                                    F: crate::types::Float<I, C>,
+                                    C: crate::types::Complex<I, F>,
+                                >(
+                                    z: C,
+                                ) -> C {
                                     if z.imag().is_zero() {
                                         z.pow(4)
                                     } else {
@@ -1920,7 +1953,7 @@ pub fn do_math(
                                     }
                                 }
                                 NumStr::new(Number::from(
-                                    Complex::with_val(options.prec, res as u8),
+                                    Complex::with_val(options.prec, res),
                                     None,
                                 ))
                             }
@@ -1932,7 +1965,7 @@ pub fn do_math(
                                     }
                                 }
                                 NumStr::new(Number::from(
-                                    Complex::with_val(options.prec, res as u8),
+                                    Complex::with_val(options.prec, res),
                                     None,
                                 ))
                             }
@@ -2198,7 +2231,7 @@ pub fn do_math(
                                                         n.units,
                                                     )
                                                 })
-                                                .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
+                                                .collect::<Vec<Number<Integer, Float, Complex>>>(),
                                         )
                                     } else {
                                         return Err("cant project");
@@ -2234,7 +2267,7 @@ pub fn do_math(
                                                         a.units,
                                                     )
                                                 })
-                                                .collect::<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>(),
+                                                .collect::<Vec<Number<Integer, Float, Complex>>>(),
                                         )
                                     } else {
                                         return Err("cant project");
@@ -2310,7 +2343,7 @@ pub fn do_math(
                                             Number::from(a.number.imag().clone().into(), None),
                                         ]
                                     })
-                                    .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
+                                    .collect::<Vec<Vec<Number<Integer, Float, Complex>>>>(),
                             ),
                             "uniq" => {
                                 let mut a = a;
@@ -2351,7 +2384,7 @@ pub fn do_math(
                                 }
                                 if fail {
                                     NumStr::new(Number::from(
-                                        Complex::with_val(options.prec, Nan),
+                                        Complex::with_val(options.prec, Constant::Nan),
                                         None,
                                     ))
                                 } else {
@@ -2493,7 +2526,7 @@ pub fn do_math(
                                             ainb = false;
                                         }
                                         NumStr::new(Number::from(
-                                            Complex::with_val(options.prec, ainb as u8),
+                                            Complex::with_val(options.prec, ainb),
                                             None,
                                         ))
                                     } else {
@@ -2513,7 +2546,7 @@ pub fn do_math(
                                             }
                                         }
                                         NumStr::new(Number::from(
-                                            Complex::with_val(options.prec, ainb as u8),
+                                            Complex::with_val(options.prec, ainb),
                                             None,
                                         ))
                                     } else {
@@ -2586,7 +2619,7 @@ pub fn do_math(
                             "rationalize" => Matrix(
                                 a.iter()
                                     .map(|c| c_to_rational(c.number.clone(), options))
-                                    .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
+                                    .collect::<Vec<Vec<Number<Integer, Float, Complex>>>>(),
                             ),
                             "prime_factors" => {
                                 if a.len() != 2 {
@@ -2624,7 +2657,7 @@ pub fn do_math(
                                                 ),
                                             ]
                                         })
-                                        .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
+                                        .collect::<Vec<Vec<Number<Integer, Float, Complex>>>>(),
                                 )
                             }
                             "poly" | "polynomial" => {
@@ -2651,17 +2684,17 @@ pub fn do_math(
                         _ => match s.as_str() {
                             "rationalize" => Vector(c_to_rational(arg.num()?.number, options)),
                             "domain_coloring_rgb" => {
-                                let pi = Float::with_val(options.prec, Pi);
+                                let pi = Float::with_val(options.prec, Constant::Pi);
                                 let num = arg.num()?.number;
-                                let hue: Float = 1 + (-num.clone()).arg().real().clone() / &pi;
-                                let sat: Float = (1 + num.clone().abs().real().clone().fract()) / 2;
+                                let hue: Float = (-num.clone()).arg().real().clone() / &pi + 1;
+                                let sat: Float = (num.clone().abs().real().clone().fract() + 1) / 2;
                                 let val: Float = {
                                     let (r, i) = (num * &pi).into_real_imag();
                                     let t1: Float = r.sin();
                                     let t2: Float = i.sin();
                                     (t1 * t2).abs().pow(0.125)
                                 };
-                                Vector(hsv2rgb(3 * hue, sat, val))
+                                Vector(hsv2rgb(hue * 3, sat, val))
                             }
                             "multinomial" => {
                                 let mut numerator: Complex = arg.num()?.number + 1;
@@ -2723,7 +2756,7 @@ pub fn do_math(
                                     let a = function.remove(i + 1).num()?.number;
                                     let b = function.remove(i + 1).num()?.number;
                                     NumStr::new(Number::from(
-                                        1 - incomplete_gamma(a.clone(), x / b) / gamma(a),
+                                        -incomplete_gamma(a.clone(), x / b) / gamma(a) + 1,
                                         None,
                                     ))
                                 } else {
@@ -2757,7 +2790,7 @@ pub fn do_math(
                                     let x = arg.num()?.number;
                                     let alpha = function.remove(i + 1).num()?.number;
                                     let beta = function.remove(i + 1).num()?.number;
-                                    let c: Complex = 1 - x.clone();
+                                    let c: Complex = -x.clone() + 1;
                                     NumStr::new(Number::from(
                                         gamma(alpha.clone() + beta.clone())
                                             * pow_nth(x, alpha.clone() - 1)
@@ -2775,8 +2808,9 @@ pub fn do_math(
                                     let mu = function.remove(i + 1).num()?.number;
                                     let sigma = function.remove(i + 1).num()?.number;
                                     let n: Complex = sqr(x - mu);
-                                    let n: Complex = -n / (2 * sqr(sigma.clone()));
-                                    let tau: Complex = 2 * Complex::with_val(options.prec, Pi);
+                                    let n: Complex = -n / (sqr(sigma.clone()) * 2);
+                                    let tau: Complex =
+                                        Complex::with_val(options.prec, Constant::Pi) * 2;
                                     NumStr::new(Number::from(n.exp() / (sigma * tau.sqrt()), None))
                                 } else {
                                     return Err("not enough args");
@@ -2830,8 +2864,9 @@ pub fn do_math(
                                     let mu = function.remove(i + 1).num()?.number;
                                     let sigma = function.remove(i + 1).num()?.number;
                                     let n: Complex = sqr(x.clone().ln() - mu);
-                                    let n: Complex = -n / (2 * sqr(sigma.clone()));
-                                    let tau: Complex = 2 * Complex::with_val(options.prec, Pi);
+                                    let n: Complex = -n / (sqr(sigma.clone()) * 2);
+                                    let tau: Complex =
+                                        Complex::with_val(options.prec, Constant::Tau);
                                     NumStr::new(Number::from(
                                         n.exp() / (sigma * tau.sqrt() * x),
                                         None,
@@ -2869,9 +2904,9 @@ pub fn do_math(
                                     let k = arg.num()?.number;
                                     let n = function.remove(i + 1).num()?.number;
                                     let p = function.remove(i + 1).num()?.number;
-                                    let q: Complex = 1 - p.clone();
+                                    let q: Complex = -p.clone() + 1;
                                     NumStr::new(Number::from(
-                                        regularized_incomplete_beta(q, n - k.clone(), 1 + k),
+                                        regularized_incomplete_beta(q, n - k.clone(), k + 1),
                                         None,
                                     ))
                                 } else {
@@ -2883,7 +2918,7 @@ pub fn do_math(
                                     let k = arg.num()?.number;
                                     let n = function.remove(i + 1).num()?.number;
                                     let p = function.remove(i + 1).num()?.number;
-                                    let q: Complex = 1 - p.clone();
+                                    let q: Complex = -p.clone() + 1;
                                     NumStr::new(Number::from(
                                         binomial(n.clone(), k.clone())
                                             * pow_nth(p, k.clone())
@@ -2912,7 +2947,7 @@ pub fn do_math(
                                     let k = arg.num()?.number;
                                     let r = function.remove(i + 1).num()?.number;
                                     let p = function.remove(i + 1).num()?.number;
-                                    let q: Complex = 1 - p.clone();
+                                    let q: Complex = -p.clone() + 1;
                                     NumStr::new(Number::from(
                                         binomial(k.clone() + r.clone() - 1, k.clone())
                                             * pow_nth(p, r)
@@ -2939,10 +2974,7 @@ pub fn do_math(
                                             / binomial(pop.clone(), draws.clone());
                                         k -= 1
                                     }
-                                    NumStr::new(Number::from(
-                                        Complex::with_val(options.prec, sum),
-                                        None,
-                                    ))
+                                    NumStr::new(Number::from(sum, None))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -3011,10 +3043,7 @@ pub fn do_math(
                                         ) / binomial(pop.clone(), success.clone());
                                         k -= 1
                                     }
-                                    NumStr::new(Number::from(
-                                        Complex::with_val(options.prec, sum),
-                                        None,
-                                    ))
+                                    NumStr::new(Number::from(sum, None))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -3071,8 +3100,8 @@ pub fn do_math(
                                 if i + 1 < function.len() {
                                     let k = arg.num()?.number;
                                     let p = function.remove(i + 1).num()?.number;
-                                    let q: Complex = 1 - p.clone();
-                                    NumStr::new(Number::from(1 - pow_nth(q, k), None))
+                                    let q: Complex = -p.clone() + 1;
+                                    NumStr::new(Number::from(-pow_nth(q, k) + 1, None))
                                 } else {
                                     return Err("not enough args");
                                 }
@@ -3081,7 +3110,7 @@ pub fn do_math(
                                 if i + 1 < function.len() {
                                     let k = arg.num()?.number;
                                     let p = function.remove(i + 1).num()?.number;
-                                    let q: Complex = 1 - p.clone();
+                                    let q: Complex = -p.clone() + 1;
                                     NumStr::new(Number::from(pow_nth(q, k - 1) * p, None))
                                 } else {
                                     return Err("not enough args");
@@ -3188,7 +3217,7 @@ pub fn do_math(
                                     let n = quadratic(a, b, c, true);
                                     if n.is_empty() {
                                         NumStr::new(Number::from(
-                                            Complex::with_val(options.prec, Nan),
+                                            Complex::with_val(options.prec, Constant::Nan),
                                             None,
                                         ))
                                     } else if n.len() == 1 {
@@ -3402,7 +3431,7 @@ pub fn do_math(
                                         let m = prime_factors(n);
                                         if m.is_empty() {
                                             NumStr::new(Number::from(
-                                                Complex::with_val(options.prec, Nan),
+                                                Complex::with_val(options.prec, Constant::Nan),
                                                 None,
                                             ))
                                         } else {
@@ -3415,12 +3444,12 @@ pub fn do_math(
                                                                 None,
                                                             ),
                                                             Number::from(
-                                                                Complex::with_val(options.prec, b),
+                                                                Complex::with_val(options.prec, *b),
                                                                 None,
                                                             ),
                                                         ]
                                                     })
-                                                    .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
+                                                    .collect::<Vec<Vec<Number<Integer,Float,Complex>>>>(),
                                             )
                                         }
                                     } else if let Some(a) = rationalize(a.real().clone(), options) {
@@ -3455,17 +3484,17 @@ pub fn do_math(
                                                         ),
                                                     ]
                                                 })
-                                                .collect::<Vec<Vec<Number<rug::Integer,rug::Float,rug::Complex>>>>(),
+                                                .collect::<Vec<Vec<Number<Integer,Float,Complex>>>>(),
                                         )
                                     } else {
                                         NumStr::new(Number::from(
-                                            Complex::with_val(options.prec, Nan),
+                                            Complex::with_val(options.prec, Constant::Nan),
                                             None,
                                         ))
                                     }
                                 } else {
                                     NumStr::new(Number::from(
-                                        Complex::with_val(options.prec, Nan),
+                                        Complex::with_val(options.prec, Constant::Nan),
                                         None,
                                     ))
                                 }
@@ -3492,13 +3521,13 @@ pub fn do_math(
                                         Vector(vec)
                                     } else {
                                         NumStr::new(Number::from(
-                                            Complex::with_val(options.prec, Nan),
+                                            Complex::with_val(options.prec, Constant::Nan),
                                             None,
                                         ))
                                     }
                                 } else {
                                     NumStr::new(Number::from(
-                                        Complex::with_val(options.prec, Nan),
+                                        Complex::with_val(options.prec, Constant::Nan),
                                         None,
                                     ))
                                 }
@@ -3513,7 +3542,7 @@ pub fn do_math(
                                 };
                                 if vec.is_empty() {
                                     Vector(vec![Number::from(
-                                        Complex::with_val(options.prec, Nan),
+                                        Complex::with_val(options.prec, Constant::Nan),
                                         None,
                                     )])
                                 } else {
@@ -3775,14 +3804,18 @@ pub fn do_math(
         Err("failed to compute")
     }
 }
-fn do_functions(
-    a: NumStr<rug::Integer, rug::Float, rug::Complex>,
+fn do_functions<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: NumStr<Integer, Float, Complex>,
     options: Options,
-    function: &mut Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+    function: &mut Vec<NumStr<Integer, Float, Complex>>,
     k: usize,
     to_deg: &Complex,
     s: &str,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if function.len() > k + 1 {
         match (a.clone(), function[k + 1].clone()) {
             (Num(a), Num(b)) => {
@@ -3941,13 +3974,17 @@ fn do_functions(
         _ => Err("str err1"),
     }
 }
-fn functions(
-    mut a: Number<rug::Integer, rug::Float, rug::Complex>,
-    mut c: Option<Number<rug::Integer, rug::Float, rug::Complex>>,
+fn functions<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut a: Number<Integer, Float, Complex>,
+    mut c: Option<Number<Integer, Float, Complex>>,
     to_deg: Complex,
     s: &str,
     options: Options,
-) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<Number<Integer, Float, Complex>, &'static str> {
     if a.number.imag().is_zero() && !a.number.imag().is_sign_positive() {
         a.number = Complex::with_val(a.number.prec(), a.number.real())
     }
@@ -4128,17 +4165,17 @@ fn functions(
             "recip" => Number::from(a.number.recip(), a.units.map(|a| a.pow(-1.0))),
             "units" => Number::from(Complex::with_val(options.prec, 1), a.units),
             "onlyreal" | "onlyre" | "ore" => {
-                if -a.number.imag().clone().abs().log10() > a.number.prec().0 / 4 {
+                if -a.number.imag().clone().abs().log10() > a.number.prec() / 4 {
                     Number::from(a.number.real().clone().into(), a.units)
                 } else {
-                    Number::from(Complex::with_val(options.prec, Nan), None)
+                    Number::from(Complex::with_val(options.prec, Constant::Nan), None)
                 }
             }
             "onlyimag" | "onlyim" | "oim" => {
-                if -a.number.real().clone().abs().log10() > a.number.prec().0 / 4 {
+                if -a.number.real().clone().abs().log10() > a.number.prec() / 4 {
                     Number::from(a.number.imag().clone().into(), a.units)
                 } else {
-                    Number::from(Complex::with_val(options.prec, Nan), None)
+                    Number::from(Complex::with_val(options.prec, Constant::Nan), None)
                 }
             }
             "re" | "real" => Number::from(a.number.real().clone().into(), a.units),
@@ -4284,12 +4321,12 @@ fn functions(
                         let b = b.ln();
                         if a.is_zero() {
                             if b.is_zero() {
-                                Complex::with_val(options.prec, Nan)
+                                Complex::with_val(options.prec, Constant::Nan)
                             } else {
-                                Complex::with_val(options.prec, Infinity)
+                                Complex::with_val(options.prec, Constant::Infinity)
                             }
                         } else if b.real().is_infinite() {
-                            -Complex::with_val(options.prec, Infinity)
+                            -Complex::with_val(options.prec, Constant::Infinity)
                         } else {
                             b / a
                         }
@@ -4311,7 +4348,7 @@ fn functions(
                         if a.real() > &1 {
                             slog(&a, &b)
                         } else {
-                            Complex::with_val(options.prec, Nan)
+                            Complex::with_val(options.prec, Constant::Nan)
                         }
                     } else {
                         return Err("no args");
@@ -4320,9 +4357,16 @@ fn functions(
                 "Ap" => {
                     if let Some(b) = d {
                         if a.real().is_sign_negative() {
-                            Complex::with_val(options.prec, Nan)
+                            Complex::with_val(options.prec, Constant::Nan)
                         } else {
-                            pub fn pow_n(z: Complex, n: usize) -> Complex {
+                            pub fn pow_n<
+                                I: crate::types::Integer<F, C>,
+                                F: crate::types::Float<I, C>,
+                                C: crate::types::Complex<I, F>,
+                            >(
+                                z: C,
+                                n: usize,
+                            ) -> C {
                                 if !z.imag().is_zero() && n <= 256 {
                                     let mut p = z.clone();
                                     for _ in 1..n {
@@ -4342,9 +4386,7 @@ fn functions(
                                 .unwrap_or_default();
                             for k in 0..=n {
                                 sum += pow_n(b.clone(), k as usize)
-                                    * euleriannumbersint::<rug::Integer, rug::Float, rug::Complex>(
-                                        n, k,
-                                    )
+                                    * euleriannumbersint::<Integer, Float, Complex>(n, k)
                             }
                             sum
                         }
@@ -4373,9 +4415,9 @@ fn functions(
                             && a.imag().is_zero()
                             && b.imag().is_zero()
                         {
-                            let a = a + Complex::with_val(
+                            let a = a + Complex::with_val_imag(
                                 options.prec,
-                                (0, Float::with_val(options.prec, 0.5).pow(options.prec / 2)),
+                                Float::with_val(options.prec, 0.5).pow(options.prec / 2),
                             );
                             let r: Complex = gamma(a.clone() + 1) / gamma(a.clone() - b + 1);
                             r.real().clone().into()
@@ -4398,8 +4440,8 @@ fn functions(
                         if !a.real().is_sign_positive() && a.imag().is_zero() && b.imag().is_zero()
                         {
                             pow_nth(Complex::with_val(options.prec, -1), b.clone())
-                                * gamma(1 - a.clone())
-                                / gamma(1 - a - b)
+                                * gamma(-a.clone() + 1)
+                                / gamma(-a - b + 1)
                         } else {
                             gamma(b.clone() + a.clone()) / gamma(a.clone())
                         }
@@ -4431,8 +4473,8 @@ fn functions(
                 "arg" => a.arg(),
                 "doublefact" | "doublefactorial" => {
                     let two = Complex::with_val(options.prec, 2);
-                    let pi = Complex::with_val(options.prec, Pi);
-                    two.pow(a.clone() / 2 + (1 - (pi.clone() * a.clone()).cos()) / 4)
+                    let pi = Complex::with_val(options.prec, Constant::Pi);
+                    two.pow(a.clone() / 2 + (-(pi.clone() * a.clone()).cos() + 1) / 4)
                         * pi.clone().pow(((pi * a.clone()).cos() - 1) / 4)
                         * gamma(a.clone() / 2 + 1)
                 }
@@ -4443,9 +4485,9 @@ fn functions(
                     let neari = a.imag().is_zero();
                     if !neari || neg || !near {
                         if neg && near && neari {
-                            let a = a + Complex::with_val(
+                            let a = a + Complex::with_val_imag(
                                 options.prec,
-                                (0, Float::with_val(options.prec, 0.5).pow(options.prec / 8)),
+                                Float::with_val(options.prec, 0.5).pow(options.prec / 8),
                             );
                             subfactorial(a)
                         } else {
@@ -4483,7 +4525,7 @@ fn functions(
                     if a.imag().is_zero() {
                         a.real().clone().ai().into()
                     } else {
-                        Complex::with_val(options.prec, Nan)
+                        Complex::with_val(options.prec, Constant::Nan)
                     }
                 }
                 "trigamma" => digamma(a, 1),
@@ -4499,7 +4541,7 @@ fn functions(
                         )
                     } else if a.imag().is_zero() {
                         if a.real().is_sign_negative() && a.real().clone().fract().is_zero() {
-                            Complex::with_val(options.prec, Infinity)
+                            Complex::with_val(options.prec, Constant::Infinity)
                         } else {
                             a.real().clone().digamma().into()
                         }
@@ -4522,7 +4564,7 @@ fn functions(
                             nth_prime(a.real().to_integer().unwrap_or_default()),
                         )
                     } else {
-                        Complex::with_val(options.prec, Nan)
+                        Complex::with_val(options.prec, Constant::Nan)
                     }
                 }
                 "mod" => {
@@ -4544,7 +4586,7 @@ fn functions(
                             || b.real().is_zero()
                             || a.real().is_zero()
                         {
-                            Complex::with_val(options.prec, Nan)
+                            Complex::with_val(options.prec, Constant::Nan)
                         } else {
                             let a = a.real().clone().abs().to_integer().unwrap_or_default();
                             let b = b.real().clone().abs().to_integer().unwrap_or_default();
@@ -4561,7 +4603,7 @@ fn functions(
                             || b.real().is_zero()
                             || a.real().is_zero()
                         {
-                            Complex::with_val(options.prec, Nan)
+                            Complex::with_val(options.prec, Constant::Nan)
                         } else {
                             Complex::with_val(
                                 options.prec,
@@ -4575,11 +4617,9 @@ fn functions(
                         return Err("not enough args");
                     }
                 }
-                "is_nan" => Complex::with_val(options.prec, a.real().is_nan() as u8),
-                "is_inf" => Complex::with_val(options.prec, a.real().is_infinite() as u8),
-                "is_fin" | "is_finite" => {
-                    Complex::with_val(options.prec, a.real().is_finite() as u8)
-                }
+                "is_nan" => Complex::with_val(options.prec, a.real().is_nan()),
+                "is_inf" => Complex::with_val(options.prec, a.real().is_infinite()),
+                "is_fin" | "is_finite" => Complex::with_val(options.prec, a.real().is_finite()),
                 "isprime" | "is_prime" => {
                     if a.imag().is_zero()
                         && a.real().clone().fract().is_zero()
@@ -4587,11 +4627,11 @@ fn functions(
                     {
                         Complex::with_val(
                             options.prec,
-                            (a.real()
+                            a.real()
                                 .to_integer()
                                 .unwrap_or_default()
                                 .is_probably_prime(100)
-                                != IsPrime::No) as u8,
+                                != IsPrime::No,
                         )
                     } else {
                         Complex::new(options.prec)
@@ -4671,7 +4711,7 @@ fn functions(
                 }
                 #[cfg(feature = "fastrand")]
                 "rand_geometric" => {
-                    let q: Float = 1 - a.real().clone();
+                    let q: Float = -a.real().clone() + 1;
                     let n: Float = (Float::with_val(options.prec, fastrand::u128(..)) / u128::MAX)
                         .ln()
                         / q.ln();
@@ -4702,10 +4742,14 @@ fn functions(
     }
 }
 #[allow(clippy::type_complexity)]
-pub fn compute_funcvars(
-    function: &mut [NumStr<rug::Integer, rug::Float, rug::Complex>],
+pub fn compute_funcvars<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    function: &mut [NumStr<Integer, Float, Complex>],
     options: Options,
-    func_vars: &mut Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+    func_vars: &mut Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
 ) {
     let mut i = 0;
     while i < func_vars.len() {

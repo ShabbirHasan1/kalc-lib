@@ -1,6 +1,8 @@
 pub mod f64;
 pub mod rug;
+use std::cmp::Ordering;
 use std::fmt::{Display, LowerExp};
+use std::iter::Sum;
 use std::ops::*;
 pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     FloatShared<I, F, Self>
@@ -13,8 +15,12 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     + WithVal<(f64, f64)>
     + WithVal<(F, F)>
     + for<'a> WithVal<(&'a F, &'a F)>
+    + for<'a> WithVal<(&'a I, &'a I)>
     + WithVal<(I, I)>
+    + WithVal<(Constant, Constant)>
     + WithVal<F>
+    + for<'a> WithVal<&'a F>
+    + for<'a> WithVal<&'a I>
     + WithValImag<usize>
     + WithValImag<i128>
     + WithValImag<u128>
@@ -33,6 +39,7 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     + Pow<F>
     + Display
 {
+    fn total_cmp(&self, other: &Self) -> Ordering;
     fn real(&self) -> &F;
     fn imag(&self) -> &F;
     fn into_real_imag(self) -> (F, F);
@@ -49,6 +56,16 @@ pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
     + RemOp<usize>
     + LowerExp
 {
+    fn erf(self) -> Self;
+    fn ai(self) -> Self;
+    fn digamma(self) -> Self;
+    fn zeta(self) -> Self;
+    fn next_up(&mut self);
+    fn next_down(&mut self);
+    fn next_toward(&mut self, to: &Self);
+    fn erfc(self) -> Self;
+    fn cmp0(&self) -> Option<Ordering>;
+    fn is_nan(&self) -> bool;
     fn is_finite(&self) -> bool;
     fn is_infinite(&self) -> bool;
     fn is_sign_negative(&self) -> bool;
@@ -59,6 +76,7 @@ pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
     fn round(self) -> Self;
     fn gamma(self) -> Self;
     fn floor(self) -> Self;
+    fn ceil(self) -> Self;
     fn to_sign_string_exp(
         &self,
         radix: i32,
@@ -75,10 +93,10 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     + Pow<i32>
     + Pow<isize>
     + Pow<f64>
-    + Shr<i32>
-    + Shl<i32>
-    + Shr<u32>
-    + Shl<u32>
+    + Shr<i32, Output = Self>
+    + Shl<i32, Output = Self>
+    + Shr<u32, Output = Self>
+    + Shl<u32, Output = Self>
     + WithVal<usize>
     + WithVal<i128>
     + WithVal<u128>
@@ -93,6 +111,19 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     + Ops<I>
     + Ops<f64>
 {
+    fn sin_cos(self, cos: Self) -> (Self, Self);
+    fn sin(self) -> Self;
+    fn cos(self) -> Self;
+    fn tan(self) -> Self;
+    fn sinh(self) -> Self;
+    fn cosh(self) -> Self;
+    fn tanh(self) -> Self;
+    fn asin(self) -> Self;
+    fn acos(self) -> Self;
+    fn atan(self) -> Self;
+    fn asinh(self) -> Self;
+    fn acosh(self) -> Self;
+    fn atanh(self) -> Self;
     fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self>;
     fn exp(self) -> Self;
     fn new(prec: u32) -> Self;
@@ -126,7 +157,9 @@ pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
     + Display
     + Default
     + Compare
+    + for<'a> Sum<&'a Self>
 {
+    fn cmp0(&self) -> Ordering;
     fn div_rem(self, rhs: Self) -> (Self, Self);
     fn next_prime(self) -> Self;
     fn binomial(self, k: u32) -> Self;
@@ -148,8 +181,8 @@ pub enum IsPrime {
     No,
     Probably,
 }
-pub trait Shared: Operators + Clone {}
-impl<T> Shared for T where T: Operators + Clone {}
+pub trait Shared: Operators + Clone + Send + Sync {}
+impl<T> Shared for T where T: Operators + Clone + Send + Sync {}
 pub trait Operators:
     Ops<Self>
     + Ops<usize>
@@ -209,11 +242,23 @@ impl<K, T> Ops<T> for K where
 {
 }
 pub trait Equiv:
-    PartialEq + PartialEq<usize> + PartialEq<isize> + PartialEq<u32> + PartialEq<i32> + Sized
+    PartialEq
+    + PartialEq<usize>
+    + PartialEq<isize>
+    + PartialEq<u32>
+    + PartialEq<i32>
+    + PartialEq<f64>
+    + Sized
 {
 }
 impl<T> Equiv for T where
-    T: PartialEq + PartialEq<usize> + PartialEq<isize> + PartialEq<u32> + PartialEq<i32> + Sized
+    T: PartialEq
+        + PartialEq<usize>
+        + PartialEq<isize>
+        + PartialEq<u32>
+        + PartialEq<i32>
+        + PartialEq<f64>
+        + Sized
 {
 }
 pub trait Compare:
@@ -223,6 +268,9 @@ pub trait Compare:
     + PartialOrd<isize>
     + PartialOrd<u32>
     + PartialOrd<i32>
+    + PartialOrd<i128>
+    + PartialOrd<u128>
+    + PartialOrd<f64>
     + Sized
 {
 }
@@ -233,6 +281,8 @@ impl<T> Compare for T where
         + PartialOrd<isize>
         + PartialOrd<u32>
         + PartialOrd<i32>
+        + PartialOrd<i128>
+        + PartialOrd<u128>
         + PartialOrd<f64>
         + Sized
 {

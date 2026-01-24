@@ -3202,9 +3202,13 @@ fn is_digit(char: char, base: i32) -> bool {
     char.is_ascii_digit() || (base > 10 && (97..=97 + (base as u8 - 11)).contains(&(char as u8)))
 }
 #[allow(clippy::type_complexity)]
-pub fn simplify(
-    output: &mut Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    funcvars: &mut Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn simplify<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    output: &mut Vec<NumStr<Integer, Float, Complex>>,
+    funcvars: &mut Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: Options,
 ) {
     let mut i = 0;

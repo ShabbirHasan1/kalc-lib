@@ -11,11 +11,6 @@ use crate::{
 };
 #[cfg(feature = "rayon")]
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rug::{
-    Complex, Float, Integer,
-    float::Special::{Infinity, Nan},
-    ops::Pow,
-};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -1502,15 +1497,19 @@ pub fn to<
     })
 }
 #[allow(clippy::type_complexity)]
-pub fn mvec(
-    function: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn mvec<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    function: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     var: &str,
     start: isize,
     end: isize,
     mvec: bool,
     options: Options,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     let mut vec = Vec::new();
     let mut mat = Vec::new();
     let mut test = true;
@@ -1574,15 +1573,19 @@ pub fn mvec(
     }
 }
 #[allow(clippy::type_complexity)]
-pub fn sum(
-    function: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn sum<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    function: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     var: &str,
     mut start: Float,
     mut end: Float,
     product: bool,
     options: Options,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if start > end {
         (start, end) = (end, start)
     }
@@ -1594,7 +1597,10 @@ pub fn sum(
             .to_isize()
             .unwrap_or_default();
         let k = if end.is_sign_positive() { 1 } else { -1 };
-        let mut last = NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None));
+        let mut last = NumStr::new(Number::from(
+            Complex::with_val(options.prec, Constant::Nan),
+            None,
+        ));
         let mut value = do_math_with_var(
             function.clone(),
             options,
@@ -1605,7 +1611,7 @@ pub fn sum(
         while last != value {
             if j > 10000 {
                 return Ok(NumStr::new(Number::from(
-                    Complex::with_val(options.prec, Nan),
+                    Complex::with_val(options.prec, Constant::Nan),
                     None,
                 )));
             }
@@ -2830,11 +2836,15 @@ pub fn variance<
     )
 }
 #[allow(clippy::type_complexity)]
-pub fn recursion(
-    mut func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
-    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+pub fn recursion<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
+    mut func: Vec<NumStr<Integer, Float, Complex>>,
     options: Options,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     for fv in func_vars.clone() {
         if fv.0.ends_with(')') {
             let mut cont = false;
@@ -3371,17 +3381,21 @@ fn subfactorial_recursion<
 }
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::type_complexity)]
-pub fn surface_area(
-    func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn surface_area<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: Options,
     varx: String,
     mut startx: Complex,
-    endx: Number<rug::Integer, rug::Float, rug::Complex>,
+    endx: Number<Integer, Float, Complex>,
     vary: String,
-    starty_func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    endy_func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+    starty_func: Vec<NumStr<Integer, Float, Complex>>,
+    endy_func: Vec<NumStr<Integer, Float, Complex>>,
+) -> Result<Number<Integer, Float, Complex>, &'static str> {
     if starty_func.is_empty() || endy_func.is_empty() {
         return Err("bad start/end");
     }
@@ -3779,20 +3793,24 @@ pub fn surface_area(
     }
 }
 #[allow(clippy::type_complexity)]
-pub fn length(
-    func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn length<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: Options,
     var: String,
     mut start: Complex,
-    end: Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Result<Number<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+    end: Number<Integer, Float, Complex>,
+) -> Result<Number<Integer, Float, Complex>, &'static str> {
     let points = options.prec as usize / 4;
     let units = end.units;
     let end = end.number;
     let delta: Complex = (end.clone() - start.clone()) / points;
     let delta2: Complex = sqr(delta.clone());
-    let mut x0: NumStr<rug::Integer, rug::Float, rug::Complex> = do_math_with_var(
+    let mut x0: NumStr<Integer, Float, Complex> = do_math_with_var(
         func.clone(),
         options,
         func_vars.clone(),
@@ -3850,18 +3868,83 @@ pub fn length(
     }
     Ok(Number::from(length, length_units))
 }
+#[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments)]
+fn check_bounds<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
+    options: Options,
+    var: String,
+    delta: &mut Complex,
+    units: Option<Units>,
+    x0: &mut NumStr<Integer, Float, Complex>,
+    start: &mut Complex,
+    right: bool,
+    compute: bool,
+) -> Result<(), &'static str> {
+    let mut has = false;
+    if let Ok(a) = x0.num() {
+        if !a.number.real().is_finite() {
+            let points = options.prec as usize / 4;
+            let end = if right {
+                delta.clone() * points + start.clone()
+            } else {
+                start.clone() - delta.clone() * points
+            };
+            if right {
+                *start += delta.clone() >> 4;
+            } else {
+                *start -= delta.clone() >> 4;
+            }
+            *delta = if right {
+                (end.clone() - start.clone()) / points
+            } else {
+                (start.clone() - end.clone()) / points
+            };
+            *x0 = do_math_with_var(
+                func.clone(),
+                options,
+                func_vars.clone(),
+                &var,
+                NumStr::new(Number::from(start.clone(), units)),
+            )?;
+            has = true
+        }
+    }
+    if !has && compute {
+        *x0 = do_math_with_var(
+            func.clone(),
+            options,
+            func_vars.clone(),
+            &var,
+            NumStr::new(Number::from(start.clone(), units)),
+        )?;
+        check_bounds(
+            func, func_vars, options, var, delta, units, x0, start, right, false,
+        )?
+    }
+    Ok(())
+}
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::type_complexity)]
-pub fn area(
-    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    mut func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn area<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut func: Vec<NumStr<Integer, Float, Complex>>,
+    mut func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: Options,
     var: String,
     mut start: Complex,
-    mut end: Number<rug::Integer, rug::Float, rug::Complex>,
+    mut end: Number<Integer, Float, Complex>,
     nth: Complex,
     combine: bool,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     let mut negate = false;
     if start.real() > end.number.real() && nth == 1 {
         negate = true;
@@ -3907,7 +3990,7 @@ pub fn area(
             func = func[last..func.len().saturating_sub(1)].to_vec();
         }
     }
-    let mut areavec: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
+    let mut areavec: Vec<Number<Integer, Float, Complex>> = Vec::new();
     let div = Float::with_val(options.prec, 0.5).pow(options.prec / 2);
     let mut delta: Complex = (end.clone() - start.clone()) / points;
     let mut area: Complex = Complex::new(options.prec);
@@ -3928,62 +4011,6 @@ pub fn area(
         };
     }
     {
-        #[allow(clippy::type_complexity)]
-        fn check_bounds(
-            func: Vec<NumStr<Integer, Float, Complex>>,
-            func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
-            options: Options,
-            var: String,
-            delta: &mut Complex,
-            units: Option<Units>,
-            x0: &mut NumStr<Integer, Float, Complex>,
-            start: &mut Complex,
-            right: bool,
-            compute: bool,
-        ) -> Result<(), &'static str> {
-            let mut has = false;
-            if let Ok(a) = x0.num() {
-                if !a.number.real().is_finite() {
-                    let points = options.prec as usize / 4;
-                    let end = if right {
-                        delta.clone() * points + start.clone()
-                    } else {
-                        start.clone() - delta.clone() * points
-                    };
-                    if right {
-                        *start += delta.clone() >> 4;
-                    } else {
-                        *start -= delta.clone() >> 4;
-                    }
-                    *delta = if right {
-                        (end.clone() - start.clone()) / points
-                    } else {
-                        (start.clone() - end.clone()) / points
-                    };
-                    *x0 = do_math_with_var(
-                        func.clone(),
-                        options,
-                        func_vars.clone(),
-                        &var,
-                        NumStr::new(Number::from(start.clone(), units)),
-                    )?;
-                    has = true
-                }
-            }
-            if !has && compute {
-                *x0 = do_math_with_var(
-                    func.clone(),
-                    options,
-                    func_vars.clone(),
-                    &var,
-                    NumStr::new(Number::from(start.clone(), units)),
-                )?;
-                check_bounds(
-                    func, func_vars, options, var, delta, units, x0, start, right, false,
-                )?
-            }
-            Ok(())
-        }
         check_bounds(
             func.clone(),
             func_vars.clone(),
@@ -4152,7 +4179,7 @@ pub fn area(
                     ]);
                     start = Complex::with_val(options.prec, -1);
                     end = Complex::with_val(options.prec, 1);
-                    delta = 2 * end.clone() / points;
+                    delta = end.clone() / points * 2;
                     check_bounds(
                         func.clone(),
                         func_vars.clone(),
@@ -4322,35 +4349,35 @@ pub fn area(
     let body = |i: usize| -> Result<
         (
             Option<Complex>,
-            Option<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+            Option<Vec<Number<Integer, Float, Complex>>>,
         ),
         &str,
     > {
         let point = if i + 1 == points {
             end.clone()
         } else {
-            start.clone() + (i + 1) * delta.clone()
+            start.clone() + delta.clone() * (i + 1)
         };
         let x0 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            NumStr::new(Number::from(point.clone() - 4 * h.clone(), units)),
+            NumStr::new(Number::from(point.clone() - h.clone() * 4, units)),
         )?;
         let x1 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            NumStr::new(Number::from(point.clone() - 3 * h.clone(), units)),
+            NumStr::new(Number::from(point.clone() - h.clone() * 3, units)),
         )?;
         let x2 = do_math_with_var(
             func.clone(),
             options,
             func_vars.clone(),
             &var,
-            NumStr::new(Number::from(point.clone() - 2 * h.clone(), units)),
+            NumStr::new(Number::from(point.clone() - h.clone() * 2, units)),
         )?;
         let x3 = do_math_with_var(
             func.clone(),
@@ -4376,10 +4403,10 @@ pub fn area(
                 if nth != 1.0 {
                     let nt = pow_nth(end.clone() - point.clone() + delta.clone(), nth.clone() - 1);
                     n0 = nx0.number * nt;
-                    let n: Complex = end.clone() - point.clone() + 3 * h.clone();
+                    let n: Complex = end.clone() - point.clone() + h.clone() * 3;
                     let nt = pow_nth(n, nth.clone() - 1);
                     n1 = nx1.number * nt;
-                    let n: Complex = end.clone() - point.clone() + 2 * h.clone();
+                    let n: Complex = end.clone() - point.clone() + h.clone() * 2;
                     let nt = pow_nth(n, nth.clone() - 1);
                     n2 = nx2.number * nt;
                     let n: Complex = end.clone() - point.clone() + h.clone();
@@ -4396,7 +4423,7 @@ pub fn area(
                     n4 = nx4.number;
                 }
                 Ok((
-                    Some(2 * h.clone() * (7 * (n0 + n4) + 12 * n2 + 32 * (n1 + n3)) / 45),
+                    Some(h.clone() * 2 * ((n0 + n4) * 7 + n2 * 12 + (n1 + n3) * 32) / 45),
                     None,
                 ))
             }
@@ -4412,7 +4439,7 @@ pub fn area(
                         func_vars.clone(),
                         &var,
                         NumStr::new(Number::from(
-                            point.clone() - 3 * h.clone() + div.clone(),
+                            point.clone() - h.clone() * 3 + div.clone(),
                             units,
                         )),
                     )?
@@ -4423,7 +4450,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            NumStr::new(Number::from(point.clone() - 3 * h.clone(), units)),
+                            NumStr::new(Number::from(point.clone() - h.clone() * 3, units)),
                         )?
                         .num()?
                         .number)
@@ -4434,7 +4461,7 @@ pub fn area(
                         func_vars.clone(),
                         &var,
                         NumStr::new(Number::from(
-                            point.clone() - 2 * h.clone() + div.clone(),
+                            point.clone() - h.clone() * 2 + div.clone(),
                             units,
                         )),
                     )?
@@ -4445,7 +4472,7 @@ pub fn area(
                             options,
                             func_vars.clone(),
                             &var,
-                            NumStr::new(Number::from(point.clone() - 2 * h.clone(), units)),
+                            NumStr::new(Number::from(point.clone() - h.clone() * 2, units)),
                         )?
                         .num()?
                         .number)
@@ -4506,10 +4533,10 @@ pub fn area(
                     } else {
                         n0 = nx0.number;
                     }
-                    let n: Complex = end.clone() - point.clone() + 3 * h.clone();
+                    let n: Complex = end.clone() - point.clone() + h.clone() * 3;
                     let nt: Complex = pow_nth(n, nth.clone() - 1);
                     n1 = nx1 * nt;
-                    let n: Complex = end.clone() - point.clone() + 2 * h.clone();
+                    let n: Complex = end.clone() - point.clone() + h.clone() * 2;
                     let nt: Complex = pow_nth(n, nth.clone() - 1);
                     n2 = nx2 * nt;
                     let n: Complex = end.clone() - point.clone() + h.clone();
@@ -4526,7 +4553,7 @@ pub fn area(
                     n4 = nx4;
                 }
                 Ok((
-                    Some(2 * h.clone() * (7 * (n0 + n4.clone()) + 12 * n2 + 32 * (n1 + n3)) / 45),
+                    Some(h.clone() * 2 * ((n0 + n4.clone()) * 7 + n2 * 12 + (n1 + n3) * 32) / 45),
                     None,
                 ))
             }
@@ -4542,10 +4569,10 @@ pub fn area(
                         let nt =
                             pow_nth(end.clone() - point.clone() + delta.clone(), nth.clone() - 1);
                         n0 = nx0[i].number.clone() * nt;
-                        let n: Complex = end.clone() - point.clone() + 3 * h.clone();
+                        let n: Complex = end.clone() - point.clone() + h.clone() * 3;
                         let nt = pow_nth(n, nth.clone() - 1);
                         n1 = nx1[i].number.clone() * nt;
-                        let n: Complex = end.clone() - point.clone() + 2 * h.clone();
+                        let n: Complex = end.clone() - point.clone() + h.clone() * 2;
                         let nt = pow_nth(n, nth.clone() - 1);
                         n2 = nx2[i].number.clone() * nt;
                         let n: Complex = end.clone() - point.clone() + h.clone();
@@ -4562,7 +4589,7 @@ pub fn area(
                         n4 = nx4[i].number.clone();
                     }
                     areavec.push(Number::from(
-                        2 * h.clone() * (7 * (n0 + n4) + 12 * n2 + 32 * (n1 + n3)) / 45,
+                        h.clone() * 2 * ((n0 + n4) * 7 + n2 * 12 + (n1 + n3) * 32) / 45,
                         match (units, nx1[i].units) {
                             (Some(a), Some(b)) => Some(a.mul(&b)),
                             (Some(a), None) | (None, Some(a)) => Some(a),
@@ -4582,7 +4609,7 @@ pub fn area(
         Result<
             (
                 Option<Complex>,
-                Option<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+                Option<Vec<Number<Integer, Float, Complex>>>,
             ),
             &str,
         >,
@@ -4636,22 +4663,29 @@ pub fn area(
                         a.units,
                     )
                 })
-                .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
+                .collect::<Vec<Number<Integer, Float, Complex>>>(),
         ))
     }
 }
 #[allow(clippy::type_complexity)]
-pub fn iter(
-    func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn iter<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: Options,
     var: String,
-    mut x: NumStr<rug::Integer, rug::Float, rug::Complex>,
+    mut x: NumStr<Integer, Float, Complex>,
     n: Float,
     all: bool,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if n.is_infinite() {
-        let mut last = NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None));
+        let mut last = NumStr::new(Number::from(
+            Complex::with_val(options.prec, Constant::Nan),
+            None,
+        ));
         let mut j = 0;
         if all {
             if let Num(num) = x.clone() {
@@ -4659,7 +4693,7 @@ pub fn iter(
                 loop {
                     if j > 10000 {
                         return Ok(NumStr::new(Number::from(
-                            Complex::with_val(options.prec, Nan),
+                            Complex::with_val(options.prec, Constant::Nan),
                             None,
                         )));
                     }
@@ -4677,7 +4711,7 @@ pub fn iter(
                 loop {
                     if j > 10000 {
                         return Ok(NumStr::new(Number::from(
-                            Complex::with_val(options.prec, Nan),
+                            Complex::with_val(options.prec, Constant::Nan),
                             None,
                         )));
                     }
@@ -4697,7 +4731,7 @@ pub fn iter(
             while last != x {
                 if j > 10000 {
                     return Ok(NumStr::new(Number::from(
-                        Complex::with_val(options.prec, Nan),
+                        Complex::with_val(options.prec, Constant::Nan),
                         None,
                     )));
                 }
@@ -4740,13 +4774,17 @@ pub fn iter(
     }
 }
 #[allow(clippy::type_complexity)]
-pub fn solve(
-    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    mut func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn solve<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut func: Vec<NumStr<Integer, Float, Complex>>,
+    mut func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     mut options: Options,
     var: String,
-    x: Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+    x: Number<Integer, Float, Complex>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     //newtons method, x-f(x)/f'(x)
     let units = x.units;
     let mut x = x.number;
@@ -4770,7 +4808,7 @@ pub fn solve(
                 Number::from(Complex::with_val(options.prec, (4, -4)), None),
             ]
         };
-        let mut values: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
+        let mut values: Vec<Number<Integer, Float, Complex>> = Vec::new();
         let mut first = true;
         'main: for p in points {
             let v = solve(
@@ -4796,12 +4834,12 @@ pub fn solve(
                     func.push(RightBracket);
                 } else {
                     for n1 in &values {
-                        if -(n1.number.real() - v.number.real().clone())
+                        if -(n1.number.real().clone() - v.number.real())
                             .clone()
                             .abs()
                             .log2()
                             > options.prec / 16
-                            && -(n1.number.imag() - v.number.imag().clone())
+                            && -(n1.number.imag().clone() - v.number.imag())
                                 .clone()
                                 .abs()
                                 .log2()
@@ -4821,7 +4859,10 @@ pub fn solve(
             }
         }
         Ok(if values.is_empty() {
-            NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
+            NumStr::new(Number::from(
+                Complex::with_val(options.prec, Constant::Nan),
+                None,
+            ))
         } else if values.len() == 1 {
             NumStr::new(values[0].clone())
         } else {
@@ -4890,20 +4931,24 @@ pub fn solve(
             Ok(NumStr::new(Number::from(x, units)))
         } else {
             Ok(NumStr::new(Number::from(
-                Complex::with_val(options.prec, Nan),
+                Complex::with_val(options.prec, Constant::Nan),
                 None,
             )))
         }
     }
 }
 #[allow(clippy::type_complexity)]
-pub fn extrema(
-    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    mut func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn extrema<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut func: Vec<NumStr<Integer, Float, Complex>>,
+    mut func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     mut options: Options,
     var: String,
-    x: Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+    x: Number<Integer, Float, Complex>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     //newtons method, x-f'(x)/f''(x)
     let units = x.units;
     let mut x = x.number;
@@ -5035,30 +5080,34 @@ pub fn extrema(
         Ok(v)
     } else {
         Ok(Vector(vec![Number::from(
-            Complex::with_val(options.prec, Nan),
+            Complex::with_val(options.prec, Constant::Nan),
             None,
         )]))
     }
 }
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::type_complexity)]
-pub fn taylor(
-    mut func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    mut func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn taylor<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut func: Vec<NumStr<Integer, Float, Complex>>,
+    mut func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     mut options: Options,
     var: String,
-    x: Option<Number<rug::Integer, rug::Float, rug::Complex>>,
-    a: Number<rug::Integer, rug::Float, rug::Complex>,
+    x: Option<Number<Integer, Float, Complex>>,
+    a: Number<Integer, Float, Complex>,
     nth: usize,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     fn fact<
         I: crate::types::Integer<F, C>,
         F: crate::types::Float<I, C>,
         C: crate::types::Complex<I, F>,
     >(
         n: usize,
-    ) -> Integer {
-        let mut fact = Integer::from(1);
+    ) -> I {
+        let mut fact = I::from(1);
         for i in 1..=n {
             fact *= i
         }
@@ -5235,15 +5284,19 @@ fn set_slope_prec(prec: u32, nth: u32) -> (u32, u32) {
 }
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::type_complexity)]
-pub fn slope(
-    func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn slope<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     mut options: Options,
     var: String,
-    mut point: Number<rug::Integer, rug::Float, rug::Complex>,
+    mut point: Number<Integer, Float, Complex>,
     combine: bool,
     nth: u32,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     let oop = options.prec;
     if nth == 0 {
         do_math_with_var(
@@ -5327,7 +5380,7 @@ pub fn slope(
                     Ok(n)
                 } else {
                     Ok(NumStr::new(Number::from(
-                        Complex::with_val(options.prec, Nan),
+                        Complex::with_val(options.prec, Constant::Nan),
                         None,
                     )))
                 }
@@ -5360,7 +5413,7 @@ pub fn slope(
                         {
                             Number::from((left + right) / 2, units)
                         } else {
-                            Number::from(Complex::with_val(options.prec, Nan), None)
+                            Number::from(Complex::with_val(options.prec, Constant::Nan), None)
                         }
                     })
                 }
@@ -5374,19 +5427,23 @@ pub fn slope(
 }
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::type_complexity)]
-pub fn slopesided(
-    func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn slopesided<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    func: Vec<NumStr<Integer, Float, Complex>>,
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     mut options: Options,
     var: String,
-    point: Number<rug::Integer, rug::Float, rug::Complex>,
+    point: Number<Integer, Float, Complex>,
     combine: bool,
     nth: u32,
     right: bool,
-    val: Option<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    val2: Option<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+    val: Option<NumStr<Integer, Float, Complex>>,
+    val2: Option<NumStr<Integer, Float, Complex>>,
     prec: Option<u32>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if nth == 0 {
         return do_math_with_var(
             func.clone(),
@@ -5539,7 +5596,7 @@ pub fn slopesided(
                             },
                         )
                     })
-                    .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
+                    .collect::<Vec<Number<Integer, Float, Complex>>>(),
             );
             if oop != 0 {
                 v.set_prec(oop);
@@ -5663,7 +5720,7 @@ pub fn slopesided(
                                 },
                             )
                         })
-                        .collect::<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>(),
+                        .collect::<Vec<Number<Integer, Float, Complex>>>(),
                 );
                 if oop != 0 {
                     v.set_prec(oop)
@@ -5681,7 +5738,11 @@ pub enum LimSide {
     Both,
 }
 #[allow(clippy::type_complexity)]
-pub fn limit(
+pub fn limit<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     mut func: Vec<NumStr<Integer, Float, Complex>>,
     mut func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     mut options: Options,
@@ -5734,91 +5795,72 @@ pub fn limit(
                 } else if n1.real().is_sign_positive() != n2.real().is_sign_positive()
                     || n1.imag().is_sign_positive() != n2.imag().is_sign_positive()
                 {
-                    NumStr::new(Number::from(Complex::with_val(options.prec, Nan), None))
+                    NumStr::new(Number::from(
+                        Complex::with_val(options.prec, Constant::Nan),
+                        None,
+                    ))
                 } else if n2.real().is_infinite() || n2.imag().is_infinite() {
                     NumStr::new(Number::from(
                         match (n2.real().is_infinite(), n2.imag().is_infinite()) {
                             (true, true) => {
                                 match (n1.real().is_sign_positive(), n1.imag().is_sign_positive()) {
-                                    (true, true) => {
-                                        Complex::with_val(options.prec, (Infinity, Infinity))
-                                    }
+                                    (true, true) => Complex::with_val(
+                                        options.prec,
+                                        (Constant::Infinity, Constant::Infinity),
+                                    ),
                                     (true, false) => Complex::with_val(
                                         options.prec,
-                                        (Infinity, -Float::with_val(options.prec, Infinity)),
+                                        (Constant::Infinity, Constant::NegInfinity),
                                     ),
                                     (false, true) => Complex::with_val(
                                         options.prec,
-                                        (-Float::with_val(options.prec, Infinity), Infinity),
+                                        (Constant::NegInfinity, Constant::Infinity),
                                     ),
-                                    (false, false) => {
-                                        -Complex::with_val(options.prec, (Infinity, Infinity))
-                                    }
+                                    (false, false) => -Complex::with_val(
+                                        options.prec,
+                                        (Constant::Infinity, Constant::Infinity),
+                                    ),
                                 }
                             }
                             (true, false) => {
-                                if n1.real().is_sign_positive() {
-                                    Complex::with_val(
-                                        options.prec,
-                                        (
-                                            Infinity,
-                                            if (n1.imag() - n2.imag().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                n2.imag().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                        ),
-                                    )
-                                } else {
-                                    -Complex::with_val(
-                                        options.prec,
-                                        (
-                                            Infinity,
-                                            if (n1.imag() - n2.imag().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                -n2.imag().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                        ),
-                                    )
-                                }
+                                Complex::with_val(
+                                    options.prec,
+                                    if n1.real().is_sign_positive() {
+                                        Constant::Infinity
+                                    } else {
+                                        Constant::NegInfinity
+                                    },
+                                ) + Complex::with_val_imag(
+                                    options.prec,
+                                    if (n1.imag().clone() - n2.imag()).abs().log2()
+                                        < options.prec as i32 / -16
+                                    {
+                                        n2.imag().clone()
+                                    } else {
+                                        Float::new(options.prec)
+                                    },
+                                )
                             }
                             (false, true) => {
-                                if n1.imag().is_sign_positive() {
-                                    Complex::with_val(
-                                        options.prec,
-                                        (
-                                            if (n1.real() - n2.real().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                n2.real().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                            Infinity,
-                                        ),
-                                    )
-                                } else {
-                                    -Complex::with_val(
-                                        options.prec,
-                                        (
-                                            if (n1.real() - n2.real().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                -n2.real().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                            Infinity,
-                                        ),
-                                    )
-                                }
+                                Complex::with_val(
+                                    options.prec,
+                                    if (n1.real().clone() - n2.real()).abs().log2()
+                                        < options.prec as i32 / -16
+                                    {
+                                        n2.real().clone()
+                                    } else {
+                                        Float::new(options.prec)
+                                    },
+                                ) + Complex::with_val_imag(
+                                    options.prec,
+                                    if n1.imag().is_sign_positive() {
+                                        Constant::Infinity
+                                    } else {
+                                        Constant::NegInfinity
+                                    },
+                                )
                             }
-                            (false, false) => Complex::with_val(options.prec, Nan),
+                            (false, false) => Complex::with_val(options.prec, Constant::Nan),
                         },
                         units,
                     ))
@@ -5834,8 +5876,9 @@ pub fn limit(
                                     .pow((options.prec / 2) as f64 + 13.0 / 0.7)
                                     - 7
                             } else {
-                                7 - Complex::with_val(options.prec, 2)
+                                -Complex::with_val(options.prec, 2)
                                     .pow((options.prec / 2) as f64 + 13.0 / 0.7)
+                                    + 7
                             },
                             xunits,
                         )),
@@ -5852,7 +5895,7 @@ pub fn limit(
                     let n3i = n3.imag().clone().abs();
                     NumStr::new(Number::from(
                         if !sign {
-                            Complex::with_val(options.prec, Nan)
+                            Complex::with_val(options.prec, Constant::Nan)
                         } else {
                             match (n3r > n2r && n2r > n1r, n3i > n2i && n2i > n1i) {
                                 (true, true) => {
@@ -5860,85 +5903,63 @@ pub fn limit(
                                         n1.real().is_sign_positive(),
                                         n1.imag().is_sign_positive(),
                                     ) {
-                                        (true, true) => {
-                                            Complex::with_val(options.prec, (Infinity, Infinity))
-                                        }
+                                        (true, true) => Complex::with_val(
+                                            options.prec,
+                                            (Constant::Infinity, Constant::Infinity),
+                                        ),
                                         (true, false) => Complex::with_val(
                                             options.prec,
-                                            (Infinity, -Float::with_val(options.prec, Infinity)),
+                                            (Constant::Infinity, Constant::NegInfinity),
                                         ),
                                         (false, true) => Complex::with_val(
                                             options.prec,
-                                            (-Float::with_val(options.prec, Infinity), Infinity),
+                                            (Constant::NegInfinity, Constant::Infinity),
                                         ),
-                                        (false, false) => {
-                                            -Complex::with_val(options.prec, (Infinity, Infinity))
-                                        }
+                                        (false, false) => -Complex::with_val(
+                                            options.prec,
+                                            (Constant::Infinity, Constant::Infinity),
+                                        ),
                                     }
                                 }
                                 (true, false) => {
-                                    if n1.real().is_sign_positive() {
-                                        Complex::with_val(
-                                            options.prec,
-                                            (
-                                                Infinity,
-                                                if (n2i - n3i.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    n3i
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                            ),
-                                        )
-                                    } else {
-                                        -Complex::with_val(
-                                            options.prec,
-                                            (
-                                                Infinity,
-                                                if (n2i - n3i.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    -n3i
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                            ),
-                                        )
-                                    }
+                                    Complex::with_val(
+                                        options.prec,
+                                        if n1.real().is_sign_positive() {
+                                            Constant::Infinity
+                                        } else {
+                                            Constant::NegInfinity
+                                        },
+                                    ) + Complex::with_val_imag(
+                                        options.prec,
+                                        if (n2i - n3i.clone()).abs().log2()
+                                            < options.prec as i32 / -16
+                                        {
+                                            n3i
+                                        } else {
+                                            Float::new(options.prec)
+                                        },
+                                    )
                                 }
                                 (false, true) => {
-                                    if n1.imag().is_sign_positive() {
-                                        Complex::with_val(
-                                            options.prec,
-                                            (
-                                                if (n2r - n3r.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    n3r
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                                Infinity,
-                                            ),
-                                        )
-                                    } else {
-                                        -Complex::with_val(
-                                            options.prec,
-                                            (
-                                                if (n2r - n3r.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    -n3r
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                                Infinity,
-                                            ),
-                                        )
-                                    }
+                                    Complex::with_val(
+                                        options.prec,
+                                        if (n2r - n3r.clone()).abs().log2()
+                                            < options.prec as i32 / -16
+                                        {
+                                            n3r
+                                        } else {
+                                            Float::new(options.prec)
+                                        },
+                                    ) + Complex::with_val_imag(
+                                        options.prec,
+                                        if n1.imag().is_sign_positive() {
+                                            Constant::Infinity
+                                        } else {
+                                            Constant::NegInfinity
+                                        },
+                                    )
                                 }
-                                (false, false) => Complex::with_val(options.prec, Nan),
+                                (false, false) => Complex::with_val(options.prec, Constant::Nan),
                             }
                         },
                         units,
@@ -5948,7 +5969,7 @@ pub fn limit(
                 Ok(n)
             }
             (Vector(v1), Vector(v2)) => {
-                let mut v3: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
+                let mut v3: Vec<Number<Integer, Float, Complex>> = Vec::new();
                 let mut vec = Vec::with_capacity(v1.len().max(1));
                 for (i, (n1, n2)) in v1.iter().zip(v2).enumerate() {
                     let units = n1.units;
@@ -5962,7 +5983,7 @@ pub fn limit(
                         } else if n1.real().is_sign_positive() != n2.real().is_sign_positive()
                             || n1.imag().is_sign_positive() != n2.imag().is_sign_positive()
                         {
-                            Complex::with_val(options.prec, Nan)
+                            Complex::with_val(options.prec, Constant::Nan)
                         } else if n2.real().is_infinite() || n2.imag().is_infinite() {
                             match (n2.real().is_infinite(), n2.imag().is_infinite()) {
                                 (true, true) => {
@@ -5970,85 +5991,59 @@ pub fn limit(
                                         n1.real().is_sign_positive(),
                                         n1.imag().is_sign_positive(),
                                     ) {
-                                        (true, true) => {
-                                            Complex::with_val(options.prec, (Infinity, Infinity))
-                                        }
+                                        (true, true) => Complex::with_val(
+                                            options.prec,
+                                            (Constant::Infinity, Constant::Infinity),
+                                        ),
                                         (true, false) => Complex::with_val(
                                             options.prec,
-                                            (Infinity, -Float::with_val(options.prec, Infinity)),
+                                            (Constant::Infinity, Constant::NegInfinity),
                                         ),
                                         (false, true) => Complex::with_val(
                                             options.prec,
-                                            (-Float::with_val(options.prec, Infinity), Infinity),
+                                            (Constant::NegInfinity, Constant::Infinity),
                                         ),
-                                        (false, false) => {
-                                            -Complex::with_val(options.prec, (Infinity, Infinity))
-                                        }
+                                        (false, false) => -Complex::with_val(
+                                            options.prec,
+                                            (Constant::Infinity, Constant::Infinity),
+                                        ),
                                     }
                                 }
                                 (true, false) => {
-                                    if n1.real().is_sign_positive() {
-                                        Complex::with_val(
-                                            options.prec,
-                                            (
-                                                Infinity,
-                                                if (n1.imag() - n2.imag().clone()).abs().log10()
-                                                    <= -10
-                                                {
-                                                    n2.imag().clone()
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                            ),
-                                        )
-                                    } else {
-                                        -Complex::with_val(
-                                            options.prec,
-                                            (
-                                                Infinity,
-                                                if (n1.imag() - n2.imag().clone()).abs().log10()
-                                                    <= -10
-                                                {
-                                                    -n2.imag().clone()
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                            ),
-                                        )
-                                    }
+                                    Complex::with_val(
+                                        options.prec,
+                                        if n1.real().is_sign_positive() {
+                                            Constant::Infinity
+                                        } else {
+                                            Constant::NegInfinity
+                                        },
+                                    ) + Complex::with_val_imag(
+                                        options.prec,
+                                        if (n1.imag().clone() - n2.imag()).abs().log10() <= -10 {
+                                            n2.imag().clone()
+                                        } else {
+                                            Float::new(options.prec)
+                                        },
+                                    )
                                 }
                                 (false, true) => {
-                                    if n1.imag().is_sign_positive() {
-                                        Complex::with_val(
-                                            options.prec,
-                                            (
-                                                if (n1.real() - n2.real().clone()).abs().log10()
-                                                    <= -10
-                                                {
-                                                    n2.real().clone()
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                                Infinity,
-                                            ),
-                                        )
-                                    } else {
-                                        -Complex::with_val(
-                                            options.prec,
-                                            (
-                                                if (n1.real() - n2.real().clone()).abs().log10()
-                                                    <= -10
-                                                {
-                                                    -n2.real().clone()
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                                Infinity,
-                                            ),
-                                        )
-                                    }
+                                    Complex::with_val(
+                                        options.prec,
+                                        if (n1.real().clone() - n2.real()).abs().log10() <= -10 {
+                                            n2.real().clone()
+                                        } else {
+                                            Float::new(options.prec)
+                                        },
+                                    ) + Complex::with_val_imag(
+                                        options.prec,
+                                        if n1.imag().is_sign_positive() {
+                                            Constant::Infinity
+                                        } else {
+                                            Constant::NegInfinity
+                                        },
+                                    )
                                 }
-                                (false, false) => Complex::with_val(options.prec, Nan),
+                                (false, false) => Complex::with_val(options.prec, Constant::Nan),
                             }
                         } else {
                             if v3.is_empty() {
@@ -6063,8 +6058,9 @@ pub fn limit(
                                                 .pow((options.prec / 2) as f64 + 13.0 / 0.7)
                                                 - 7
                                         } else {
-                                            7 - Complex::with_val(options.prec, 2)
+                                            -Complex::with_val(options.prec, 2)
                                                 .pow((options.prec / 2) as f64 + 13.0 / 0.7)
+                                                + 7
                                         },
                                         xunits,
                                     )),
@@ -6081,7 +6077,7 @@ pub fn limit(
                             let n2i = n2.imag().clone().abs();
                             let n3i = v3.imag().clone().abs();
                             if !sign {
-                                Complex::with_val(options.prec, Nan)
+                                Complex::with_val(options.prec, Constant::Nan)
                             } else {
                                 match (n3r > n2r && n2r > n1r, n3i > n2i && n2i > n1i) {
                                     (true, true) => {
@@ -6091,91 +6087,63 @@ pub fn limit(
                                         ) {
                                             (true, true) => Complex::with_val(
                                                 options.prec,
-                                                (Infinity, Infinity),
+                                                (Constant::Infinity, Constant::Infinity),
                                             ),
                                             (true, false) => Complex::with_val(
                                                 options.prec,
-                                                (
-                                                    Infinity,
-                                                    -Float::with_val(options.prec, Infinity),
-                                                ),
+                                                (Constant::Infinity, Constant::NegInfinity),
                                             ),
                                             (false, true) => Complex::with_val(
                                                 options.prec,
-                                                (
-                                                    -Float::with_val(options.prec, Infinity),
-                                                    Infinity,
-                                                ),
+                                                (Constant::NegInfinity, Constant::Infinity),
                                             ),
                                             (false, false) => -Complex::with_val(
                                                 options.prec,
-                                                (Infinity, Infinity),
+                                                (Constant::Infinity, Constant::Infinity),
                                             ),
                                         }
                                     }
                                     (true, false) => {
-                                        if n1.real().is_sign_positive() {
-                                            Complex::with_val(
-                                                options.prec,
-                                                (
-                                                    Infinity,
-                                                    if (n2i - n3i.clone()).abs().log2()
-                                                        < options.prec as i32 / -16
-                                                    {
-                                                        n3i
-                                                    } else {
-                                                        Float::new(options.prec)
-                                                    },
-                                                ),
-                                            )
-                                        } else {
-                                            -Complex::with_val(
-                                                options.prec,
-                                                (
-                                                    Infinity,
-                                                    if (n2i - n3i.clone()).abs().log2()
-                                                        < options.prec as i32 / -16
-                                                    {
-                                                        -n3i
-                                                    } else {
-                                                        Float::new(options.prec)
-                                                    },
-                                                ),
-                                            )
-                                        }
+                                        Complex::with_val(
+                                            options.prec,
+                                            if n1.real().is_sign_positive() {
+                                                Constant::Infinity
+                                            } else {
+                                                Constant::NegInfinity
+                                            },
+                                        ) + Complex::with_val_imag(
+                                            options.prec,
+                                            if (n2i - n3i.clone()).abs().log2()
+                                                < options.prec as i32 / -16
+                                            {
+                                                n3i
+                                            } else {
+                                                Float::new(options.prec)
+                                            },
+                                        )
                                     }
                                     (false, true) => {
-                                        if n1.imag().is_sign_positive() {
-                                            Complex::with_val(
-                                                options.prec,
-                                                (
-                                                    if (n2r - n3r.clone()).abs().log2()
-                                                        < options.prec as i32 / -16
-                                                    {
-                                                        n3r
-                                                    } else {
-                                                        Float::new(options.prec)
-                                                    },
-                                                    Infinity,
-                                                ),
-                                            )
-                                        } else {
-                                            -Complex::with_val(
-                                                options.prec,
-                                                (
-                                                    if (n2r - n3r.clone()).abs().log2()
-                                                        < options.prec as i32 / -16
-                                                    {
-                                                        -n3r
-                                                    } else {
-                                                        Float::new(options.prec)
-                                                    },
-                                                    Infinity,
-                                                ),
-                                            )
-                                        }
+                                        Complex::with_val(
+                                            options.prec,
+                                            if (n2r - n3r.clone()).abs().log2()
+                                                < options.prec as i32 / -16
+                                            {
+                                                n3r
+                                            } else {
+                                                Float::new(options.prec)
+                                            },
+                                        ) + Complex::with_val_imag(
+                                            options.prec,
+                                            if n1.imag().is_sign_positive() {
+                                                Constant::Infinity
+                                            } else {
+                                                Constant::NegInfinity
+                                            },
+                                        )
                                     }
-                                    (false, false) => Complex::with_val(options.prec, Nan),
+                                    (false, false) => {
+                                        Complex::with_val(options.prec, Constant::Nan)
+                                    }
                                 }
                             }
                         },
@@ -6232,7 +6200,7 @@ pub fn limit(
                             Ok(n)
                         } else {
                             Ok(NumStr::new(Number::from(
-                                Complex::with_val(options.prec, Nan),
+                                Complex::with_val(options.prec, Constant::Nan),
                                 None,
                             )))
                         }
@@ -6265,9 +6233,12 @@ pub fn limit(
                                     || (left.clone() - right.clone()).abs().real().clone().log2()
                                         < options.prec as i32 / -16
                                 {
-                                    Number::from((left + right.clone()) / 2, units)
+                                    Number::from((left.clone() + right) / 2, units)
                                 } else {
-                                    Number::from(Complex::with_val(options.prec, Nan), None)
+                                    Number::from(
+                                        Complex::with_val(options.prec, Constant::Nan),
+                                        None,
+                                    )
                                 },
                             )
                         }
@@ -6282,12 +6253,16 @@ pub fn limit(
     }
 }
 #[allow(clippy::type_complexity)]
-fn limsided(
+fn limsided<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     func: Vec<NumStr<Integer, Float, Complex>>,
     func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: Options,
     var: String,
-    point: Number<rug::Integer, rug::Float, rug::Complex>,
+    point: Number<Integer, Float, Complex>,
     right: bool,
 ) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     let xunits = point.units;
@@ -6349,90 +6324,68 @@ fn limsided(
                     let n2i = n2.imag().clone().abs();
                     let n3i = n3.imag().clone().abs();
                     if !sign {
-                        Complex::with_val(options.prec, Nan)
+                        Complex::with_val(options.prec, Constant::Nan)
                     } else {
                         match (n3r > n2r && n2r > n1r, n3i > n2i && n2i > n1i) {
                             (true, true) => {
                                 match (n1.real().is_sign_positive(), n1.imag().is_sign_positive()) {
-                                    (true, true) => {
-                                        Complex::with_val(options.prec, (Infinity, Infinity))
-                                    }
+                                    (true, true) => Complex::with_val(
+                                        options.prec,
+                                        (Constant::Infinity, Constant::Infinity),
+                                    ),
                                     (true, false) => Complex::with_val(
                                         options.prec,
-                                        (Infinity, -Float::with_val(options.prec, Infinity)),
+                                        (Constant::Infinity, Constant::NegInfinity),
                                     ),
                                     (false, true) => Complex::with_val(
                                         options.prec,
-                                        (-Float::with_val(options.prec, Infinity), Infinity),
+                                        (Constant::NegInfinity, Constant::Infinity),
                                     ),
-                                    (false, false) => {
-                                        -Complex::with_val(options.prec, (Infinity, Infinity))
-                                    }
+                                    (false, false) => -Complex::with_val(
+                                        options.prec,
+                                        (Constant::Infinity, Constant::Infinity),
+                                    ),
                                 }
                             }
                             (true, false) => {
-                                if n1.real().is_sign_positive() {
-                                    Complex::with_val(
-                                        options.prec,
-                                        (
-                                            Infinity,
-                                            if (n1.imag() - n2.imag().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                n2.imag().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                        ),
-                                    )
-                                } else {
-                                    -Complex::with_val(
-                                        options.prec,
-                                        (
-                                            Infinity,
-                                            if (n1.imag() - n2.imag().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                -n2.imag().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                        ),
-                                    )
-                                }
+                                Complex::with_val(
+                                    options.prec,
+                                    if n1.real().is_sign_positive() {
+                                        Constant::Infinity
+                                    } else {
+                                        Constant::NegInfinity
+                                    },
+                                ) + Complex::with_val_imag(
+                                    options.prec,
+                                    if (n1.imag().clone() - n2.imag()).abs().log2()
+                                        < options.prec as i32 / -16
+                                    {
+                                        n2.imag().clone()
+                                    } else {
+                                        Float::new(options.prec)
+                                    },
+                                )
                             }
                             (false, true) => {
-                                if n1.imag().is_sign_positive() {
-                                    Complex::with_val(
-                                        options.prec,
-                                        (
-                                            if (n1.real() - n2.real().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                n2.real().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                            Infinity,
-                                        ),
-                                    )
-                                } else {
-                                    -Complex::with_val(
-                                        options.prec,
-                                        (
-                                            if (n1.real() - n2.real().clone()).abs().log2()
-                                                < options.prec as i32 / -16
-                                            {
-                                                -n2.real().clone()
-                                            } else {
-                                                Float::new(options.prec)
-                                            },
-                                            Infinity,
-                                        ),
-                                    )
-                                }
+                                Complex::with_val(
+                                    options.prec,
+                                    if (n1.real().clone() - n2.real()).abs().log2()
+                                        < options.prec as i32 / -16
+                                    {
+                                        n2.real().clone()
+                                    } else {
+                                        Float::new(options.prec)
+                                    },
+                                ) + Complex::with_val_imag(
+                                    options.prec,
+                                    if n1.imag().is_sign_positive() {
+                                        Constant::Infinity
+                                    } else {
+                                        Constant::NegInfinity
+                                    },
+                                )
                             }
-                            (false, false) => Complex::with_val(options.prec, Nan),
+                            (false, false) => Complex::with_val(options.prec, Constant::Nan),
                         }
                     }
                 },
@@ -6440,7 +6393,7 @@ fn limsided(
             )))
         }
         (Vector(n1), Vector(n2)) => {
-            let mut n3: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
+            let mut n3: Vec<Number<Integer, Float, Complex>> = Vec::new();
             let mut vec = Vec::with_capacity(n1.len().max(1));
             for (i, (n1, n2)) in n1.iter().zip(n2).enumerate() {
                 let units = n1.units;
@@ -6476,7 +6429,7 @@ fn limsided(
                         let n2i = n2.imag().clone().abs();
                         let n3i = n3.imag().clone().abs();
                         if !sign {
-                            Complex::with_val(options.prec, Nan)
+                            Complex::with_val(options.prec, Constant::Nan)
                         } else {
                             match (n3r > n2r && n2r > n1r, n3i > n2i && n2i > n1i) {
                                 (true, true) => {
@@ -6484,85 +6437,63 @@ fn limsided(
                                         n1.real().is_sign_positive(),
                                         n1.imag().is_sign_positive(),
                                     ) {
-                                        (true, true) => {
-                                            Complex::with_val(options.prec, (Infinity, Infinity))
-                                        }
+                                        (true, true) => Complex::with_val(
+                                            options.prec,
+                                            (Constant::Infinity, Constant::Infinity),
+                                        ),
                                         (true, false) => Complex::with_val(
                                             options.prec,
-                                            (Infinity, -Float::with_val(options.prec, Infinity)),
+                                            (Constant::Infinity, Constant::NegInfinity),
                                         ),
                                         (false, true) => Complex::with_val(
                                             options.prec,
-                                            (-Float::with_val(options.prec, Infinity), Infinity),
+                                            (Constant::NegInfinity, Constant::Infinity),
                                         ),
-                                        (false, false) => {
-                                            -Complex::with_val(options.prec, (Infinity, Infinity))
-                                        }
+                                        (false, false) => -Complex::with_val(
+                                            options.prec,
+                                            (Constant::Infinity, Constant::Infinity),
+                                        ),
                                     }
                                 }
                                 (true, false) => {
-                                    if n1.real().is_sign_positive() {
-                                        Complex::with_val(
-                                            options.prec,
-                                            (
-                                                Infinity,
-                                                if (n2i - n3i.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    n3i
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                            ),
-                                        )
-                                    } else {
-                                        -Complex::with_val(
-                                            options.prec,
-                                            (
-                                                Infinity,
-                                                if (n2i - n3i.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    -n3i
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                            ),
-                                        )
-                                    }
+                                    Complex::with_val(
+                                        options.prec,
+                                        if n1.real().is_sign_positive() {
+                                            Constant::Infinity
+                                        } else {
+                                            Constant::NegInfinity
+                                        },
+                                    ) + Complex::with_val_imag(
+                                        options.prec,
+                                        if (n2i - n3i.clone()).abs().log2()
+                                            < options.prec as i32 / -16
+                                        {
+                                            n3i
+                                        } else {
+                                            Float::new(options.prec)
+                                        },
+                                    )
                                 }
                                 (false, true) => {
-                                    if n1.imag().is_sign_positive() {
-                                        Complex::with_val(
-                                            options.prec,
-                                            (
-                                                if (n2r - n3r.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    n3r
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                                Infinity,
-                                            ),
-                                        )
-                                    } else {
-                                        -Complex::with_val(
-                                            options.prec,
-                                            (
-                                                if (n2r - n3r.clone()).abs().log2()
-                                                    < options.prec as i32 / -16
-                                                {
-                                                    -n3r
-                                                } else {
-                                                    Float::new(options.prec)
-                                                },
-                                                Infinity,
-                                            ),
-                                        )
-                                    }
+                                    Complex::with_val(
+                                        options.prec,
+                                        if (n2r - n3r.clone()).abs().log2()
+                                            < options.prec as i32 / -16
+                                        {
+                                            n3r
+                                        } else {
+                                            Float::new(options.prec)
+                                        },
+                                    ) + Complex::with_val_imag(
+                                        options.prec,
+                                        if n1.imag().is_sign_positive() {
+                                            Constant::Infinity
+                                        } else {
+                                            Constant::NegInfinity
+                                        },
+                                    )
                                 }
-                                (false, false) => Complex::with_val(options.prec, Nan),
+                                (false, false) => Complex::with_val(options.prec, Constant::Nan),
                             }
                         }
                     },
