@@ -1,15 +1,11 @@
-use crate::types::Integer;
+use crate::types::{Constant, Integer};
 use crate::{
     complex::NumStr,
     units::{AngleType::Radians, Notation::Normal},
 };
 #[cfg(feature = "bin-deps")]
 use rug::ops::CompleteRound;
-use rug::{
-    Complex, Float,
-    float::Constant::Pi,
-    ops::{DivRounding, Pow},
-};
+use rug::ops::DivRounding;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -867,7 +863,14 @@ pub fn is_unit(unit: &mut String) -> bool {
             }
         })
 }
-pub fn prefixes(mut unit: String, prec: u32) -> (String, Float) {
+pub fn prefixes<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut unit: String,
+    prec: u32,
+) -> (String, Float) {
     if is_unit(&mut unit) {
         return (unit, Float::with_val(prec, 1));
     }
@@ -1234,13 +1237,17 @@ pub fn units() -> HashSet<&'static str> {
     .collect::<HashSet<&str>>()
 }
 #[allow(clippy::type_complexity)]
-pub fn to_unit(
+pub fn to_unit<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     unit: String,
     mut num: Float,
     options: Options,
 ) -> (
-    Number<rug::Integer, rug::Float, rug::Complex>,
-    Option<Number<rug::Integer, rug::Float, rug::Complex>>,
+    Number<Integer, Float, Complex>,
+    Option<Number<Integer, Float, Complex>>,
 ) {
     let mut units = Units::default();
     let mut add = None;
@@ -1260,8 +1267,14 @@ pub fn to_unit(
         }
         "steradian" | "sr" => {
             match options.angle {
-                AngleType::Gradians => num *= 40000 / Float::with_val(options.prec, Pi).pow(2),
-                AngleType::Degrees => num *= 32400 / Float::with_val(options.prec, Pi).pow(2),
+                AngleType::Gradians => {
+                    num *= Float::with_val(options.prec, 40000)
+                        / Float::with_val(options.prec, Constant::Pi).pow(2)
+                }
+                AngleType::Degrees => {
+                    num *= Float::with_val(options.prec, 32400)
+                        / Float::with_val(options.prec, Constant::Pi).pow(2)
+                }
                 AngleType::Radians => {}
             };
             units.angle = 2.0
@@ -1296,8 +1309,14 @@ pub fn to_unit(
         }
         "lumen" | "lm" => {
             match options.angle {
-                AngleType::Gradians => num *= 40000 / Float::with_val(options.prec, Pi).pow(2),
-                AngleType::Degrees => num *= 32400 / Float::with_val(options.prec, Pi).pow(2),
+                AngleType::Gradians => {
+                    num *= Float::with_val(options.prec, 40000)
+                        / Float::with_val(options.prec, Constant::Pi).pow(2)
+                }
+                AngleType::Degrees => {
+                    num *= Float::with_val(options.prec, 32400)
+                        / Float::with_val(options.prec, Constant::Pi).pow(2)
+                }
                 AngleType::Radians => {}
             };
             units.angle = 2.0;
@@ -1305,8 +1324,14 @@ pub fn to_unit(
         }
         "lux" | "lx" => {
             match options.angle {
-                AngleType::Gradians => num *= 40000 / Float::with_val(options.prec, Pi).pow(2),
-                AngleType::Degrees => num *= 32400 / Float::with_val(options.prec, Pi).pow(2),
+                AngleType::Gradians => {
+                    num *= Float::with_val(options.prec, 40000)
+                        / Float::with_val(options.prec, Constant::Pi).pow(2)
+                }
+                AngleType::Degrees => {
+                    num *= Float::with_val(options.prec, 32400)
+                        / Float::with_val(options.prec, Constant::Pi).pow(2)
+                }
                 AngleType::Radians => {}
             };
             units.angle = 2.0;
@@ -1341,7 +1366,8 @@ pub fn to_unit(
         }
         "parsec" | "pc" => {
             units.meter = 1.0;
-            num *= 648000 / Float::with_val(options.prec, Pi);
+            num *= 648000;
+            num /= Float::with_val(options.prec, Constant::Pi);
             num *= 149597870700u64;
         }
         "au" => {
@@ -1561,7 +1587,7 @@ pub fn to_unit(
                     num /= 60;
                 }
                 AngleType::Radians => {
-                    num *= Float::with_val(options.prec, Pi) / 180;
+                    num *= Float::with_val(options.prec, Constant::Pi) / 180;
                     num /= 60;
                 }
             };
@@ -1578,7 +1604,7 @@ pub fn to_unit(
                     num /= 3600;
                 }
                 AngleType::Radians => {
-                    num *= Float::with_val(options.prec, Pi) / 180;
+                    num *= Float::with_val(options.prec, Constant::Pi) / 180;
                     num /= 3600;
                 }
             };
@@ -1591,14 +1617,20 @@ pub fn to_unit(
                     num *= 200;
                     num /= 180
                 }
-                AngleType::Radians => num *= Float::with_val(options.prec, Pi) / 180,
+                AngleType::Radians => num *= Float::with_val(options.prec, Constant::Pi) / 180,
             };
             units.angle = 1.0;
         }
         "rad" | "radian" => {
             match options.angle {
-                AngleType::Degrees => num *= 180 / Float::with_val(options.prec, Pi),
-                AngleType::Gradians => num *= 200 / Float::with_val(options.prec, Pi),
+                AngleType::Degrees => {
+                    num *= 180;
+                    num /= Float::with_val(options.prec, Constant::Pi)
+                }
+                AngleType::Gradians => {
+                    num *= 200;
+                    num /= Float::with_val(options.prec, Constant::Pi)
+                }
                 AngleType::Radians => {}
             };
             units.angle = 1.0
@@ -1610,7 +1642,7 @@ pub fn to_unit(
                     num /= 200
                 }
                 AngleType::Gradians => {}
-                AngleType::Radians => num *= Float::with_val(options.prec, Pi) / 200,
+                AngleType::Radians => num *= Float::with_val(options.prec, Constant::Pi) / 200,
             };
             units.angle = 1.0;
         }
@@ -1647,7 +1679,7 @@ pub fn to_unit(
             units.second = -1.0;
             num *= 132521403;
             num /= 40000000;
-            num /= Float::with_val(options.prec, Pi);
+            num /= Float::with_val(options.prec, Constant::Pi);
             num /= 10000000000000000000000000000000000u128;
         }
         "eV" => {

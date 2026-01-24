@@ -190,6 +190,8 @@ pub trait Operators:
     + Ops<i128>
     + Ops<i32>
     + Ops<u32>
+    + Ops<i64>
+    + Ops<u64>
     + for<'a> Ops<&'a Self>
     + Neg<Output = Self>
     + Sized
@@ -202,6 +204,8 @@ impl<T> Operators for T where
         + Ops<i128>
         + Ops<i32>
         + Ops<u32>
+        + Ops<i64>
+        + Ops<u64>
         + for<'a> Ops<&'a T>
         + Neg<Output = T>
         + Sized

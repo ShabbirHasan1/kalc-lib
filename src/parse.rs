@@ -1,3 +1,4 @@
+use crate::types::Constant;
 use crate::{
     complex::{
         NumStr,
@@ -17,16 +18,15 @@ use crate::{
         prefixes, to_unit,
     },
 };
-use rug::{
-    Complex,
-    float::Special::{Infinity, Nan},
-    ops::CompleteRound,
-};
 #[allow(clippy::type_complexity)]
 #[allow(clippy::too_many_arguments)]
-pub fn input_var(
+pub fn input_var<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     input: &str,
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     sumrec: &mut Vec<(isize, String)>,
     bracket: &mut isize,
     options: Options,
@@ -39,8 +39,8 @@ pub fn input_var(
     ison: Option<usize>,
 ) -> Result<
     (
-        Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-        Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+        Vec<NumStr<Integer, Float, Complex>>,
+        Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
         HowGraphing,
         bool,
         Option<String>,
@@ -49,7 +49,7 @@ pub fn input_var(
 > {
     let mut sumvar: Option<String> = None;
     let mut graph = HowGraphing::default();
-    let prec = (options.prec, options.prec);
+    let prec = options.prec;
     let mut funcvars = Vec::new();
     if input.starts_with("history")
         || input.starts_with("his")
@@ -93,7 +93,7 @@ pub fn input_var(
         }
     }
     let mut sarea = 0;
-    let mut output: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
+    let mut output: Vec<NumStr<Integer, Float, Complex>> = Vec::new();
     let mut stack_end = Vec::new();
     let mut stack_start = Vec::new();
     let mut i = 0;
@@ -198,8 +198,8 @@ pub fn input_var(
                 _ => {}
             }
             output.push(NumStr::new(Number::from(
-                match Complex::parse_radix(pow.as_bytes(), options.base.0) {
-                    Ok(n) => n.complete(prec),
+                match Complex::parse_radix(prec, pow.as_bytes(), options.base.0) {
+                    Some(n) => n,
                     _ => return Err("exponent error"),
                 } * pow_nth(
                     Complex::with_val(options.prec, (0, 1)),
@@ -260,9 +260,9 @@ pub fn input_var(
                 i += 1;
             }
             output.push(NumStr::new(Number::from(
-                match Complex::parse_radix(num.clone(), options.base.0) {
-                    Ok(n) => n.complete(prec),
-                    Err(_) => return Err("probably radix error"),
+                match Complex::parse_radix(prec, num.clone(), options.base.0) {
+                    Some(n) => n,
+                    None => return Err("probably radix error"),
                 },
                 None,
             )));
@@ -839,13 +839,14 @@ pub fn input_var(
                         if solves[0].1 == 2 {
                             output.push(Comma);
                             output.push(NumStr::new(Number::from(
-                                Complex::with_val(options.prec, (Nan, 1)),
+                                Complex::with_val(options.prec, Constant::Nan)
+                                    + Complex::with_val_imag(options.prec, 1),
                                 None,
                             )));
                         } else if solves[0].1 == 1 {
                             output.push(Comma);
                             output.push(NumStr::new(Number::from(
-                                Complex::with_val(options.prec, Nan),
+                                Complex::with_val(options.prec, Constant::Nan),
                                 None,
                             )));
                         }
@@ -875,13 +876,14 @@ pub fn input_var(
                         if solvesp[0].1 == 2 {
                             output.push(Comma);
                             output.push(NumStr::new(Number::from(
-                                Complex::with_val(options.prec, (Nan, 1)),
+                                Complex::with_val(options.prec, Constant::Nan)
+                                    + Complex::with_val_imag(options.prec, 1),
                                 None,
                             )));
                         } else if solvesp[0].1 == 1 {
                             output.push(Comma);
                             output.push(NumStr::new(Number::from(
-                                Complex::with_val(options.prec, Nan),
+                                Complex::with_val(options.prec, Constant::Nan),
                                 None,
                             )));
                         }
@@ -900,8 +902,8 @@ pub fn input_var(
                     if !exp.0.is_empty() && exp.1 == *bracket {
                         output.push(Exponent);
                         output.push(NumStr::new(Number::from(
-                            match Complex::parse_radix(exp.0.as_bytes(), options.base.0) {
-                                Ok(n) => n.complete(prec),
+                            match Complex::parse_radix(prec, exp.0.as_bytes(), options.base.0) {
+                                Some(n) => n,
                                 _ => return Err("exponent error"),
                             },
                             None,
@@ -1121,7 +1123,7 @@ pub fn input_var(
                     }
                 }
                 '∞' => output.push(NumStr::new(Number::from(
-                    Complex::with_val(options.prec, Infinity),
+                    Complex::with_val(options.prec, Constant::Infinity),
                     None,
                 ))),
                 '#' => {
@@ -1460,7 +1462,7 @@ pub fn input_var(
                 match word.to_ascii_lowercase().as_str() {
                     "nan" | "NaN" => {
                         output.push(NumStr::new(Number::from(
-                            Complex::with_val(options.prec, Nan),
+                            Complex::with_val(options.prec, Constant::Nan),
                             None,
                         )));
                     }
@@ -1475,7 +1477,7 @@ pub fn input_var(
                     }
                     "inf" => {
                         output.push(NumStr::new(Number::from(
-                            Complex::with_val(options.prec, Infinity),
+                            Complex::with_val(options.prec, Constant::Infinity),
                             None,
                         )));
                     }
@@ -1541,7 +1543,7 @@ pub fn input_var(
         } else if options.units
             && (collectvars.is_empty() || word.len() > 1)
             && {
-                (unit, mul) = prefixes(word.clone(), prec.0);
+                (unit, mul) = prefixes(word.clone(), prec);
                 is_unit(&mut unit)
             }
             && var_overrule
@@ -1789,11 +1791,12 @@ pub fn input_var(
                                 let mut ignorefv: Vec<(usize, usize)> = Vec::new();
                                 for (z, (varf, func_var)) in split.iter().zip(func_vars).enumerate()
                                 {
-                                    let rnum = if let Ok(n) = Complex::parse_radix(
+                                    let rnum = if let Some(n) = Complex::parse_radix(
+                                        prec,
                                         varf.iter().collect::<String>(),
                                         options.base.0,
                                     ) {
-                                        NumStr::new(Number::from(n.complete(prec), None))
+                                        NumStr::new(Number::from(n, None))
                                     } else {
                                         let parsed;
                                         let exit;
@@ -2107,9 +2110,12 @@ pub fn input_var(
                                 if !exp.0.is_empty() && exp.1 == *bracket {
                                     output.push(Exponent);
                                     output.push(NumStr::new(Number::from(
-                                        match Complex::parse_radix(exp.0.as_bytes(), options.base.0)
-                                        {
-                                            Ok(n) => n.complete(prec),
+                                        match Complex::parse_radix(
+                                            prec,
+                                            exp.0.as_bytes(),
+                                            options.base.0,
+                                        ) {
+                                            Some(n) => n,
                                             _ => return Err("exponent error"),
                                         },
                                         None,
@@ -2144,11 +2150,12 @@ pub fn input_var(
                                 let mut parsed = var.parsed.clone();
                                 let mut fvs = var.funcvars.clone();
                                 let mut k = 0;
-                                let mut num = if let Ok(n) = Complex::parse_radix(
+                                let mut num = if let Some(n) = Complex::parse_radix(
+                                    prec,
                                     temp.iter().collect::<String>(),
                                     options.base.0,
                                 ) {
-                                    vec![NumStr::new(Number::from(n.complete(prec), None))]
+                                    vec![NumStr::new(Number::from(n, None))]
                                 } else {
                                     let parsed;
                                     let exit;
@@ -2455,9 +2462,12 @@ pub fn input_var(
                                 if !exp.0.is_empty() && exp.1 == *bracket {
                                     output.push(Exponent);
                                     output.push(NumStr::new(Number::from(
-                                        match Complex::parse_radix(exp.0.as_bytes(), options.base.0)
-                                        {
-                                            Ok(n) => n.complete(prec),
+                                        match Complex::parse_radix(
+                                            prec,
+                                            exp.0.as_bytes(),
+                                            options.base.0,
+                                        ) {
+                                            Some(n) => n,
                                             _ => return Err("exponent error"),
                                         },
                                         None,
@@ -2855,13 +2865,14 @@ pub fn input_var(
         if s.1 == 2 {
             output.push(Comma);
             output.push(NumStr::new(Number::from(
-                Complex::with_val(options.prec, (Nan, 1)),
+                Complex::with_val(options.prec, Constant::Nan)
+                    + Complex::with_val_imag(options.prec, 1),
                 None,
             )));
         } else if s.1 == 1 {
             output.push(Comma);
             output.push(NumStr::new(Number::from(
-                Complex::with_val(options.prec, Nan),
+                Complex::with_val(options.prec, Constant::Nan),
                 None,
             )));
         }
@@ -2874,13 +2885,14 @@ pub fn input_var(
         if s.1 == 2 {
             output.push(Comma);
             output.push(NumStr::new(Number::from(
-                Complex::with_val(options.prec, (Nan, 1)),
+                Complex::with_val(options.prec, Constant::Nan)
+                    + Complex::with_val_imag(options.prec, 1),
                 None,
             )));
         } else if s.1 == 1 {
             output.push(Comma);
             output.push(NumStr::new(Number::from(
-                Complex::with_val(options.prec, Nan),
+                Complex::with_val(options.prec, Constant::Nan),
                 None,
             )));
         }
@@ -2912,8 +2924,8 @@ pub fn input_var(
             _ => {}
         }
         output.push(NumStr::new(Number::from(
-            match Complex::parse_radix(pow.as_bytes(), options.base.0) {
-                Ok(n) => n.complete(prec),
+            match Complex::parse_radix(prec, pow.as_bytes(), options.base.0) {
+                Some(n) => n,
                 _ => return Err("exponent error"),
             } * pow_nth(
                 Complex::with_val(options.prec, (0, 1)),
@@ -2925,8 +2937,8 @@ pub fn input_var(
     if !exp.0.is_empty() {
         output.push(Exponent);
         output.push(NumStr::new(Number::from(
-            match Complex::parse_radix(exp.0.as_bytes(), options.base.0) {
-                Ok(n) => n.complete(prec),
+            match Complex::parse_radix(prec, exp.0.as_bytes(), options.base.0) {
+                Some(n) => n,
                 _ => return Err("exponent error"),
             },
             None,
@@ -2993,7 +3005,7 @@ pub fn input_var(
         }
         let arg = output
             .drain(n + 6..n + 6 + end)
-            .collect::<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>>();
+            .collect::<Vec<NumStr<Integer, Float, Complex>>>();
         output.insert(n + 6, Func("@p".to_string() + &n.to_string()));
         output.insert(n + 6 + last - end, RightBracket);
         if nth != 1 {
@@ -3167,8 +3179,12 @@ pub fn input_var(
     }
     Ok((output, funcvars, graph, false, sumvar))
 }
-fn place_multiplier(
-    output: &mut Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+fn place_multiplier<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    output: &mut Vec<NumStr<Integer, Float, Complex>>,
     sumrec: &[(isize, String)],
     sumvar: &Option<String>,
 ) {
@@ -3187,9 +3203,13 @@ fn place_multiplier(
         _ => {}
     }
 }
-fn can_abs(
-    output: &[NumStr<rug::Integer, rug::Float, rug::Complex>],
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+fn can_abs<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    output: &[NumStr<Integer, Float, Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
 ) -> bool {
     if let Some(Func(s)) = output.last() {
         !(functions().contains(s.as_str())
