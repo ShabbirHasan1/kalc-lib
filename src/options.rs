@@ -20,7 +20,7 @@ use crossterm::{
     execute, terminal,
     terminal::{Clear, ClearType},
 };
-use rug::{Complex, Float, float::Special::Nan};
+use rug::{Complex, Float, Integer, float::Special::Nan};
 use std::{
     fs::File,
     io::{BufRead, BufReader, Stdout, Write},
@@ -28,9 +28,9 @@ use std::{
 };
 pub fn arg_opts(
     options: &mut Options,
-    colors: &mut Colors,
+    colors: &mut Colors<Integer, Float, Complex>,
     args: &mut Vec<String>,
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     soft: bool,
 ) -> Result<bool, &'static str> {
     let mut default = false;
@@ -118,9 +118,9 @@ pub fn arg_opts(
 }
 pub fn file_opts(
     options: &mut Options,
-    colors: &mut Colors,
+    colors: &mut Colors<Integer, Float, Complex>,
     file_path: &String,
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     check: Vec<usize>,
     soft: bool,
 ) -> Result<Vec<usize>, &'static str> {
@@ -174,7 +174,7 @@ pub fn file_opts(
 }
 pub fn set_commands(
     options: &mut Options,
-    colors: &mut Colors,
+    colors: &mut Colors<rug::Integer, rug::Float, rug::Complex>,
     vars: &mut [Variable<rug::Integer, rug::Float, rug::Complex>],
     l: &str,
     o: &str,
@@ -312,7 +312,7 @@ pub fn set_commands(
                                 .unwrap_or(n.clone())
                         })
                     })
-                    .collect::<Vec<(String, Number<rug::Integer, rug::Float, rug::Complex>)>>()
+                    .collect::<Vec<(String, Number<Integer, Float, Complex>)>>()
             }
         }
         "label" => {
@@ -1059,10 +1059,14 @@ pub fn commands(options: &mut Options, lines: &[String], input: &[char], stdout:
         }
     }
 }
-pub fn list_vars(
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+pub fn list_vars<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    vars: &[Variable<Integer, Float, Complex>],
     options: &Options,
-    colors: &Colors,
+    colors: &Colors<Integer, Float, Complex>,
 ) -> String {
     let mut out = String::new();
     for v in vars.iter() {
@@ -1151,8 +1155,8 @@ pub fn list_vars(
 }
 pub fn equal_to(
     options: Options,
-    colors: &Colors,
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    colors: &Colors<Integer, Float, Complex>,
+    vars: &[Variable<Integer, Float, Complex>],
     l: &str,
     last: &str,
 ) -> String {

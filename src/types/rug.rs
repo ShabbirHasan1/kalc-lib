@@ -1,6 +1,7 @@
 use crate::types::{
     Complex, Constant, Float, FloatShared, Integer, IsPrime, Pow, WithVal, WithValImag,
 };
+use rug::ops::CompleteRound;
 macro_rules! with_val {
     ($ty:ty, $($v:ty),*) => {
         $(
@@ -148,6 +149,12 @@ impl Integer<rug::Float, rug::Complex> for rug::Integer {
     fn to_i128(&self) -> Option<i128> {
         self.to_i128()
     }
+    fn to_string_radix(&self, radix: i32) -> String {
+        self.to_string_radix(radix)
+    }
+    fn from_str_radix(src: &str, radix: i32) -> Option<Self> {
+        Self::from_str_radix(src, radix).ok()
+    }
     fn is_probably_prime(&self, reps: u32) -> IsPrime {
         self.is_probably_prime(reps).into()
     }
@@ -168,6 +175,9 @@ impl From<rug::integer::IsPrime> for IsPrime {
     }
 }
 impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
+    fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
+        Some(Self::parse_radix(src, radix).ok()?.complete(prec))
+    }
     fn exp(self) -> Self {
         self.exp()
     }
@@ -230,6 +240,16 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     fn floor(self) -> Self {
         self.floor()
     }
+    fn to_sign_string_exp(
+        &self,
+        radix: i32,
+        num_digits: Option<usize>,
+    ) -> (bool, String, Option<i32>) {
+        self.to_sign_string_exp(radix, num_digits)
+    }
+    fn to_string_radix(&self, radix: i32, num_digits: Option<usize>) -> String {
+        self.to_string_radix(radix, num_digits)
+    }
     fn to_integer(&self) -> Option<rug::Integer> {
         self.to_integer()
     }
@@ -238,6 +258,9 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     }
 }
 impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
+    fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
+        Some(Self::parse_radix(src, radix).ok()?.complete((prec, prec)))
+    }
     fn exp(self) -> Self {
         self.exp()
     }

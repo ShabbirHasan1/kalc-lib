@@ -1,3 +1,4 @@
+use crate::types::Constant;
 use crate::{
     complex::{
         NumStr,
@@ -19,11 +20,7 @@ use crate::{
         Variable,
     },
 };
-use rug::{
-    Complex, Float, Integer,
-    float::Constant::Pi,
-    ops::{CompleteRound, Pow},
-};
+use rug::{Complex, Float, float::Constant::Pi, ops::CompleteRound};
 use std::cmp::Ordering;
 #[allow(clippy::too_many_arguments)]
 pub fn print_concurrent(
@@ -31,7 +28,7 @@ pub fn print_concurrent(
     last: &[char],
     vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
     mut options: Options,
-    mut colors: Colors,
+    mut colors: Colors<rug::Integer, rug::Float, rug::Complex>,
     start: usize,
     end: usize,
     long_output: bool,
@@ -1441,10 +1438,14 @@ pub fn print_concurrent(
     }
     (frac + 1, HowGraphing::default(), long, var)
 }
-pub fn print_answer(
-    num: NumStr<rug::Integer, rug::Float, rug::Complex>,
+pub fn print_answer<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    num: NumStr<Integer, Float, Complex>,
     options: Options,
-    colors: &Colors,
+    colors: &Colors<Integer, Float, Complex>,
 ) {
     match num {
         Num(n) => {
@@ -1467,9 +1468,15 @@ pub fn print_answer(
                 v = to_polar(
                     v,
                     match options.angle {
-                        AngleType::Degrees => 180 / Complex::with_val(options.prec, Pi),
+                        AngleType::Degrees => {
+                            Float::with_val(options.prec, 180)
+                                / Complex::with_val(options.prec, Constant::Pi)
+                        }
                         AngleType::Radians => Complex::with_val(options.prec, 1),
-                        AngleType::Gradians => 200 / Complex::with_val(options.prec, Pi),
+                        AngleType::Gradians => {
+                            Float::with_val(options.prec, 200)
+                                / Complex::with_val(options.prec, Constant::Pi)
+                        }
                     },
                 );
             }
@@ -1591,11 +1598,15 @@ pub fn print_answer(
         _ => {}
     }
 }
-pub fn custom_units(
-    mut number: Number<rug::Integer, rug::Float, rug::Complex>,
+pub fn custom_units<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut number: Number<Integer, Float, Complex>,
     options: Options,
-    colors: &Colors,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+    colors: &Colors<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     if !colors.default_units.is_empty() {
         let mut meter = Complex::with_val(options.prec, 1);
         let mut second = Complex::with_val(options.prec, 1);
@@ -1678,10 +1689,14 @@ pub fn custom_units(
     }
     number
 }
-pub fn get_output(
+pub fn get_output<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     options: Options,
-    colors: &Colors,
-    number: &Number<rug::Integer, rug::Float, rug::Complex>,
+    colors: &Colors<Integer, Float, Complex>,
+    number: &Number<Integer, Float, Complex>,
 ) -> (String, String, Option<String>) {
     let num = number.number.clone();
     let units = number.units;
@@ -1922,7 +1937,16 @@ pub fn get_output(
         )
     }
 }
-fn to_string(num: &Float, options: Options, imag: bool, radix: i32) -> String {
+fn to_string<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    num: &Float,
+    options: Options,
+    imag: bool,
+    radix: i32,
+) -> String {
     let (neg, mut str, exp) = num.to_sign_string_exp(radix, None);
     let mut neg = if neg { "-" } else { "" };
     if exp.is_none() {
@@ -1989,9 +2013,8 @@ fn to_string(num: &Float, options: Options, imag: bool, radix: i32) -> String {
             r.insert(decimals, '.');
         }
     }
-    let mut d = Float::parse_radix(&r, radix)
+    let mut d = Float::parse_radix(num.prec(), &r, radix)
         .unwrap()
-        .complete(num.prec())
         .to_integer()
         .unwrap();
     if exp > 0 {
@@ -2012,10 +2035,9 @@ fn to_string(num: &Float, options: Options, imag: bool, radix: i32) -> String {
             .starts_with('9')
     {
         if zeros.is_empty() {
-            let t: Float = Float::parse_radix(if l.is_empty() { "0" } else { &l }, radix)
-                .unwrap()
-                .complete(num.prec())
-                + 1;
+            let t: Float =
+                Float::parse_radix(num.prec(), if l.is_empty() { "0" } else { &l }, radix).unwrap()
+                    + 1;
             l = t.to_integer().unwrap_or_default().to_string();
             d = Integer::new();
         } else {
@@ -2201,7 +2223,14 @@ fn remove_trailing_zeros(input: &str, options: Options) -> String {
         }
     }
 }
-fn notate(options: Options, colors: &Colors) -> String {
+fn notate<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    options: Options,
+    colors: &Colors<Integer, Float, Complex>,
+) -> String {
     format!(
         "{}{}",
         if options.color == Auto::True {

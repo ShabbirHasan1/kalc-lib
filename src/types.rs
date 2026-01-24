@@ -1,6 +1,6 @@
 pub mod f64;
 pub mod rug;
-use std::fmt::Display;
+use std::fmt::{Display, LowerExp};
 use std::ops::*;
 pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     FloatShared<I, F, Self>
@@ -41,7 +41,13 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     fn mul_i(self, negative: bool) -> Self;
 }
 pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
-    FloatShared<I, Self, C> + PartialOrd<f64> + Compare + OperatorsOut<C, C> + Pow<Self> + RemOp<usize>
+    FloatShared<I, Self, C>
+    + PartialOrd<f64>
+    + Compare
+    + OperatorsOut<C, C>
+    + Pow<Self>
+    + RemOp<usize>
+    + LowerExp
 {
     fn is_finite(&self) -> bool;
     fn is_infinite(&self) -> bool;
@@ -53,6 +59,12 @@ pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
     fn round(self) -> Self;
     fn gamma(self) -> Self;
     fn floor(self) -> Self;
+    fn to_sign_string_exp(
+        &self,
+        radix: i32,
+        num_digits: Option<usize>,
+    ) -> (bool, String, Option<i32>);
+    fn to_string_radix(&self, radix: i32, num_digits: Option<usize>) -> String;
     fn to_integer(&self) -> Option<I>;
     fn log2(self) -> Self;
 }
@@ -81,6 +93,7 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     + Ops<I>
     + Ops<f64>
 {
+    fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self>;
     fn exp(self) -> Self;
     fn new(prec: u32) -> Self;
     fn is_zero(&self) -> bool;
@@ -123,6 +136,8 @@ pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
     fn to_i32(&self) -> Option<i32>;
     fn to_isize(&self) -> Option<isize>;
     fn to_i128(&self) -> Option<i128>;
+    fn to_string_radix(&self, radix: i32) -> String;
+    fn from_str_radix(src: &str, radix: i32) -> Option<Self>;
     fn is_probably_prime(&self, reps: u32) -> IsPrime;
     fn abs(self) -> Self;
     fn new() -> Self;

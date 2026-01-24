@@ -5,7 +5,7 @@ use crate::{
     parse::input_var,
     units::{Colors, Number, Options, Variable},
 };
-use rug::{Float, float::Constant::Pi};
+use rug::{Complex, Float, Integer, float::Constant::Pi};
 pub fn get_file_vars(
     options: Options,
     vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
@@ -583,9 +583,9 @@ pub fn add_var(
     Ok(())
 }
 pub fn set_commands_or_vars(
-    colors: &mut Colors,
+    colors: &mut Colors<Integer, Float, Complex>,
     options: &mut Options,
-    vars: &mut Vec<Variable<rug::Integer, rug::Float, rug::Complex>>,
+    vars: &mut Vec<Variable<Integer, Float, Complex>>,
     input: &[char],
 ) -> Result<(), &'static str> {
     let n = input.iter().collect::<String>();

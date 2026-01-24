@@ -306,13 +306,17 @@ pub fn write(
         writeln!(file, "{input}").unwrap();
     }
 }
-pub fn clearln(
+pub fn clearln<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     input: &[char],
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     start: usize,
     end: usize,
     options: Options,
-    colors: &Colors,
+    colors: &Colors<Integer, Float, Complex>,
 ) {
     print!(
         "\x1b[G{}{}\x1b[K{}",
@@ -330,13 +334,17 @@ pub fn clearln(
         }
     );
 }
-pub fn clear(
+pub fn clear<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     input: &[char],
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     start: usize,
     end: usize,
     options: Options,
-    colors: &Colors,
+    colors: &Colors<Integer, Float, Complex>,
 ) {
     print!(
         "\x1b[G{}{}\x1b[J{}",
@@ -354,11 +362,15 @@ pub fn clear(
         }
     );
 }
-pub fn to_output(
+pub fn to_output<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     input: &[char],
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     color: bool,
-    colors: &Colors,
+    colors: &Colors<Integer, Float, Complex>,
 ) -> String {
     if color {
         let mut count: isize = (input
@@ -463,12 +475,16 @@ pub fn to_output(
         input.iter().collect::<String>()
     }
 }
-pub fn handle_err(
+pub fn handle_err<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     err: &str,
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     input: &[char],
     options: Options,
-    colors: &Colors,
+    colors: &Colors<Integer, Float, Complex>,
     start: usize,
     end: usize,
 ) {
@@ -499,7 +515,14 @@ pub fn handle_err(
         },
     );
 }
-pub fn prompt(options: Options, colors: &Colors) -> String {
+pub fn prompt<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    options: Options,
+    colors: &Colors<Integer, Float, Complex>,
+) -> String {
     if !options.interactive {
         String::new()
     } else if options.prompt {
@@ -777,12 +800,16 @@ pub fn do_math_with_var(
     )
 }
 #[allow(clippy::type_complexity)]
-pub fn parsed_to_string(
-    mut input: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
-    func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+pub fn parsed_to_string<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut input: Vec<NumStr<Integer, Float, Complex>>,
+    vars: &[Variable<Integer, Float, Complex>],
+    func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
     options: &Options,
-    colors: &Colors,
+    colors: &Colors<Integer, Float, Complex>,
 ) -> String {
     let mut i = 0;
     'main: while i < input.len() {
@@ -962,9 +989,13 @@ pub fn insert_last(input: &[char], last: &str) -> String {
     }
     output
 }
-pub fn get_word_bank(
+pub fn get_word_bank<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
     word: &str,
-    vars: &[Variable<rug::Integer, rug::Float, rug::Complex>],
+    vars: &[Variable<Integer, Float, Complex>],
     options: Options,
 ) -> Vec<String> {
     let mut bank: Vec<String> = vars

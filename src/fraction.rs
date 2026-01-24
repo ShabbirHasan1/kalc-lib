@@ -8,7 +8,7 @@ use crate::{
 pub fn fraction<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>(
     value: F,
     options: Options,
-    colors: &Colors,
+    colors: &Colors<I, F, C>,
     n: usize,
 ) -> String {
     if value.clone().fract().is_zero() || !value.is_finite() || options.prec < 128 {

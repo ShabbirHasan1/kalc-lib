@@ -66,12 +66,16 @@ pub struct Data<
 > {
     pub vars: Vec<Variable<I, F, C>>,
     pub options: Options,
-    pub colors: Colors,
+    pub colors: Colors<I, F, C>,
 }
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Colors {
+pub struct Colors<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> {
     pub text: String,
     pub prompt: String,
     pub imag: String,
@@ -82,9 +86,14 @@ pub struct Colors {
     pub imcol: Vec<String>,
     pub label: (String, String, String),
     pub graphtofile: String,
-    pub default_units: Vec<(String, Number<rug::Integer, Float, Complex>)>,
+    pub default_units: Vec<(String, Number<Integer, Float, Complex>)>,
 }
-impl Default for Colors {
+impl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+> Default for Colors<Integer, Float, Complex>
+{
     fn default() -> Self {
         Self {
             text: "\x1b[0m".to_string(),
@@ -359,7 +368,15 @@ impl Units {
             unit: self.unit / b,
         }
     }
-    pub fn to_string(mut self, options: Options, colors: &Colors) -> String {
+    pub fn to_string<
+        Integer: crate::types::Integer<Float, Complex>,
+        Float: crate::types::Float<Integer, Complex>,
+        Complex: crate::types::Complex<Integer, Float>,
+    >(
+        mut self,
+        options: Options,
+        colors: &Colors<Integer, Float, Complex>,
+    ) -> String {
         let mut siunits = String::new();
         let mut meter = "m";
         let mut second = "s";
