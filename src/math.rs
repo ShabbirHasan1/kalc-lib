@@ -4341,7 +4341,10 @@ fn functions(
                                 .to_u32()
                                 .unwrap_or_default();
                             for k in 0..=n {
-                                sum += pow_n(b.clone(), k as usize) * euleriannumbersint(n, k)
+                                sum += pow_n(b.clone(), k as usize)
+                                    * euleriannumbersint::<rug::Integer, rug::Float, rug::Complex>(
+                                        n, k,
+                                    )
                             }
                             sum
                         }

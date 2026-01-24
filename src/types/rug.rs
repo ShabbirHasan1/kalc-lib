@@ -1,4 +1,6 @@
-use crate::types::{Complex, Constant, Float, FloatShared, Integer, Pow, WithVal, WithValImag};
+use crate::types::{
+    Complex, Constant, Float, FloatShared, Integer, IsPrime, Pow, WithVal, WithValImag,
+};
 macro_rules! with_val {
     ($ty:ty, $($v:ty),*) => {
         $(
@@ -40,6 +42,7 @@ with_val_imag!(
     isize,
     i128,
     u128,
+    u32,
     rug::Float,
     rug::Integer
 );
@@ -51,19 +54,34 @@ with_val!(
     isize,
     i128,
     u128,
+    u32,
+    bool,
     rug::Float,
     rug::Integer,
     (f64, f64),
     (i32, i32),
+    (u32, u32),
     (usize, usize),
     (isize, isize),
     (i128, i128),
     (u128, u128),
     (rug::Float, rug::Float),
+    (&rug::Float, &rug::Float),
     (rug::Integer, rug::Integer)
 );
-with_val!(rug::Float, f64, i32, usize, isize, rug::Integer, i128, u128);
-pow!(rug::Complex, f64, usize, isize, u32, i32, Self);
+with_val!(
+    rug::Float,
+    f64,
+    i32,
+    u32,
+    bool,
+    usize,
+    isize,
+    rug::Integer,
+    i128,
+    u128
+);
+pow!(rug::Complex, rug::Float, f64, usize, isize, u32, i32, Self);
 pow!(rug::Float, f64, usize, isize, u32, i32, Self);
 pow!(rug::Integer, u32);
 impl WithVal<Constant> for rug::Complex {
@@ -74,6 +92,7 @@ impl WithVal<Constant> for rug::Complex {
             Constant::Infinity => Self::with_val(prec, rug::float::Special::Infinity),
             Constant::NegInfinity => Self::with_val(prec, rug::float::Special::NegInfinity),
             Constant::Nan => Self::with_val(prec, rug::float::Special::Nan),
+            Constant::Tau => Self::with_val(prec, rug::float::Constant::Pi) * 2,
         }
     }
 }
@@ -84,7 +103,8 @@ impl WithValImag<Constant> for rug::Complex {
             Constant::E => Self::with_val(prec, 1).exp().mul_i(false),
             Constant::Infinity => Self::with_val(prec, (0, rug::float::Special::Infinity)),
             Constant::NegInfinity => Self::with_val(prec, (0, rug::float::Special::NegInfinity)),
-            Constant::Nan => Self::with_val(prec, rug::float::Special::Nan),
+            Constant::Nan => Self::with_val(prec, (0, rug::float::Special::Nan)),
+            Constant::Tau => Self::with_val(prec, (0, rug::float::Constant::Pi)) * 2,
         }
     }
 }
@@ -96,6 +116,7 @@ impl WithVal<Constant> for rug::Float {
             Constant::Infinity => Self::with_val(prec, rug::float::Special::Infinity),
             Constant::NegInfinity => Self::with_val(prec, rug::float::Special::NegInfinity),
             Constant::Nan => Self::with_val(prec, rug::float::Special::Nan),
+            Constant::Tau => Self::with_val(prec, rug::float::Constant::Pi) * 2,
         }
     }
 }
@@ -127,8 +148,23 @@ impl Integer<rug::Float, rug::Complex> for rug::Integer {
     fn to_i128(&self) -> Option<i128> {
         self.to_i128()
     }
+    fn is_probably_prime(&self, reps: u32) -> IsPrime {
+        self.is_probably_prime(reps).into()
+    }
     fn abs(self) -> Self {
         self.abs()
+    }
+    fn new() -> Self {
+        Self::new()
+    }
+}
+impl From<rug::integer::IsPrime> for IsPrime {
+    fn from(value: rug::integer::IsPrime) -> Self {
+        match value {
+            rug::integer::IsPrime::No => IsPrime::No,
+            rug::integer::IsPrime::Probably => IsPrime::Probably,
+            rug::integer::IsPrime::Yes => IsPrime::Yes,
+        }
     }
 }
 impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
@@ -152,6 +188,9 @@ impl FloatShared<rug::Integer, Self, rug::Complex> for rug::Float {
     }
     fn ln(self) -> Self {
         self.ln()
+    }
+    fn log10(self) -> Self {
+        self.log10()
     }
     fn sqrt(self) -> Self {
         self.sqrt()
@@ -182,6 +221,9 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     fn trunc(self) -> Self {
         self.trunc()
     }
+    fn round(self) -> Self {
+        self.round()
+    }
     fn gamma(self) -> Self {
         self.gamma()
     }
@@ -190,6 +232,9 @@ impl Float<rug::Integer, rug::Complex> for rug::Float {
     }
     fn to_integer(&self) -> Option<rug::Integer> {
         self.to_integer()
+    }
+    fn log2(self) -> Self {
+        self.log2()
     }
 }
 impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
@@ -214,6 +259,9 @@ impl FloatShared<rug::Integer, rug::Float, Self> for rug::Complex {
     fn ln(self) -> Self {
         self.ln()
     }
+    fn log10(self) -> Self {
+        self.log10()
+    }
     fn sqrt(self) -> Self {
         self.sqrt()
     }
@@ -227,5 +275,17 @@ impl Complex<rug::Integer, rug::Float> for rug::Complex {
     }
     fn imag(&self) -> &rug::Float {
         self.imag()
+    }
+    fn into_real_imag(self) -> (rug::Float, rug::Float) {
+        self.into_real_imag()
+    }
+    fn conj(self) -> Self {
+        self.conj()
+    }
+    fn arg(self) -> Self {
+        self.arg()
+    }
+    fn mul_i(self, negative: bool) -> Self {
+        self.mul_i(negative)
     }
 }

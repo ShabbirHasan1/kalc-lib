@@ -1,4 +1,4 @@
-use crate::types::Constant;
+use crate::types::{Constant, IsPrime};
 use crate::{
     complex::NumStr::{
         Comma, Division, Exponent, Func, LeftBracket, LeftCurlyBracket, Matrix, Minus,
@@ -13,11 +13,7 @@ use crate::{
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rug::{
     Complex, Float, Integer,
-    float::{
-        Constant::Pi,
-        Special::{Infinity, Nan},
-    },
-    integer::IsPrime,
+    float::Special::{Infinity, Nan},
     ops::Pow,
 };
 #[cfg(feature = "serde")]
@@ -523,99 +519,131 @@ impl<
         }
     }
 }
-pub fn and(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn and<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
         Complex::with_val(
             a.prec(),
-            (a.imag().is_zero() && b.imag().is_zero() && a.real() == &1 && b.real() == &1) as u8,
+            a.imag().is_zero() && b.imag().is_zero() && a.real() == &1 && b.real() == &1,
         ),
         None,
     )
 }
-pub fn or(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn or<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
         Complex::with_val(
             a.prec(),
-            (a.imag().is_zero() && b.imag().is_zero() && (a.real() == &1 || b.real() == &1)) as u8,
+            (a.imag().is_zero() && b.imag().is_zero() && (a.real() == &1 || b.real() == &1))
+                as usize,
         ),
         None,
     )
 }
-pub fn xor(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn xor<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
         Complex::with_val(
             a.prec(),
             (a.imag().is_zero() && b.imag().is_zero() && ((a.real() == &1) ^ (b.real() == &1)))
-                as u8,
+                as usize,
         ),
         None,
     )
 }
-pub fn nand(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn nand<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
         Complex::with_val(
             a.prec(),
-            (a.imag().is_zero() && b.imag().is_zero() && (a.real() != &1 || b.real() != &1)) as u8,
+            (a.imag().is_zero() && b.imag().is_zero() && (a.real() != &1 || b.real() != &1))
+                as usize,
         ),
         None,
     )
 }
-pub fn nor(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn nor<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
         Complex::with_val(
             a.prec(),
-            (a.imag().is_zero() && b.imag().is_zero() && (a.real() != &1 && b.real() != &1)) as u8,
+            (a.imag().is_zero() && b.imag().is_zero() && (a.real() != &1 && b.real() != &1))
+                as usize,
         ),
         None,
     )
 }
-pub fn implies(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn implies<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = &a.number;
     let b = &b.number;
     Number::from(
         Complex::with_val(
             a.prec(),
-            (a.imag().is_zero() && b.imag().is_zero() && (a.real() != &1 || b.real() == &1)) as u8,
+            (a.imag().is_zero() && b.imag().is_zero() && (a.real() != &1 || b.real() == &1))
+                as usize,
         ),
         None,
     )
 }
-pub fn not(
-    a: &NumStr<rug::Integer, rug::Float, rug::Complex>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+pub fn not<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &NumStr<Integer, Float, Complex>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     match a {
         Num(a) => {
             let a = &a.number;
             Ok(NumStr::new(Number::from(
-                Complex::with_val(a.prec(), (a.imag().is_zero() && a.real() != &1) as u8),
+                Complex::with_val(a.prec(), a.imag().is_zero() && a.real() != &1),
                 None,
             )))
         }
@@ -681,10 +709,14 @@ pub fn div<
         },
     )
 }
-pub fn root(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn root<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     Number::from(
         {
             let a = a.number.clone();
@@ -708,7 +740,14 @@ pub fn root(
         },
     )
 }
-pub fn unity(y: Complex, x: Complex) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+pub fn unity<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    y: Complex,
+    x: Complex,
+) -> Vec<Number<Integer, Float, Complex>> {
     if y.is_zero() {
         let n = x
             .into_real_imag()
@@ -721,8 +760,8 @@ pub fn unity(y: Complex, x: Complex) -> Vec<Number<rug::Integer, rug::Float, rug
         return vec![Number::from(Complex::new(y.prec()), None); n];
     }
     let y = y.ln();
-    let mut vec: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = Vec::new();
-    let taui: Complex = 2 * Complex::with_val(x.prec(), (0, Pi));
+    let mut vec: Vec<Number<Integer, Float, Complex>> = Vec::new();
+    let taui: Complex = Complex::with_val_imag(x.prec(), Constant::Tau);
     let r: Float = x.imag().clone().pow(2) / 2;
     let r: Float = x.real().clone() / 2 + r / x.real().clone();
     let n = (x.imag().clone() * y.real() / x.real() - y.imag()) / taui.imag().clone();
@@ -778,40 +817,52 @@ pub fn unity(y: Complex, x: Complex) -> Vec<Number<rug::Integer, rug::Float, rug
                     .unwrap_or_default()
             }
     } {
-        let r: Complex = (y.clone() + k * taui.clone()) / x.clone();
+        let r: Complex = (y.clone() + taui.clone() * k) / x.clone();
         let r: Complex = r.exp();
         vec.push(Number::from(r, None))
     }
     vec
 }
-pub fn shl(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn shl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     Number::from(
         a.number.clone() * pow_nth(Complex::with_val(a.number.prec(), 2), b.number.clone()),
         None,
     )
 }
-pub fn shr(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn shr<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     Number::from(
         a.number.clone() * pow_nth(Complex::with_val(a.number.prec(), 2), -b.number.clone()),
         None,
     )
 }
-pub fn ne(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn ne<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let ua = a.units;
     let ub = b.units;
     let a = a.number.clone();
     let b = b.number.clone();
     let c: Complex = a.clone() - b.clone();
-    let int = Integer::from(10).pow(a.prec().0 / 4);
+    let int = Integer::from(10).pow(a.prec() / 4);
     let re: Float = c.real().clone() * int.clone();
     let re: Float = re.round() / int.clone();
     let im: Float = c.imag().clone() * int.clone();
@@ -819,7 +870,7 @@ pub fn ne(
     Number::from(
         Complex::with_val(
             a.prec(),
-            ((!(re.is_zero()
+            (!(re.is_zero()
                 || (a.real().is_infinite()
                     && b.real().is_infinite()
                     && a.real().is_sign_positive() == b.real().is_sign_positive()))
@@ -831,21 +882,25 @@ pub fn ne(
                     (Some(a), Some(b)) => a != b,
                     (Some(a), None) | (None, Some(a)) => !a.is_none(),
                     (None, None) => false,
-                }) as u8,
+                },
         ),
         None,
     )
 }
-pub fn eq(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn eq<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let ua = a.units;
     let ub = b.units;
     let a = a.number.clone();
     let b = b.number.clone();
     let c: Complex = a.clone() - b.clone();
-    let int = Integer::from(10).pow(a.prec().0 / 4);
+    let int = Integer::from(10).pow(a.prec() / 4);
     let re: Float = c.real().clone() * int.clone();
     let re: Float = re.round() / int.clone();
     let im: Float = c.imag().clone() * int.clone();
@@ -853,7 +908,7 @@ pub fn eq(
     Number::from(
         Complex::with_val(
             a.prec(),
-            ((re.is_zero()
+            (re.is_zero()
                 || (a.real().is_infinite()
                     && b.real().is_infinite()
                     && a.real().is_sign_positive() == b.real().is_sign_positive())
@@ -865,15 +920,19 @@ pub fn eq(
                     (Some(a), Some(b)) => a == b,
                     (Some(a), None) | (None, Some(a)) => a.is_none(),
                     (None, None) => true,
-                }) as u8,
+                },
         ),
         None,
     )
 }
-pub fn about_eq(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn about_eq<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let ua = a.units;
     let ub = b.units;
     let a = a.number.clone();
@@ -881,7 +940,7 @@ pub fn about_eq(
     Number::from(
         Complex::with_val(
             a.prec(),
-            ((a.real().is_sign_positive() == b.real().is_sign_positive()
+            (a.real().is_sign_positive() == b.real().is_sign_positive()
                 && a.imag().is_sign_positive() == b.imag().is_sign_positive()
                 && a.real().clone().abs().log10().floor()
                     == b.real().clone().abs().log10().floor()
@@ -891,33 +950,45 @@ pub fn about_eq(
                     (Some(a), Some(b)) => a == b,
                     (Some(a), None) | (None, Some(a)) => a.is_none(),
                     (None, None) => true,
-                }) as u8,
+                },
         ),
         None,
     )
 }
-pub fn ge(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn ge<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     Number::from(
-        Complex::with_val(a.number.prec(), (a.number.real() >= b.number.real()) as u8),
+        Complex::with_val(a.number.prec(), a.number.real() >= b.number.real()),
         None,
     )
 }
-pub fn gt(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn gt<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     Number::from(
-        Complex::with_val(a.number.prec(), (a.number.real() > b.number.real()) as u8),
+        Complex::with_val(a.number.prec(), a.number.real() > b.number.real()),
         None,
     )
 }
-pub fn rem(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn rem<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = &a.number;
     let b = &b.number;
     let c = a.clone() / b.clone();
@@ -925,12 +996,19 @@ pub fn rem(
         a.prec(),
         (c.real().clone().floor(), c.imag().clone().floor()),
     );
-    Number::from(a - b * c, None)
+    Number::from(-c * b + a, None)
 }
-pub fn digamma(mut z: Complex, mut n: u32) -> Complex {
+pub fn digamma<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut z: Complex,
+    mut n: u32,
+) -> Complex {
     n += 1;
     let oop = z.prec();
-    let op = oop.0 / 2;
+    let op = oop / 2;
     let prec = n * op;
     z.set_prec(prec);
     let h: Float = Float::with_val(prec, 0.5).pow(op / 2);
@@ -962,10 +1040,14 @@ pub fn gamma<
         a.real().clone().gamma().into()
     }
 }
-pub fn tetration(
-    a: &Number<rug::Integer, rug::Float, rug::Complex>,
-    b: &Number<rug::Integer, rug::Float, rug::Complex>,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn tetration<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Number<Integer, Float, Complex>,
+    b: &Number<Integer, Float, Complex>,
+) -> Number<Integer, Float, Complex> {
     let a = a.number.clone();
     let b = b.number.clone();
     Number::from(
@@ -983,7 +1065,8 @@ pub fn tetration(
             } else if b == -1 {
                 Complex::new(a.prec())
             } else {
-                Complex::with_val(a.prec(), (Infinity, Nan))
+                Complex::with_val(a.prec(), Constant::Infinity)
+                    + Complex::with_val_imag(a.prec(), Constant::Nan)
             }
         } else {
             tetration_recursion(a.clone(), b.clone())
@@ -991,37 +1074,58 @@ pub fn tetration(
         None,
     )
 }
-fn tetration_recursion(a: Complex, b: Complex) -> Complex {
+fn tetration_recursion<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: Complex,
+    b: Complex,
+) -> Complex {
     if b.real().is_sign_positive() {
         pow_nth(a.clone(), tetration_recursion(a, b - 1))
     } else if b.real() <= &-1 {
         tetration_recursion(a.clone(), b + 1).ln() / a.ln()
     } else {
         let aln = a.abs().clone().ln();
-        1 + b.clone() * (aln.clone() * (2 + b.clone()) - b) / (1 + aln)
+        b.clone() * (aln.clone() * (b.clone()) - b + 2) / (aln + 1) + 1
     }
 }
-pub fn slog(a: &Complex, b: &Complex) -> Complex {
+pub fn slog<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &Complex,
+    b: &Complex,
+) -> Complex {
     if b.real() <= &0 {
         let z = &pow_nth(a.clone(), b.clone());
         if z.real() <= b.real() {
-            Complex::with_val(a.prec(), Nan)
+            Complex::with_val(a.prec(), Constant::Nan)
         } else {
             slog(a, z) - 1
         }
     } else if b.real() > &1 {
         let z = &(b.clone().ln() / a.clone().ln());
         if z.real() >= b.real() {
-            Complex::with_val(a.prec(), Nan)
+            Complex::with_val(a.prec(), Constant::Nan)
         } else {
             slog(a, z) + 1
         }
     } else {
         let a = a.clone().ln();
-        b.clone() * (2 * a.clone() + b * (1 - a.clone())) / (1 + a) - 1
+        b.clone() * (a.clone() * 2 + (-a.clone() + 1) * b) / (a + 1) - 1
     }
 }
-pub fn atan(a: Complex, b: Complex) -> Complex {
+pub fn atan<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: Complex,
+    b: Complex,
+) -> Complex {
     if a.imag().is_zero() && b.imag().is_zero() {
         Complex::with_val(a.prec(), (a.real(), b.real())).arg()
     } else {
@@ -1030,10 +1134,14 @@ pub fn atan(a: Complex, b: Complex) -> Complex {
         -i.clone() * ((a + b * i) / abs.sqrt()).ln()
     }
 }
-pub fn to_polar(
-    mut a: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
+pub fn to_polar<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut a: Vec<Number<Integer, Float, Complex>>,
     to_deg: Complex,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+) -> Vec<Number<Integer, Float, Complex>> {
     if a.len() == 1 {
         a.push(Number::from(Complex::new(a[0].number.prec()), None));
     }
@@ -1059,7 +1167,7 @@ pub fn to_polar(
                         if a[0].number.real().is_sign_positive() {
                             Complex::new(a[0].number.prec())
                         } else {
-                            to_deg * Float::with_val(a[0].number.prec().0, Pi)
+                            to_deg * Float::with_val(a[0].number.prec(), Constant::Pi)
                         },
                         Some(Units {
                             angle: 1.0,
@@ -1166,10 +1274,14 @@ pub fn to_polar(
         ]
     }
 }
-pub fn to_cyl(
-    mut a: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
+pub fn to_cyl<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut a: Vec<Number<Integer, Float, Complex>>,
     to_deg: Complex,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+) -> Vec<Number<Integer, Float, Complex>> {
     if a.len() == 1 {
         a.push(Number::from(Complex::new(a[0].number.prec()), None));
     }
@@ -1195,7 +1307,7 @@ pub fn to_cyl(
                         if a[0].number.real().is_sign_positive() {
                             Complex::new(a[0].number.prec())
                         } else {
-                            to_deg * Float::with_val(a[0].number.prec().0, Pi)
+                            to_deg * Float::with_val(a[0].number.prec(), Constant::Pi)
                         },
                         Some(Units {
                             angle: 1.0,
@@ -1274,10 +1386,14 @@ pub fn to_cyl(
         ]
     }
 }
-pub fn to(
-    a: &NumStr<rug::Integer, rug::Float, rug::Complex>,
-    b: &NumStr<rug::Integer, rug::Float, rug::Complex>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+pub fn to<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &NumStr<Integer, Float, Complex>,
+    b: &NumStr<Integer, Float, Complex>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     Ok(match (a, b) {
         (Num(a), Num(b)) => {
             let prec = a.number.prec();
@@ -1295,7 +1411,7 @@ pub fn to(
                 .unwrap_or_default()
                 .to_isize()
                 .unwrap_or_default();
-            let vec: Vec<Number<rug::Integer, rug::Float, rug::Complex>> = if a < b {
+            let vec: Vec<Number<Integer, Float, Complex>> = if a < b {
                 (a..=b)
                     .map(|a| Number::from(Complex::with_val(prec, a), None))
                     .collect()
@@ -1319,7 +1435,7 @@ pub fn to(
                 .unwrap_or_default()
                 .to_isize()
                 .unwrap_or_default();
-            let mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> = a
+            let mat: Vec<Vec<Number<Integer, Float, Complex>>> = a
                 .iter()
                 .map(|a| {
                     let a = a
@@ -1355,7 +1471,7 @@ pub fn to(
                 .unwrap_or_default()
                 .to_isize()
                 .unwrap_or_default();
-            let mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> = b
+            let mat: Vec<Vec<Number<Integer, Float, Complex>>> = b
                 .iter()
                 .map(|b| {
                     let b = b
@@ -1568,9 +1684,13 @@ pub fn submatrix<
         })
         .collect()
 }
-pub fn trace(
-    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+pub fn trace<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &[Vec<Number<Integer, Float, Complex>>],
+) -> Number<Integer, Float, Complex> {
     let mut n = Complex::new(a[0][0].number.prec());
     for (i, j) in a.iter().enumerate() {
         if j.len() == i {
@@ -1580,7 +1700,14 @@ pub fn trace(
     }
     Number::from(n, a[0][0].units)
 }
-pub fn identity(a: usize, prec: u32) -> Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> {
+pub fn identity<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: usize,
+    prec: u32,
+) -> Vec<Vec<Number<Integer, Float, Complex>>> {
     let mut mat = Vec::with_capacity(a.max(1));
     for i in 0..a {
         let mut vec = Vec::with_capacity(a.max(1));
@@ -1663,9 +1790,13 @@ pub fn transpose<
     b
 }
 #[allow(clippy::type_complexity)]
-pub fn minors(
-    a: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
-) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
+pub fn minors<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &[Vec<Number<Integer, Float, Complex>>],
+) -> Result<Vec<Vec<Number<Integer, Float, Complex>>>, &'static str> {
     if a.iter().all(|j| a.len() == j.len()) {
         let mut result = vec![vec![Number::from(Complex::new(1), None); a[0].len()]; a.len()];
         for (i, k) in result.iter_mut().enumerate() {
@@ -1719,7 +1850,13 @@ pub fn inverse<
         Err("not square")
     }
 }
-pub fn nth_prime(n: Integer) -> Integer {
+pub fn nth_prime<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    n: Integer,
+) -> Integer {
     let mut count = Integer::from(1);
     let mut num = Integer::from(3);
     if n == 0 {
@@ -1769,9 +1906,13 @@ pub fn prime_factors<
     }
     mat
 }
-pub fn sort(
-    mut a: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+pub fn sort<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut a: Vec<Number<Integer, Float, Complex>>,
+) -> Vec<Number<Integer, Float, Complex>> {
     a.sort_by(|x, y| {
         x.number
             .real()
@@ -1780,10 +1921,14 @@ pub fn sort(
     });
     a
 }
-pub fn sort_mat(
-    mut a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
+pub fn sort_mat<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut a: Vec<Vec<Number<Integer, Float, Complex>>>,
     prec: u32,
-) -> Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>> {
+) -> Vec<Vec<Number<Integer, Float, Complex>>> {
     a.sort_by(|x, y| {
         if x.is_empty() || y.is_empty() {
             Ordering::Equal
@@ -1800,15 +1945,19 @@ pub fn sort_mat(
     a.sort_by(|x, y| x.len().partial_cmp(&y.len()).unwrap_or(Ordering::Equal));
     a
 }
-pub fn eigenvalues(
-    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+pub fn eigenvalues<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mat: &[Vec<Number<Integer, Float, Complex>>],
     real: bool,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         match mat.len() {
             1 => Ok(NumStr::new(mat[0][0].clone())),
             2 => {
-                let pr = mat[0][0].number.prec().0;
+                let pr = mat[0][0].number.prec();
                 let mut mat = Matrix(mat.into());
                 mat.set_prec(pr * 2);
                 let mat = mat.mat()?;
@@ -1829,7 +1978,7 @@ pub fn eigenvalues(
                 Ok(v)
             }
             3 => {
-                let pr = mat[0][0].number.prec().0;
+                let pr = mat[0][0].number.prec();
                 let mut mat = Matrix(mat.into());
                 mat.set_prec(pr * 2);
                 let mat = mat.mat()?;
@@ -1877,7 +2026,7 @@ pub fn eigenvalues(
                 Ok(v)
             }
             4 => {
-                let pr = mat[0][0].number.prec().0;
+                let pr = mat[0][0].number.prec();
                 let mut mat = Matrix(mat.into());
                 mat.set_prec(pr * 2);
                 let mat = mat.mat()?;
@@ -1980,16 +2129,20 @@ pub fn eigenvalues(
         Err("not square")
     }
 }
-pub fn eigenvectors(
-    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+pub fn eigenvectors<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mat: &[Vec<Number<Integer, Float, Complex>>],
     real: bool,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         let one = Number::from(Complex::with_val(mat[0][0].number.prec(), 1), None);
         match mat.len() {
             1 => Ok(NumStr::new(one)),
             2..5 => {
-                let p = mat[0][0].number.prec().0;
+                let p = mat[0][0].number.prec();
                 let mut l = eigenvalues(mat, real)?.vec()?;
                 let mut i = 0;
                 while i + 1 < l.len() {
@@ -2010,7 +2163,7 @@ pub fn eigenvectors(
                 let v = l
                     .iter()
                     .filter_map(|l| {
-                        Matrix(identity(mat.len(), l.number.prec().0))
+                        Matrix(identity(mat.len(), l.number.prec()))
                             .mul(&NumStr::new(l.clone()))
                             .map(|n| {
                                 Matrix(mat.to_vec())
@@ -2021,7 +2174,7 @@ pub fn eigenvectors(
                             .unwrap_or(None)
                     })
                     .flatten()
-                    .collect::<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>();
+                    .collect::<Vec<Vec<Number<Integer, Float, Complex>>>>();
                 Ok(Matrix(v))
             }
             _ => Err("unsupported"),
@@ -2030,13 +2183,17 @@ pub fn eigenvectors(
         Err("not square")
     }
 }
-pub fn rcf(
-    mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+pub fn rcf<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mat: Vec<Vec<Number<Integer, Float, Complex>>>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if mat.is_empty() || (0..mat.len()).any(|j| mat.len() != mat[j].len()) {
         return Err("matrix not square");
     }
-    let pr = mat[0][0].number.prec().0;
+    let pr = mat[0][0].number.prec();
     let l = mat.len();
     let mut ev = gen_ev(&mat, false)?;
     let mut beta = Vec::new();
@@ -2045,7 +2202,7 @@ pub fn rcf(
         let v = ev
             .iter_mut()
             .filter_map(|e| e.pop().map(Vector))
-            .collect::<Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>>();
+            .collect::<Vec<NumStr<Integer, Float, Complex>>>();
         let l = v.len();
         if l == 0 {
             break;
@@ -2066,13 +2223,17 @@ pub fn rcf(
     }
     change_basis(mat, &identity(l, pr), &transpose(&beta))
 }
-pub fn jcf(
-    mat: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+pub fn jcf<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mat: Vec<Vec<Number<Integer, Float, Complex>>>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if mat.is_empty() || (0..mat.len()).any(|j| mat.len() != mat[j].len()) {
         return Err("matrix not square");
     }
-    let pr = mat[0][0].number.prec().0;
+    let pr = mat[0][0].number.prec();
     let l = mat.len();
     let beta = transpose(&generalized_eigenvectors(&mat, false)?.mat()?);
     let i = identity(l, pr);
@@ -2106,14 +2267,18 @@ pub fn jcf(
     Ok(d)
 }
 #[allow(clippy::type_complexity)]
-fn gen_ev(
-    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+fn gen_ev<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mat: &[Vec<Number<Integer, Float, Complex>>],
     real: bool,
-) -> Result<Vec<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>, &'static str> {
+) -> Result<Vec<Vec<Vec<Number<Integer, Float, Complex>>>>, &'static str> {
     if mat.is_empty() || (0..mat.len()).any(|j| mat.len() != mat[j].len()) {
         return Err("matrix not square");
     }
-    let p = mat[0][0].number.prec().0;
+    let p = mat[0][0].number.prec();
     let mut l = eigenvalues(mat, real)?.vec()?;
     let mut i = 0;
     while i + 1 < l.len() {
@@ -2131,7 +2296,7 @@ fn gen_ev(
     }
     Ok(l.iter()
         .filter_map(|l| {
-            Matrix(identity(mat.len(), l.number.prec().0))
+            Matrix(identity(mat.len(), l.number.prec()))
                 .mul(&NumStr::new(l.clone()))
                 .map(|n| {
                     Matrix(mat.to_vec())
@@ -2151,12 +2316,16 @@ fn gen_ev(
                 })
                 .unwrap_or(None)
         })
-        .collect::<Vec<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>>())
+        .collect::<Vec<Vec<Vec<Number<Integer, Float, Complex>>>>>())
 }
-pub fn generalized_eigenvectors(
-    mat: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
+pub fn generalized_eigenvectors<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mat: &[Vec<Number<Integer, Float, Complex>>],
     real: bool,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     if !mat.is_empty() && (0..mat.len()).all(|j| mat.len() == mat[j].len()) {
         let one = Number::from(Complex::with_val(mat[0][0].number.prec(), 1), None);
         match mat.len() {
@@ -2166,7 +2335,7 @@ pub fn generalized_eigenvectors(
                     .iter()
                     .flatten()
                     .cloned()
-                    .collect::<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>>(),
+                    .collect::<Vec<Vec<Number<Integer, Float, Complex>>>>(),
             )),
             _ => Err("unsupported"),
         }
@@ -2174,11 +2343,15 @@ pub fn generalized_eigenvectors(
         Err("not square")
     }
 }
-pub fn change_basis(
-    a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
-    beta: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
-    gamma: &[Vec<Number<rug::Integer, rug::Float, rug::Complex>>],
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+pub fn change_basis<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: Vec<Vec<Number<Integer, Float, Complex>>>,
+    beta: &[Vec<Number<Integer, Float, Complex>>],
+    gamma: &[Vec<Number<Integer, Float, Complex>>],
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     let m = Matrix(a);
     let tn = Matrix(inverse(&transpose(gamma))?);
     let mut c = Vec::new();
@@ -2192,17 +2365,25 @@ pub fn change_basis(
     }
     Matrix(c).mul(&m)?.mul(&Matrix(d))
 }
-pub fn coordinate(
-    v: Vec<Number<rug::Integer, rug::Float, rug::Complex>>,
-    beta: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
-) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
+pub fn coordinate<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    v: Vec<Number<Integer, Float, Complex>>,
+    beta: Vec<Vec<Number<Integer, Float, Complex>>>,
+) -> Result<NumStr<Integer, Float, Complex>, &'static str> {
     let tn = Matrix(inverse(&transpose(&beta))?);
     tn.mul(&Vector(v))
 }
 #[allow(clippy::type_complexity)]
-pub fn rref(
-    mut a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
-) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
+pub fn rref<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut a: Vec<Vec<Number<Integer, Float, Complex>>>,
+) -> Result<Vec<Vec<Number<Integer, Float, Complex>>>, &'static str> {
     if a.is_empty() || a[0].is_empty() || a.iter().any(|b| a[0].len() != b.len()) {
         return Err("invalid matrix");
     }
@@ -2233,13 +2414,17 @@ pub fn rref(
     Ok(a.to_vec())
 }
 #[allow(clippy::type_complexity)]
-pub fn kernel(
-    a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
-) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
+pub fn kernel<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: Vec<Vec<Number<Integer, Float, Complex>>>,
+) -> Result<Vec<Vec<Number<Integer, Float, Complex>>>, &'static str> {
     if a.is_empty() || a[0].is_empty() || a.iter().any(|b| a[0].len() != b.len()) {
         return Err("invalid matrix");
     }
-    let pr = a[0][0].number.prec().0;
+    let pr = a[0][0].number.prec();
     let rref = rref(a.clone())?;
     let mut ker = Vec::new();
     let mut leading_ones = Vec::new();
@@ -2255,7 +2440,7 @@ pub fn kernel(
             let mut zero = vec![Number::from(Complex::new(pr), None); rref[0].len()];
             for j in 0..i.min(leading_ones.len()) {
                 if leading_ones[j] < i {
-                    zero[leading_ones[j]] = Number::from(-1.0 * t[j].number.clone(), None)
+                    zero[leading_ones[j]] = Number::from(-t[j].number.clone(), None)
                 }
             }
             zero[i] = Number::from(Complex::with_val(pr, 1), None);
@@ -2271,9 +2456,13 @@ pub fn kernel(
     Ok(ker)
 }
 #[allow(clippy::type_complexity)]
-pub fn range(
-    a: Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>,
-) -> Result<Vec<Vec<Number<rug::Integer, rug::Float, rug::Complex>>>, &'static str> {
+pub fn range<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: Vec<Vec<Number<Integer, Float, Complex>>>,
+) -> Result<Vec<Vec<Number<Integer, Float, Complex>>>, &'static str> {
     let rref = rref(a.clone())?;
     let mut ran = Vec::new();
     let mut leading_ones = Vec::new();
@@ -2304,12 +2493,16 @@ pub fn div_units(a: Option<Units>, b: Option<Units>) -> Option<Units> {
         _ => None,
     }
 }
-pub fn quadratic(
-    a: Number<rug::Integer, rug::Float, rug::Complex>,
-    b: Number<rug::Integer, rug::Float, rug::Complex>,
-    c: Number<rug::Integer, rug::Float, rug::Complex>,
+pub fn quadratic<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: Number<Integer, Float, Complex>,
+    b: Number<Integer, Float, Complex>,
+    c: Number<Integer, Float, Complex>,
     real: bool,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+) -> Vec<Number<Integer, Float, Complex>> {
     if a.number.is_zero() {
         return if b.number.is_zero() {
             vec![Number::from(Complex::new(a.number.prec()), None)]
@@ -2318,11 +2511,14 @@ pub fn quadratic(
             let b = b.number;
             let c = c.number;
             let mut r = -c / b;
-            if -r.imag().clone().abs().log10() > a.number.prec().0 / 4 {
+            if -r.imag().clone().abs().log10() > a.number.prec() / 4 {
                 r = r.real().clone().into();
             }
             if real && !r.imag().is_zero() {
-                vec![Number::from(Complex::with_val(a.number.prec(), Nan), None)]
+                vec![Number::from(
+                    Complex::with_val(a.number.prec(), Constant::Nan),
+                    None,
+                )]
             } else {
                 vec![Number::from(r, units)]
             }
@@ -2333,15 +2529,15 @@ pub fn quadratic(
     let b = b.number;
     let c = c.number;
     let p: Complex = sqr(b.clone());
-    let p: Complex = p - (4 * c * a.clone());
+    let p: Complex = p - (c * a.clone() * 4);
     let p = p.sqrt();
-    let a: Complex = 2 * a;
+    let a: Complex = a * 2;
     let mut z1 = (p.clone() - b.clone()) / a.clone();
     let mut z2 = (-p - b) / a.clone();
-    if -z1.imag().clone().abs().log10() > a.prec().0 / 4 {
+    if -z1.imag().clone().abs().log10() > a.prec() / 4 {
         z1 = z1.real().clone().into();
     }
-    if -z2.imag().clone().abs().log10() > a.prec().0 / 4 {
+    if -z2.imag().clone().abs().log10() > a.prec() / 4 {
         z2 = z2.real().clone().into();
     }
     if real {
@@ -2353,7 +2549,10 @@ pub fn quadratic(
             vec.push(Number::from(z2, units))
         }
         if vec.is_empty() {
-            vec![Number::from(Complex::with_val(a.prec(), Nan), None)]
+            vec![Number::from(
+                Complex::with_val(a.prec(), Constant::Nan),
+                None,
+            )]
         } else {
             vec
         }
@@ -2361,13 +2560,17 @@ pub fn quadratic(
         vec![Number::from(z1, units), Number::from(z2, units)]
     }
 }
-pub fn cubic(
-    a: Number<rug::Integer, rug::Float, rug::Complex>,
-    b: Number<rug::Integer, rug::Float, rug::Complex>,
-    c: Number<rug::Integer, rug::Float, rug::Complex>,
-    d: Number<rug::Integer, rug::Float, rug::Complex>,
+pub fn cubic<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: Number<Integer, Float, Complex>,
+    b: Number<Integer, Float, Complex>,
+    c: Number<Integer, Float, Complex>,
+    d: Number<Integer, Float, Complex>,
     real: bool,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+) -> Vec<Number<Integer, Float, Complex>> {
     let units = div_units(d.units, a.units).map(|a| a.root(3.0));
     if a.number.is_zero() {
         return quadratic(b, c, d, real);
@@ -2382,19 +2585,19 @@ pub fn cubic(
     let b = b.number;
     let c = c.number;
     let prec = a.prec();
-    let threerecip = Float::with_val(prec.0, 3).recip();
+    let threerecip = Float::with_val(prec, 3).recip();
     if b.is_zero() && c.is_zero() {
         let reuse = pow_nth(d / a.clone(), threerecip.clone().into());
         let mut z1 = -reuse.clone();
-        let mut z2 = reuse.clone() * Complex::with_val(prec.0, -1).pow(threerecip.clone());
-        let mut z3: Complex = -reuse * Complex::with_val(prec.0, -1).pow(2 * threerecip);
-        if -z1.imag().clone().abs().log10() > a.prec().0 / 4 {
+        let mut z2 = reuse.clone() * Complex::with_val(prec, -1).pow(threerecip.clone());
+        let mut z3: Complex = -reuse * Complex::with_val(prec, -1).pow(threerecip * 2);
+        if -z1.imag().clone().abs().log10() > a.prec() / 4 {
             z1 = z1.real().clone().into();
         }
-        if -z2.imag().clone().abs().log10() > a.prec().0 / 4 {
+        if -z2.imag().clone().abs().log10() > a.prec() / 4 {
             z2 = z2.real().clone().into();
         }
-        if -z3.imag().clone().abs().log10() > a.prec().0 / 4 {
+        if -z3.imag().clone().abs().log10() > a.prec() / 4 {
             z3 = z3.real().clone().into();
         }
         return if real {
@@ -2409,7 +2612,7 @@ pub fn cubic(
                 vec.push(Number::from(z3, units))
             }
             if vec.is_empty() {
-                vec![Number::from(Complex::with_val(prec, Nan), None)]
+                vec![Number::from(Complex::with_val(prec, Constant::Nan), None)]
             } else {
                 vec
             }
@@ -2425,12 +2628,12 @@ pub fn cubic(
     let c = c / a.clone();
     let d = d / a.clone();
     // https://en.wikipedia.org/wiki/Cubic_equation#General_cubic_formula
-    let d0: Complex = sqr(b.clone()) - 3 * c.clone();
-    let d1: Complex = 2 * cube(b.clone()) - 9 * b.clone() * c.clone() + 27 * d.clone();
-    let c: Complex = sqr(d1.clone()) - 4 * cube(d0.clone());
+    let d0: Complex = sqr(b.clone()) - c.clone() * 3;
+    let d1: Complex = cube(b.clone()) * 2 - b.clone() * c.clone() * 9 + d.clone() * 27;
+    let c: Complex = sqr(d1.clone()) - cube(d0.clone()) * 4;
     let c: Complex = (d1 + c.sqrt()) / 2;
     let c = pow_nth(c, threerecip.clone().into());
-    let omega: Complex = Complex::with_val(prec, (-0.5, Float::with_val(prec.0, 3).sqrt() / 2));
+    let omega: Complex = (Complex::with_val(prec, 3).sqrt().mul_i(false) - 1) / 2;
     let mut z1: Complex = if d0.is_zero() {
         -(b.clone() + c.clone()) / 3
     } else {
@@ -2448,13 +2651,13 @@ pub fn cubic(
     } else {
         -(b + c1.clone() + d0 / c1) / 3
     };
-    if -z1.imag().clone().abs().log10() > a.prec().0 / 4 {
+    if -z1.imag().clone().abs().log10() > a.prec() / 4 {
         z1 = z1.real().clone().into();
     }
-    if -z2.imag().clone().abs().log10() > a.prec().0 / 4 {
+    if -z2.imag().clone().abs().log10() > a.prec() / 4 {
         z2 = z2.real().clone().into();
     }
-    if -z3.imag().clone().abs().log10() > a.prec().0 / 4 {
+    if -z3.imag().clone().abs().log10() > a.prec() / 4 {
         z3 = z3.real().clone().into();
     }
     if real {
@@ -2469,7 +2672,7 @@ pub fn cubic(
             vec.push(Number::from(z3, units))
         }
         if vec.is_empty() {
-            vec![Number::from(Complex::with_val(prec, Nan), None)]
+            vec![Number::from(Complex::with_val(prec, Constant::Nan), None)]
         } else {
             vec
         }
@@ -2481,14 +2684,18 @@ pub fn cubic(
         ]
     }
 }
-pub fn quartic(
-    div: Number<rug::Integer, rug::Float, rug::Complex>,
-    b: Number<rug::Integer, rug::Float, rug::Complex>,
-    c: Number<rug::Integer, rug::Float, rug::Complex>,
-    d: Number<rug::Integer, rug::Float, rug::Complex>,
-    e: Number<rug::Integer, rug::Float, rug::Complex>,
+pub fn quartic<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    div: Number<Integer, Float, Complex>,
+    b: Number<Integer, Float, Complex>,
+    c: Number<Integer, Float, Complex>,
+    d: Number<Integer, Float, Complex>,
+    e: Number<Integer, Float, Complex>,
     real: bool,
-) -> Vec<Number<rug::Integer, rug::Float, rug::Complex>> {
+) -> Vec<Number<Integer, Float, Complex>> {
     let units = div_units(e.units, div.units).map(|a| a.root(4.0));
     if e.number.is_zero() {
         let mut vec = cubic(div, b, c, d, real);
@@ -2504,7 +2711,7 @@ pub fn quartic(
     let d = d.number;
     let e = e.number;
     let prec = div.prec();
-    let threerecip = Float::with_val(prec.0, 3).recip();
+    let threerecip = Float::with_val(prec, 3).recip();
     let a = b / div.clone();
     let b = c / div.clone();
     let c = d / div.clone();
@@ -2524,31 +2731,31 @@ pub fn quartic(
         };
     }
     // https://upload.wikimedia.org/wikipedia/commons/9/99/Quartic_Formula.svg
-    let alpha: Complex = sqr(b.clone()) - 3 * a.clone() * c.clone() + 12 * d.clone();
-    let phi: Complex = 2 * cube(b.clone()) - 9 * a.clone() * b.clone() * c.clone()
-        + 27 * sqr(c.clone())
-        + 27 * sqr(a.clone()) * d.clone()
-        - 72 * b.clone() * d.clone();
-    let omega: Complex = -4 * cube(alpha.clone()) + sqr(phi.clone());
+    let alpha: Complex = sqr(b.clone()) - a.clone() * c.clone() * 3 + d.clone() * 12;
+    let phi: Complex = cube(b.clone()) * 2 - a.clone() * b.clone() * c.clone() * 9
+        + sqr(c.clone()) * 27
+        + sqr(a.clone()) * d.clone() * 27
+        - b.clone() * d.clone() * 72;
+    let omega: Complex = cube(alpha.clone()) * -4 + sqr(phi.clone());
     let omega: Complex = phi + omega.sqrt();
     let alpha: Complex = if alpha.is_zero() {
         Complex::new(prec)
     } else {
-        Float::with_val(prec.0, 2).pow(threerecip.clone()) * alpha
-            / (3 * pow_nth(omega.clone(), threerecip.clone().into()))
+        Float::with_val(prec, 2).pow(threerecip.clone()) * alpha
+            / (pow_nth(omega.clone(), threerecip.clone().into()) * 3)
     };
     let beta: Complex = omega / 54;
     let beta: Complex = pow_nth(beta, threerecip.clone().into());
-    let infirst: Complex = sqr(a.clone()) / 4 - 2 * b.clone() / 3 + alpha.clone() + beta.clone();
+    let infirst: Complex = sqr(a.clone()) / 4 - b.clone() / 3 * 2 + alpha.clone() + beta.clone();
     let first: Complex = infirst.clone().sqrt() / 2;
-    let third: Complex = -1 * cube(a.clone()) + 4 * a.clone() * b.clone() - 8 * c.clone();
+    let third: Complex = -cube(a.clone()) + a.clone() * b.clone() * 4 - c.clone() * 8;
     let third: Complex = if third.is_zero() {
         Complex::new(prec)
     } else {
         third / (first.clone() * 8)
     };
     let a4: Complex = -a.clone() / 4;
-    let second: Complex = sqr(a.clone()) / 2 - 4 * b.clone() / 3 - alpha.clone() - beta.clone();
+    let second: Complex = sqr(a.clone()) / 2 - b.clone() / 3 * 4 - alpha.clone() - beta.clone();
     let secondn: Complex = second.clone() - third.clone();
     let secondn: Complex = secondn.sqrt() / 2;
     let secondp: Complex = second + third.clone();
@@ -2557,16 +2764,16 @@ pub fn quartic(
     let mut r2 = a4.clone() - first.clone() + secondn.clone();
     let mut r3 = a4.clone() + first.clone() - secondp.clone();
     let mut r4 = a4.clone() + first.clone() + secondp.clone();
-    if -r1.imag().clone().abs().log10() > a.prec().0 / 8 {
+    if -r1.imag().clone().abs().log10() > a.prec() / 8 {
         r1 = r1.real().clone().into();
     }
-    if -r2.imag().clone().abs().log10() > a.prec().0 / 8 {
+    if -r2.imag().clone().abs().log10() > a.prec() / 8 {
         r2 = r2.real().clone().into();
     }
-    if -r3.imag().clone().abs().log10() > a.prec().0 / 8 {
+    if -r3.imag().clone().abs().log10() > a.prec() / 8 {
         r3 = r3.real().clone().into();
     }
-    if -r4.imag().clone().abs().log10() > a.prec().0 / 8 {
+    if -r4.imag().clone().abs().log10() > a.prec() / 8 {
         r4 = r4.real().clone().into();
     }
     if real {
@@ -2584,7 +2791,7 @@ pub fn quartic(
             vec.push(Number::from(r4, units))
         }
         if vec.is_empty() {
-            vec![Number::from(Complex::with_val(prec, Nan), None)]
+            vec![Number::from(Complex::with_val(prec, Constant::Nan), None)]
         } else {
             vec
         }
@@ -2597,11 +2804,15 @@ pub fn quartic(
         ]
     }
 }
-pub fn variance(
-    a: &[Number<rug::Integer, rug::Float, rug::Complex>],
+pub fn variance<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    a: &[Number<Integer, Float, Complex>],
     mean: Option<Complex>,
     prec: u32,
-) -> Number<rug::Integer, rug::Float, rug::Complex> {
+) -> Number<Integer, Float, Complex> {
     let mean = if let Some(n) = mean {
         n
     } else {
@@ -2776,7 +2987,14 @@ pub fn recursion(
     }
     do_math(func, options, func_vars)
 }
-pub fn gcd(mut x: Integer, mut y: Integer) -> Integer {
+pub fn gcd<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    mut x: Integer,
+    mut y: Integer,
+) -> Integer {
     while x != y {
         if x > y {
             x -= y.clone()
@@ -2828,24 +3046,45 @@ fn incomplete_beta_recursion<
             / (incomplete_beta_recursion(x, a, b, iter + 1, max) + 1)
     }
 }
-pub fn erf(z: Complex) -> Complex {
-    1 - erfc(z)
+pub fn erf<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    z: Complex,
+) -> Complex {
+    -erfc(z) + 1
 }
-pub fn erfc(z: Complex) -> Complex {
+pub fn erfc<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    z: Complex,
+) -> Complex {
     let p2: Complex = sqr(z.clone());
-    erfc_recursion(z.clone(), 0, z.prec().0 as usize / 4) / Complex::with_val(z.prec(), Pi).sqrt()
+    erfc_recursion(z.clone(), 0, z.prec() as usize / 4)
+        / Complex::with_val(z.prec(), Constant::Pi).sqrt()
         * z
         / p2.exp()
 }
-fn erfc_recursion(z: Complex, iter: usize, max: usize) -> Complex {
+fn erfc_recursion<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    z: Complex,
+    iter: usize,
+    max: usize,
+) -> Complex {
     if iter == max {
         Complex::with_val(z.prec(), 1)
     } else if iter == 0 {
         erfc_recursion(z, 1, max).recip()
     } else if iter % 2 == 1 {
-        sqr(z.clone()) + iter / (2 * erfc_recursion(z, iter + 1, max))
+        sqr(z.clone()) + Float::with_val(z.prec(), iter) / (erfc_recursion(z, iter + 1, max) * 2)
     } else {
-        1 + iter / (2 * erfc_recursion(z, iter + 1, max))
+        Float::with_val(z.prec(), iter) / (erfc_recursion(z, iter + 1, max) * 2) + 1
     }
 }
 fn gamma0<
@@ -2896,30 +3135,50 @@ fn gamma0_recursion_second<
             + C::with_val(z.prec(), iter / 2) / gamma0_recursion_second(z, iter + 1, max)
     }
 }
-pub fn incomplete_gamma(s: Complex, z: Complex) -> Complex {
+pub fn incomplete_gamma<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    s: Complex,
+    z: Complex,
+) -> Complex {
     if z.is_zero() {
         gamma(s)
     } else if s.real().is_sign_positive()
         && !s.real().clone().fract().is_zero()
         && *z.real() <= 0.25
     {
-        let p = z.prec().0 as usize / 4;
+        let p = z.prec() as usize / 4;
         gamma(s.clone()) - lower_incomplete_gamma_recursion(s, z, 0, p)
     } else {
-        let p = z.prec().0 as usize / 4;
+        let p = z.prec() as usize / 4;
         incomplete_gamma_recursion(s, z, 0, p)
     }
 }
-pub fn lower_incomplete_gamma(s: Complex, z: Complex) -> Complex {
+pub fn lower_incomplete_gamma<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    s: Complex,
+    z: Complex,
+) -> Complex {
     if s.real().is_sign_positive() && !s.real().clone().fract().is_zero() && *z.real() <= 1 {
-        let p = z.prec().0 as usize / 4;
+        let p = z.prec() as usize / 4;
         lower_incomplete_gamma_recursion(s, z, 0, p)
     } else {
         gamma(s.clone()) - incomplete_gamma(s, z)
     }
 }
-pub fn eta(s: Complex) -> Complex {
-    let prec = s.prec().0;
+pub fn eta<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    s: Complex,
+) -> Complex {
+    let prec = s.prec();
     let mut sum = Complex::new(prec);
     let two = Float::with_val(prec, 2);
     for n in 0..=(prec / 16).max(16) {
@@ -2937,17 +3196,30 @@ pub fn eta(s: Complex) -> Complex {
     }
     sum
 }
-pub fn zeta(s: Complex) -> Complex {
-    eta(s.clone()) / (1 - pow_nth(Complex::with_val(s.prec(), 2), 1 - s))
+pub fn zeta<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    s: Complex,
+) -> Complex {
+    eta(s.clone()) / (-pow_nth(Complex::with_val(s.prec(), 2), -s + 1) + 1)
 }
-pub fn euleriannumbers(n: Complex, k: i32) -> Complex {
+pub fn euleriannumbers<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    n: Complex,
+    k: i32,
+) -> Complex {
     if k < 0 {
-        Complex::with_val(n.prec(), Nan)
+        Complex::with_val(n.prec(), Constant::Nan)
     } else if n.real().clone().fract() != 0 && n.imag().is_zero() && n.real().is_sign_positive() {
         let mut sum = Complex::new(n.prec());
         for i in 0..=k {
             let ic = Complex::with_val(n.prec(), i);
-            let num: Complex = k - ic.clone() + 1;
+            let num: Complex = -ic.clone() + k + 1;
             let num = binomial(n.clone() + 1, ic) * pow_nth(num, n.clone());
             if i % 2 == 0 { sum += num } else { sum -= num }
         }
@@ -2955,7 +3227,7 @@ pub fn euleriannumbers(n: Complex, k: i32) -> Complex {
     } else {
         Complex::with_val(
             n.prec(),
-            euleriannumbersint(
+            euleriannumbersint::<Integer, Float, Complex>(
                 n.real()
                     .to_integer()
                     .unwrap_or_default()
@@ -2966,10 +3238,17 @@ pub fn euleriannumbers(n: Complex, k: i32) -> Complex {
         )
     }
 }
-pub fn euleriannumbersint(n: u32, k: u32) -> Integer {
+pub fn euleriannumbersint<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    n: u32,
+    k: u32,
+) -> Integer {
     let mut sum = Integer::new();
     for i in 0..=k {
-        let num: Integer = k - Integer::from(i) + 1;
+        let num: Integer = -Integer::from(i) + k + 1;
         let num = Integer::from(n + 1).binomial(i) * num.pow(n);
         if i % 2 == 0 { sum += num } else { sum -= num }
     }
@@ -3014,19 +3293,39 @@ pub fn binomial<
         gamma(a.clone() + 1) / (gamma(b.clone() + 1) * gamma(a.clone() - b.clone() + 1))
     }
 }
-fn incomplete_gamma_recursion(s: Complex, z: Complex, iter: usize, max: usize) -> Complex {
+fn incomplete_gamma_recursion<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    s: Complex,
+    z: Complex,
+    iter: usize,
+    max: usize,
+) -> Complex {
     if iter == max {
         Complex::with_val(s.prec(), 1)
     } else if iter == 0 {
         (pow_nth(z.clone(), s.clone()) / z.clone().exp()) / incomplete_gamma_recursion(s, z, 1, max)
     } else if iter % 2 == 1 {
         z.clone()
-            + ((iter.div_ceil(2) - s.clone()) / incomplete_gamma_recursion(s, z, iter + 1, max))
+            + ((-s.clone() + iter.div_ceil(2)) / incomplete_gamma_recursion(s, z, iter + 1, max))
     } else {
-        1 + (iter.div_ceil(2) / incomplete_gamma_recursion(s, z, iter + 1, max))
+        (Float::with_val(z.prec(), iter.div_ceil(2))
+            / incomplete_gamma_recursion(s, z, iter + 1, max))
+            + 1
     }
 }
-fn lower_incomplete_gamma_recursion(s: Complex, z: Complex, iter: usize, max: usize) -> Complex {
+fn lower_incomplete_gamma_recursion<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    s: Complex,
+    z: Complex,
+    iter: usize,
+    max: usize,
+) -> Complex {
     if iter == max {
         Complex::with_val(s.prec(), 1)
     } else if iter == 0 {
@@ -3039,20 +3338,35 @@ fn lower_incomplete_gamma_recursion(s: Complex, z: Complex, iter: usize, max: us
                 / lower_incomplete_gamma_recursion(s, z, iter + 1, max)
     } else {
         s.clone() + iter - 1
-            + (iter / 2 * z.clone() / lower_incomplete_gamma_recursion(s, z, iter + 1, max))
+            + (z.clone() / lower_incomplete_gamma_recursion(s, z, iter + 1, max) * iter / 2)
     }
 }
-pub fn subfactorial(z: Complex) -> Complex {
-    subfactorial_recursion(z.clone(), 0, (z.prec().0 as usize / 4).max(32))
-        + gamma(z.clone() + 1) / Float::with_val(z.prec().0, 1).exp()
+pub fn subfactorial<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    z: Complex,
+) -> Complex {
+    subfactorial_recursion(z.clone(), 0, (z.prec() as usize / 4).max(32))
+        + gamma(z.clone() + 1) / Float::with_val(z.prec(), 1).exp()
 }
-fn subfactorial_recursion(z: Complex, iter: usize, max: usize) -> Complex {
+fn subfactorial_recursion<
+    Integer: crate::types::Integer<Float, Complex>,
+    Float: crate::types::Float<Integer, Complex>,
+    Complex: crate::types::Complex<Integer, Float>,
+>(
+    z: Complex,
+    iter: usize,
+    max: usize,
+) -> Complex {
     if iter == max {
         Complex::with_val(z.prec(), 1)
     } else if iter == 0 {
         Complex::with_val(z.prec(), -1).pow(z.clone()) / subfactorial_recursion(z, 1, max)
     } else {
-        (z.clone() + iter + 1) - iter / subfactorial_recursion(z, iter + 1, max)
+        (z.clone() + iter + 1)
+            - Float::with_val(z.prec(), iter) / subfactorial_recursion(z, iter + 1, max)
     }
 }
 #[allow(clippy::too_many_arguments)]
@@ -3616,13 +3930,13 @@ pub fn area(
     {
         #[allow(clippy::type_complexity)]
         fn check_bounds(
-            func: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
-            func_vars: Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+            func: Vec<NumStr<Integer, Float, Complex>>,
+            func_vars: Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
             options: Options,
             var: String,
             delta: &mut Complex,
             units: Option<Units>,
-            x0: &mut NumStr<rug::Integer, rug::Float, rug::Complex>,
+            x0: &mut NumStr<Integer, Float, Complex>,
             start: &mut Complex,
             right: bool,
             compute: bool,
@@ -3632,9 +3946,9 @@ pub fn area(
                 if !a.number.real().is_finite() {
                     let points = options.prec as usize / 4;
                     let end = if right {
-                        points * delta.clone() + start.clone()
+                        delta.clone() * points + start.clone()
                     } else {
-                        start.clone() - points * delta.clone()
+                        start.clone() - delta.clone() * points
                     };
                     if right {
                         *start += delta.clone() >> 4;
@@ -3771,11 +4085,15 @@ pub fn area(
             let two = NumStr::new(Number::from(Complex::with_val(options.prec, 2), None));
             let one = NumStr::new(Number::from(Complex::with_val(options.prec, 1), None));
             #[allow(clippy::type_complexity)]
-            fn change_var(
-                func: &mut [NumStr<rug::Integer, rug::Float, rug::Complex>],
-                func_vars: &mut Vec<(String, Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>)>,
+            fn change_var<
+                Integer: crate::types::Integer<Float, Complex>,
+                Float: crate::types::Float<Integer, Complex>,
+                Complex: crate::types::Complex<Integer, Float>,
+            >(
+                func: &mut [NumStr<Integer, Float, Complex>],
+                func_vars: &mut Vec<(String, Vec<NumStr<Integer, Float, Complex>>)>,
                 from: String,
-                fto: Vec<NumStr<rug::Integer, rug::Float, rug::Complex>>,
+                fto: Vec<NumStr<Integer, Float, Complex>>,
             ) {
                 let to = format!("@!@{from}@");
                 for v in func.iter_mut() {
@@ -4733,7 +5051,13 @@ pub fn taylor(
     a: Number<rug::Integer, rug::Float, rug::Complex>,
     nth: usize,
 ) -> Result<NumStr<rug::Integer, rug::Float, rug::Complex>, &'static str> {
-    fn fact(n: usize) -> Integer {
+    fn fact<
+        I: crate::types::Integer<F, C>,
+        F: crate::types::Float<I, C>,
+        C: crate::types::Complex<I, F>,
+    >(
+        n: usize,
+    ) -> Integer {
         let mut fact = Integer::from(1);
         for i in 1..=n {
             fact *= i
@@ -4798,7 +5122,7 @@ pub fn taylor(
             )?;
             let v = d.func(
                 &NumStr::new(Number::from(
-                    fact(n) * (x.clone() - an.clone()).pow(-(n as i32)),
+                    fact::<Integer, Float, Complex>(n) * (x.clone() - an.clone()).pow(-(n as i32)),
                     None,
                 )),
                 div,
@@ -4867,7 +5191,8 @@ pub fn taylor(
                             poly,
                             &Number::from(
                                 (-a.clone().number).pow(n - i) * d.number.clone()
-                                    / (fact(n - i) * fact(i)),
+                                    / (fact::<Integer, Float, Complex>(n - i)
+                                        * fact::<Integer, Float, Complex>(i)),
                                 None,
                             ),
                         )
@@ -4882,7 +5207,9 @@ pub fn taylor(
                     *poly = add(
                         poly,
                         &Number::from(
-                            (-a.clone().number).pow(n - i) * d.clone() / (fact(n - i) * fact(i)),
+                            (-a.clone().number).pow(n - i) * d.clone()
+                                / (fact::<Integer, Float, Complex>(n - i)
+                                    * fact::<Integer, Float, Complex>(i)),
                             None,
                         ),
                     )

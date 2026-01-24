@@ -7,10 +7,12 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     + WithVal<(usize, usize)>
     + WithVal<(isize, isize)>
     + WithVal<(i32, i32)>
+    + WithVal<(u32, u32)>
     + WithVal<(i128, i128)>
     + WithVal<(u128, u128)>
     + WithVal<(f64, f64)>
     + WithVal<(F, F)>
+    + for<'a> WithVal<(&'a F, &'a F)>
     + WithVal<(I, I)>
     + WithVal<F>
     + WithValImag<usize>
@@ -19,6 +21,7 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     + WithValImag<isize>
     + WithValImag<f64>
     + WithValImag<i32>
+    + WithValImag<u32>
     + WithValImag<I>
     + WithValImag<F>
     + WithValImag<Constant>
@@ -27,13 +30,18 @@ pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
     + for<'a> Ops<&'a F>
     + From<F>
     + Pow<Self>
+    + Pow<F>
     + Display
 {
     fn real(&self) -> &F;
     fn imag(&self) -> &F;
+    fn into_real_imag(self) -> (F, F);
+    fn conj(self) -> Self;
+    fn arg(self) -> Self;
+    fn mul_i(self, negative: bool) -> Self;
 }
 pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
-    FloatShared<I, Self, C> + PartialOrd<f64> + Compare + OperatorsOut<C, C> + Pow<Self>
+    FloatShared<I, Self, C> + PartialOrd<f64> + Compare + OperatorsOut<C, C> + Pow<Self> + RemOp<usize>
 {
     fn is_finite(&self) -> bool;
     fn is_infinite(&self) -> bool;
@@ -42,9 +50,11 @@ pub trait Float<I: Integer<Self, C>, C: Complex<I, Self>>:
     fn to_f64(&self) -> f64;
     fn fract(self) -> Self;
     fn trunc(self) -> Self;
+    fn round(self) -> Self;
     fn gamma(self) -> Self;
     fn floor(self) -> Self;
     fn to_integer(&self) -> Option<I>;
+    fn log2(self) -> Self;
 }
 pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     Shared
@@ -53,12 +63,18 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     + Pow<i32>
     + Pow<isize>
     + Pow<f64>
+    + Shr<i32>
+    + Shl<i32>
+    + Shr<u32>
+    + Shl<u32>
     + WithVal<usize>
     + WithVal<i128>
     + WithVal<u128>
     + WithVal<isize>
     + WithVal<f64>
     + WithVal<i32>
+    + WithVal<u32>
+    + WithVal<bool>
     + WithVal<I>
     + WithVal<Constant>
     + Display
@@ -72,18 +88,31 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     fn recip(self) -> Self;
     fn prec(&self) -> u32;
     fn ln(self) -> Self;
+    fn log10(self) -> Self;
     fn sqrt(self) -> Self;
     fn set_prec(&mut self, prec: u32);
 }
 pub enum Constant {
     Pi,
+    Tau,
     E,
     Infinity,
     NegInfinity,
     Nan,
 }
 pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
-    Shared + From<usize> + From<isize> + From<i32> + Pow<u32> + Display + Default + Compare
+    Shared
+    + From<usize>
+    + From<isize>
+    + From<u32>
+    + From<i32>
+    + From<i32>
+    + Pow<u32>
+    + OperatorsOutNoDiv<F, F>
+    + OperatorsOutNoDiv<C, C>
+    + Display
+    + Default
+    + Compare
 {
     fn div_rem(self, rhs: Self) -> (Self, Self);
     fn next_prime(self) -> Self;
@@ -94,7 +123,15 @@ pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
     fn to_i32(&self) -> Option<i32>;
     fn to_isize(&self) -> Option<isize>;
     fn to_i128(&self) -> Option<i128>;
+    fn is_probably_prime(&self, reps: u32) -> IsPrime;
     fn abs(self) -> Self;
+    fn new() -> Self;
+}
+#[derive(PartialEq)]
+pub enum IsPrime {
+    Yes,
+    No,
+    Probably,
 }
 pub trait Shared: Operators + Clone {}
 impl<T> Shared for T where T: Operators + Clone {}
@@ -122,12 +159,16 @@ impl<T> Operators for T where
         + Sized
 {
 }
-pub trait OperatorsOut<T, K>:
-    Mul<T, Output = K> + Add<T, Output = K> + Sub<T, Output = K> + Div<T, Output = K>
+pub trait RemOp<T>: Rem<T, Output = Self> + RemAssign<T> {}
+impl<K, T> RemOp<T> for K where K: Rem<T, Output = Self> + RemAssign<T> {}
+pub trait OperatorsOut<T, K>: OperatorsOutNoDiv<T, K> + Div<T, Output = K> {}
+impl<K, T, V> OperatorsOut<T, V> for K where K: OperatorsOutNoDiv<T, V> + Div<T, Output = V> {}
+pub trait OperatorsOutNoDiv<T, K>:
+    Mul<T, Output = K> + Add<T, Output = K> + Sub<T, Output = K>
 {
 }
-impl<K, T, V> OperatorsOut<T, V> for K where
-    K: Mul<T, Output = V> + Add<T, Output = V> + Sub<T, Output = V> + Div<T, Output = V>
+impl<K, T, V> OperatorsOutNoDiv<T, V> for K where
+    K: Mul<T, Output = V> + Add<T, Output = V> + Sub<T, Output = V>
 {
 }
 pub trait Ops<T>:
