@@ -3,6 +3,8 @@ use crate::types::{
     Complex as Comp, Constant, Float as Flo, FloatShared as FloSha, IsPrime, Pow, WithVal,
     WithValImag,
 };
+#[cfg(feature = "bitcode")]
+use bitcode::{Decode, Encode};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -12,12 +14,15 @@ use std::iter::Sum;
 use std::ops::*;
 #[derive(Clone, Copy, Default, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "bitcode", derive(Encode, Decode))]
 pub struct Integer<T>(pub T);
 #[derive(Clone, Copy, Default, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "bitcode", derive(Encode, Decode))]
 pub struct Float<T>(pub T);
 #[derive(Clone, Copy, Default, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "bitcode", derive(Encode, Decode))]
 pub struct Complex<T> {
     pub real: Float<T>,
     pub imag: Float<T>,
