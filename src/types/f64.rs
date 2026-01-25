@@ -12,17 +12,17 @@ use std::iter::Sum;
 use std::ops::*;
 #[derive(Clone, Copy, Default, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Integer(pub i128);
+pub struct Integer<T>(pub T);
 #[derive(Clone, Copy, Default, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Float(pub f64);
+pub struct Float<T>(pub T);
 #[derive(Clone, Copy, Default, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Complex {
-    pub real: Float,
-    pub imag: Float,
+pub struct Complex<T> {
+    pub real: Float<T>,
+    pub imag: Float<T>,
 }
-impl LowerExp for Complex {
+impl LowerExp for Complex<f64> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -37,12 +37,12 @@ impl LowerExp for Complex {
         )
     }
 }
-impl LowerExp for Float {
+impl LowerExp for Float<f64> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:e}", self.0)
     }
 }
-impl Display for Complex {
+impl Display for Complex<f64> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -57,39 +57,39 @@ impl Display for Complex {
         )
     }
 }
-impl Display for Integer {
+impl Display for Integer<i128> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
-impl Display for Float {
+impl Display for Float<f64> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
-impl Deref for Integer {
+impl Deref for Integer<i128> {
     type Target = i128;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl DerefMut for Integer {
+impl DerefMut for Integer<i128> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
-impl Deref for Float {
+impl Deref for Float<f64> {
     type Target = f64;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl DerefMut for Float {
+impl DerefMut for Float<f64> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
-impl From<f64> for Float {
+impl From<f64> for Float<f64> {
     fn from(value: f64) -> Self {
         Self(value)
     }
@@ -97,25 +97,25 @@ impl From<f64> for Float {
 macro_rules! with_val {
     ($($ty:ty),*) => {
         $(
-            impl WithVal<$ty> for Float
+            impl WithVal<$ty> for Float<f64>
             {
                 fn with_val(_: u32, val: $ty) -> Self {
                     Self(val as f64)
                 }
             }
-            impl From<$ty> for Integer
+            impl From<$ty> for Integer<i128>
             {
                 fn from(value: $ty) -> Self {
                     Self(value as i128)
                 }
             }
-            impl<'a> WithVal<&'a $ty> for Float
+            impl<'a> WithVal<&'a $ty> for Float<f64>
             {
                 fn with_val(_: u32, val: &'a $ty) -> Self {
                     Self(*val as f64)
                 }
             }
-            impl<'a> From<&'a $ty> for Integer
+            impl<'a> From<&'a $ty> for Integer<i128>
             {
                 fn from(value: &'a $ty) -> Self {
                     Self(*value as i128)
@@ -127,47 +127,47 @@ macro_rules! with_val {
 with_val!(
     i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64
 );
-impl WithVal<bool> for Float {
+impl WithVal<bool> for Float<f64> {
     fn with_val(_: u32, val: bool) -> Self {
         Self(if val { 1.0 } else { 0.0 })
     }
 }
-impl WithVal<Float> for Float {
-    fn with_val(_: u32, val: Float) -> Self {
+impl WithVal<Float<f64>> for Float<f64> {
+    fn with_val(_: u32, val: Float<f64>) -> Self {
         val
     }
 }
-impl WithVal<&Float> for Float {
-    fn with_val(_: u32, val: &Float) -> Self {
+impl WithVal<&Float<f64>> for Float<f64> {
+    fn with_val(_: u32, val: &Float<f64>) -> Self {
         *val
     }
 }
-impl WithVal<Complex> for Complex {
-    fn with_val(_: u32, val: Complex) -> Self {
+impl WithVal<Complex<f64>> for Complex<f64> {
+    fn with_val(_: u32, val: Complex<f64>) -> Self {
         val
     }
 }
-impl WithVal<&Complex> for Complex {
-    fn with_val(_: u32, val: &Complex) -> Self {
+impl WithVal<&Complex<f64>> for Complex<f64> {
+    fn with_val(_: u32, val: &Complex<f64>) -> Self {
         *val
     }
 }
-impl From<&Integer> for Integer {
-    fn from(value: &Integer) -> Self {
+impl From<&Integer<i128>> for Integer<i128> {
+    fn from(value: &Integer<i128>) -> Self {
         *value
     }
 }
-impl WithVal<Integer> for Float {
-    fn with_val(_: u32, val: Integer) -> Self {
+impl WithVal<Integer<i128>> for Float<f64> {
+    fn with_val(_: u32, val: Integer<i128>) -> Self {
         Self(val.0 as f64)
     }
 }
-impl WithVal<&Integer> for Float {
-    fn with_val(_: u32, val: &Integer) -> Self {
+impl WithVal<&Integer<i128>> for Float<f64> {
+    fn with_val(_: u32, val: &Integer<i128>) -> Self {
         Self(val.0 as f64)
     }
 }
-impl WithVal<Constant> for Float {
+impl WithVal<Constant> for Float<f64> {
     fn with_val(prec: u32, val: Constant) -> Self {
         match val {
             Constant::Pi => Self::with_val(prec, PI),
@@ -179,9 +179,9 @@ impl WithVal<Constant> for Float {
         }
     }
 }
-impl<T> WithVal<T> for Complex
+impl<T> WithVal<T> for Complex<f64>
 where
-    Float: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     fn with_val(prec: u32, val: T) -> Self {
         Self {
@@ -190,9 +190,9 @@ where
         }
     }
 }
-impl<T, K> WithVal<(T, K)> for Complex
+impl<T, K> WithVal<(T, K)> for Complex<f64>
 where
-    Float: WithVal<T> + WithVal<K>,
+    Float<f64>: WithVal<T> + WithVal<K>,
 {
     fn with_val(prec: u32, val: (T, K)) -> Self {
         Self {
@@ -201,9 +201,9 @@ where
         }
     }
 }
-impl<T> WithValImag<T> for Complex
+impl<T> WithValImag<T> for Complex<f64>
 where
-    Float: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     fn with_val_imag(prec: u32, val: T) -> Self {
         Self {
@@ -212,12 +212,12 @@ where
         }
     }
 }
-impl Pow<u32> for Integer {
+impl Pow<u32> for Integer<i128> {
     fn pow(self, rhs: u32) -> Self {
         (*self).pow(rhs).into()
     }
 }
-impl<T> Pow<T> for Float
+impl<T> Pow<T> for Float<f64>
 where
     Self: WithVal<T>,
 {
@@ -225,7 +225,7 @@ where
         (*self).powf(*Float::with_val(0, rhs)).into()
     }
 }
-impl<T> Pow<T> for Complex
+impl<T> Pow<T> for Complex<f64>
 where
     Self: WithVal<T>,
 {
@@ -239,7 +239,7 @@ where
         mag * Self { real, imag }
     }
 }
-impl<T> PartialEq<T> for Integer
+impl<T> PartialEq<T> for Integer<i128>
 where
     Self: for<'a> From<&'a T>,
 {
@@ -247,7 +247,7 @@ where
         self.0.eq(&Self::from(other).0)
     }
 }
-impl<T> PartialOrd<T> for Integer
+impl<T> PartialOrd<T> for Integer<i128>
 where
     Self: for<'a> From<&'a T>,
 {
@@ -255,7 +255,7 @@ where
         self.0.partial_cmp(&Self::from(other).0)
     }
 }
-impl<T> PartialEq<T> for Float
+impl<T> PartialEq<T> for Float<f64>
 where
     Self: for<'a> WithVal<&'a T>,
 {
@@ -263,7 +263,7 @@ where
         self.0 == Self::with_val(0, other).0
     }
 }
-impl<T> PartialOrd<T> for Float
+impl<T> PartialOrd<T> for Float<f64>
 where
     Self: for<'a> WithVal<&'a T>,
 {
@@ -271,115 +271,115 @@ where
         self.0.partial_cmp(&Self::with_val(0, other).0)
     }
 }
-impl<T> PartialEq<T> for Complex
+impl<T> PartialEq<T> for Complex<f64>
 where
-    Float: PartialEq<T>,
+    Float<f64>: PartialEq<T>,
 {
     fn eq(&self, other: &T) -> bool {
         self.real == *other && self.imag.0 == 0.0
     }
 }
-impl<T, K> PartialEq<(T, K)> for Complex
+impl<T, K> PartialEq<(T, K)> for Complex<f64>
 where
-    Float: PartialEq<T> + PartialEq<K>,
+    Float<f64>: PartialEq<T> + PartialEq<K>,
 {
     fn eq(&self, other: &(T, K)) -> bool {
         self.real == other.0 && self.imag == other.1
     }
 }
-impl PartialEq<Complex> for Complex {
-    fn eq(&self, other: &Complex) -> bool {
+impl PartialEq<Complex<f64>> for Complex<f64> {
+    fn eq(&self, other: &Complex<f64>) -> bool {
         self.real == other.real && self.imag == other.imag
     }
 }
-impl<T> Add<T> for Integer
+impl<T> Add<T> for Integer<i128>
 where
-    Integer: From<T>,
+    Integer<i128>: From<T>,
 {
     type Output = Self;
     fn add(self, rhs: T) -> Self::Output {
         Self(self.0 + Self::from(rhs).0)
     }
 }
-impl<T> Sub<T> for Integer
+impl<T> Sub<T> for Integer<i128>
 where
-    Integer: From<T>,
+    Integer<i128>: From<T>,
 {
     type Output = Self;
     fn sub(self, rhs: T) -> Self::Output {
         Self(self.0 - Self::from(rhs).0)
     }
 }
-impl<T> Mul<T> for Integer
+impl<T> Mul<T> for Integer<i128>
 where
-    Integer: From<T>,
+    Integer<i128>: From<T>,
 {
     type Output = Self;
     fn mul(self, rhs: T) -> Self::Output {
         Self(self.0 * Self::from(rhs).0)
     }
 }
-impl<T> Div<T> for Integer
+impl<T> Div<T> for Integer<i128>
 where
-    Integer: From<T>,
+    Integer<i128>: From<T>,
 {
     type Output = Self;
     fn div(self, rhs: T) -> Self::Output {
         Self(self.0 / Self::from(rhs).0)
     }
 }
-impl Neg for Integer {
+impl Neg for Integer<i128> {
     type Output = Self;
     fn neg(self) -> Self::Output {
         Self(-self.0)
     }
 }
-impl<T> Add<T> for Float
+impl<T> Add<T> for Float<f64>
 where
-    Float: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     type Output = Self;
     fn add(self, rhs: T) -> Self::Output {
         Self(self.0 + Self::with_val(0, rhs).0)
     }
 }
-impl<T> Sub<T> for Float
+impl<T> Sub<T> for Float<f64>
 where
-    Float: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     type Output = Self;
     fn sub(self, rhs: T) -> Self::Output {
         Self(self.0 - Self::with_val(0, rhs).0)
     }
 }
-impl<T> Mul<T> for Float
+impl<T> Mul<T> for Float<f64>
 where
-    Float: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     type Output = Self;
     fn mul(self, rhs: T) -> Self::Output {
         Self(self.0 * Self::with_val(0, rhs).0)
     }
 }
-impl<T> Div<T> for Float
+impl<T> Div<T> for Float<f64>
 where
-    Float: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     type Output = Self;
     fn div(self, rhs: T) -> Self::Output {
         Self(self.0 / Self::with_val(0, rhs).0)
     }
 }
-impl<T> Rem<T> for Float
+impl<T> Rem<T> for Float<f64>
 where
-    Float: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     type Output = Self;
     fn rem(self, rhs: T) -> Self::Output {
         Self(self.0 % Self::with_val(0, rhs).0)
     }
 }
-impl<T> Rem<T> for Integer
+impl<T> Rem<T> for Integer<i128>
 where
     Self: From<T>,
 {
@@ -388,13 +388,13 @@ where
         Self(self.0 % Self::from(rhs).0)
     }
 }
-impl Neg for Float {
+impl Neg for Float<f64> {
     type Output = Self;
     fn neg(self) -> Self::Output {
         Self(-self.0)
     }
 }
-impl<T> Add<T> for Complex
+impl<T> Add<T> for Complex<f64>
 where
     Self: WithVal<T>,
 {
@@ -407,7 +407,7 @@ where
         }
     }
 }
-impl<T> Sub<T> for Complex
+impl<T> Sub<T> for Complex<f64>
 where
     Self: WithVal<T>,
 {
@@ -420,7 +420,7 @@ where
         }
     }
 }
-impl<T> Mul<T> for Complex
+impl<T> Mul<T> for Complex<f64>
 where
     Self: WithVal<T>,
 {
@@ -433,7 +433,7 @@ where
         }
     }
 }
-impl<T> Div<T> for Complex
+impl<T> Div<T> for Complex<f64>
 where
     Self: WithVal<T>,
 {
@@ -447,7 +447,7 @@ where
         }
     }
 }
-impl Neg for Complex {
+impl Neg for Complex<f64> {
     type Output = Self;
     fn neg(self) -> Self::Output {
         Self {
@@ -497,9 +497,9 @@ macro_rules! ops_assign {
         )*
     };
 }
-ops_assign!(Integer, Float, Complex);
-impl From<Float> for Complex {
-    fn from(value: Float) -> Self {
+ops_assign!(Integer<i128>, Float<f64>, Complex<f64>);
+impl From<Float<f64>> for Complex<f64> {
+    fn from(value: Float<f64>) -> Self {
         Self {
             real: value,
             imag: Float::default(),
@@ -526,86 +526,86 @@ macro_rules! shift {
         )*
     };
 }
-shift!(Float, u32, i32);
-shift!(Complex, u32, i32);
-impl<'a> Sum<&'a Self> for Integer {
+shift!(Float<f64>, u32, i32);
+shift!(Complex<f64>, u32, i32);
+impl<'a> Sum<&'a Self> for Integer<i128> {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         Self(i128::sum(iter.map(|i| i.0)))
     }
 }
-impl Add<Complex> for Integer {
-    type Output = Complex;
-    fn add(self, rhs: Complex) -> Self::Output {
+impl Add<Complex<f64>> for Integer<i128> {
+    type Output = Complex<f64>;
+    fn add(self, rhs: Complex<f64>) -> Self::Output {
         rhs + self
     }
 }
-impl Sub<Complex> for Integer {
-    type Output = Complex;
-    fn sub(self, rhs: Complex) -> Self::Output {
+impl Sub<Complex<f64>> for Integer<i128> {
+    type Output = Complex<f64>;
+    fn sub(self, rhs: Complex<f64>) -> Self::Output {
         -rhs + self
     }
 }
-impl Mul<Complex> for Integer {
-    type Output = Complex;
-    fn mul(self, rhs: Complex) -> Self::Output {
+impl Mul<Complex<f64>> for Integer<i128> {
+    type Output = Complex<f64>;
+    fn mul(self, rhs: Complex<f64>) -> Self::Output {
         rhs * self
     }
 }
-impl Div<Complex> for Integer {
-    type Output = Complex;
-    fn div(self, rhs: Complex) -> Self::Output {
+impl Div<Complex<f64>> for Integer<i128> {
+    type Output = Complex<f64>;
+    fn div(self, rhs: Complex<f64>) -> Self::Output {
         Complex::with_val(0, self) / rhs
     }
 }
-impl Add<Float> for Integer {
-    type Output = Float;
-    fn add(self, rhs: Float) -> Self::Output {
+impl Add<Float<f64>> for Integer<i128> {
+    type Output = Float<f64>;
+    fn add(self, rhs: Float<f64>) -> Self::Output {
         rhs + self
     }
 }
-impl Sub<Float> for Integer {
-    type Output = Float;
-    fn sub(self, rhs: Float) -> Self::Output {
+impl Sub<Float<f64>> for Integer<i128> {
+    type Output = Float<f64>;
+    fn sub(self, rhs: Float<f64>) -> Self::Output {
         -rhs + self
     }
 }
-impl Mul<Float> for Integer {
-    type Output = Float;
-    fn mul(self, rhs: Float) -> Self::Output {
+impl Mul<Float<f64>> for Integer<i128> {
+    type Output = Float<f64>;
+    fn mul(self, rhs: Float<f64>) -> Self::Output {
         rhs * self
     }
 }
-impl Div<Float> for Integer {
-    type Output = Float;
-    fn div(self, rhs: Float) -> Self::Output {
+impl Div<Float<f64>> for Integer<i128> {
+    type Output = Float<f64>;
+    fn div(self, rhs: Float<f64>) -> Self::Output {
         Float::with_val(0, self) / rhs
     }
 }
-impl Add<Complex> for Float {
-    type Output = Complex;
-    fn add(self, rhs: Complex) -> Self::Output {
+impl Add<Complex<f64>> for Float<f64> {
+    type Output = Complex<f64>;
+    fn add(self, rhs: Complex<f64>) -> Self::Output {
         rhs + self
     }
 }
-impl Sub<Complex> for Float {
-    type Output = Complex;
-    fn sub(self, rhs: Complex) -> Self::Output {
+impl Sub<Complex<f64>> for Float<f64> {
+    type Output = Complex<f64>;
+    fn sub(self, rhs: Complex<f64>) -> Self::Output {
         -rhs + self
     }
 }
-impl Mul<Complex> for Float {
-    type Output = Complex;
-    fn mul(self, rhs: Complex) -> Self::Output {
+impl Mul<Complex<f64>> for Float<f64> {
+    type Output = Complex<f64>;
+    fn mul(self, rhs: Complex<f64>) -> Self::Output {
         rhs * self
     }
 }
-impl Div<Complex> for Float {
-    type Output = Complex;
-    fn div(self, rhs: Complex) -> Self::Output {
+impl Div<Complex<f64>> for Float<f64> {
+    type Output = Complex<f64>;
+    fn div(self, rhs: Complex<f64>) -> Self::Output {
         Complex::with_val(0, self) / rhs
     }
 }
-impl types::Integer<Float, Complex> for Integer {
+impl types::Integer<Float<f64>, Complex<f64>> for Integer<i128> {
     fn cmp0(&self) -> Ordering {
         self.cmp(&0)
     }
@@ -673,7 +673,7 @@ impl types::Integer<Float, Complex> for Integer {
         Self::default()
     }
 }
-impl types::Float<Integer, Complex> for Float {
+impl types::Float<Integer<i128>, Complex<f64>> for Float<f64> {
     fn erf(self) -> Self {
         //TODO
         self
@@ -779,7 +779,7 @@ impl types::Float<Integer, Complex> for Float {
         //TODO
         self.to_string()
     }
-    fn to_integer(&self) -> Option<Integer> {
+    fn to_integer(&self) -> Option<Integer<i128>> {
         if !self.is_finite() {
             return None;
         }
@@ -789,7 +789,7 @@ impl types::Float<Integer, Complex> for Float {
         Self(self.0.log2())
     }
 }
-impl types::FloatShared<Integer, Self, Complex> for Float {
+impl types::FloatShared<Integer<i128>, Self, Complex<f64>> for Float<f64> {
     fn sin_cos(self, _: Self) -> (Self, Self) {
         let (sin, cos) = self.0.sin_cos();
         (Self(sin), Self(cos))
@@ -867,19 +867,19 @@ impl types::FloatShared<Integer, Self, Complex> for Float {
     }
     fn set_prec(&mut self, _: u32) {}
 }
-impl types::Complex<Integer, Float> for Complex {
+impl types::Complex<Integer<i128>, Float<f64>> for Complex<f64> {
     fn total_cmp(&self, other: &Self) -> Ordering {
         self.real
             .total_cmp(&other.real)
             .then(self.imag.total_cmp(&other.imag))
     }
-    fn real(&self) -> &Float {
+    fn real(&self) -> &Float<f64> {
         &self.real
     }
-    fn imag(&self) -> &Float {
+    fn imag(&self) -> &Float<f64> {
         &self.imag
     }
-    fn into_real_imag(self) -> (Float, Float) {
+    fn into_real_imag(self) -> (Float<f64>, Float<f64>) {
         (self.real, self.imag)
     }
     fn conj(mut self) -> Self {
@@ -896,7 +896,7 @@ impl types::Complex<Integer, Float> for Complex {
         self * if negative { (0, -1) } else { (0, 1) }
     }
 }
-impl types::FloatShared<Integer, Float, Self> for Complex {
+impl types::FloatShared<Integer<i128>, Float<f64>, Self> for Complex<f64> {
     fn sin_cos(self, _: Self) -> (Self, Self) {
         (self.sin(), self.cos())
     }
