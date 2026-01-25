@@ -3,16 +3,21 @@ use crate::types::{
     Complex as Comp, Constant, Float as Flo, FloatShared as FloSha, IsPrime, Pow, WithVal,
     WithValImag,
 };
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::f64::consts::{E, PI, TAU};
 use std::fmt::{Display, Formatter, LowerExp};
 use std::iter::Sum;
 use std::ops::*;
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Integer(pub i128);
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Float(pub f64);
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Complex {
     pub real: Float,
     pub imag: Float,
@@ -374,6 +379,15 @@ where
         Self(self.0 % Self::with_val(0, rhs).0)
     }
 }
+impl<T> Rem<T> for Integer
+where
+    Self: From<T>,
+{
+    type Output = Self;
+    fn rem(self, rhs: T) -> Self::Output {
+        Self(self.0 % Self::from(rhs).0)
+    }
+}
 impl Neg for Float {
     type Output = Self;
     fn neg(self) -> Self::Output {
@@ -593,306 +607,398 @@ impl Div<Complex> for Float {
 }
 impl types::Integer<Float, Complex> for Integer {
     fn cmp0(&self) -> Ordering {
-        todo!()
+        self.cmp(&0)
     }
     fn div_rem(self, rhs: Self) -> (Self, Self) {
-        todo!()
+        (self / rhs, self % rhs)
     }
     fn next_prime(self) -> Self {
-        todo!()
+        //TODO
+        self + 1
     }
+    #[allow(unused_variables)]
     fn binomial(self, k: u32) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn to_u32(&self) -> Option<u32> {
-        todo!()
+        Some(self.0 as u32)
     }
     fn to_usize(&self) -> Option<usize> {
-        todo!()
+        Some(self.0 as usize)
     }
     fn to_u128(&self) -> Option<u128> {
-        todo!()
+        Some(self.0 as u128)
     }
     fn to_i32(&self) -> Option<i32> {
-        todo!()
+        Some(self.0 as i32)
     }
     fn to_isize(&self) -> Option<isize> {
-        todo!()
+        Some(self.0 as isize)
     }
     fn to_i128(&self) -> Option<i128> {
-        todo!()
+        Some(self.0)
     }
     fn to_string_radix(&self, radix: i32) -> String {
-        todo!()
+        let radix = radix.into();
+        let (mut div, mut rem) = self.div_rem(radix);
+        let mut s = rem.to_string();
+        while div != 0 {
+            (div, rem) = div.div_rem(radix);
+            s.insert(0, rem.to_string().chars().next().unwrap());
+        }
+        s
     }
     fn from_str_radix(src: &str, radix: i32) -> Option<Self> {
-        todo!()
+        let neg = src.starts_with('-');
+        let len = src.len() - if neg { 1 } else { 0 };
+        let mut n = Integer::new();
+        for (i, d) in src.chars().skip(if neg { 1 } else { 0 }).enumerate() {
+            if !d.is_digit(radix as u32) {
+                return None;
+            }
+            n += Integer::from(radix).pow((len - i) as u32) * d.to_string().parse::<i128>().unwrap()
+        }
+        Some(n)
     }
+    #[allow(unused_variables)]
     fn is_probably_prime(&self, reps: u32) -> IsPrime {
-        todo!()
+        //TODO
+        IsPrime::Yes
     }
     fn abs(self) -> Self {
-        todo!()
+        Self(self.0.abs())
     }
     fn new() -> Self {
-        todo!()
+        Self::default()
     }
 }
 impl types::Float<Integer, Complex> for Float {
     fn erf(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn ai(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn digamma(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn zeta(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn next_up(&mut self) {
-        todo!()
+        self.0 = self.0.next_up();
     }
     fn next_down(&mut self) {
-        todo!()
+        self.0 = self.0.next_down();
     }
     fn next_toward(&mut self, to: &Self) {
-        todo!()
+        match self.total_cmp(to) {
+            Ordering::Less => self.next_up(),
+            Ordering::Equal => {}
+            Ordering::Greater => self.next_down(),
+        }
     }
     fn erfc(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn cmp0(&self) -> Option<Ordering> {
-        todo!()
+        Some(self.total_cmp(&0.0))
     }
     fn is_nan(&self) -> bool {
-        todo!()
+        self.0.is_nan()
     }
     fn is_finite(&self) -> bool {
-        todo!()
+        self.0.is_finite()
     }
     fn is_infinite(&self) -> bool {
-        todo!()
+        self.0.is_infinite()
     }
     fn is_sign_negative(&self) -> bool {
-        todo!()
+        self.0.is_sign_negative()
     }
     fn is_sign_positive(&self) -> bool {
-        todo!()
+        self.0.is_sign_positive()
     }
     fn to_f64(&self) -> f64 {
-        todo!()
+        self.0
     }
     fn fract(self) -> Self {
-        todo!()
+        Self(self.0.fract())
     }
     fn trunc(self) -> Self {
-        todo!()
+        Self(self.0.trunc())
     }
     fn round(self) -> Self {
-        todo!()
+        Self(self.0.round())
     }
     fn gamma(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn floor(self) -> Self {
-        todo!()
+        Self(self.0.floor())
     }
     fn ceil(self) -> Self {
-        todo!()
+        Self(self.0.ceil())
     }
     fn to_sign_string_exp(
         &self,
         radix: i32,
         num_digits: Option<usize>,
     ) -> (bool, String, Option<i32>) {
-        todo!()
+        let mut s = self.0.abs().to_string();
+        s.retain(|c| c != '.');
+        while s.starts_with('0') && s.len() != 1 {
+            s.remove(0);
+        }
+        if let Some(num) = num_digits
+            && s.len() > num
+        {
+            s.drain(s.len() - num - 1..);
+        }
+        (
+            self.is_sign_negative(),
+            s,
+            if self.is_zero() {
+                Some(0)
+            } else if self.is_finite() {
+                Some((self.abs().ln() / Float::with_val(0, radix).ln()).ceil().0 as i32)
+            } else {
+                None
+            },
+        )
     }
+    #[allow(unused_variables)]
     fn to_string_radix(&self, radix: i32, num_digits: Option<usize>) -> String {
-        todo!()
+        //TODO
+        self.to_string()
     }
     fn to_integer(&self) -> Option<Integer> {
-        todo!()
+        if !self.is_finite() {
+            return None;
+        }
+        Some(Integer(self.0 as i128))
     }
     fn log2(self) -> Self {
-        todo!()
+        Self(self.0.log2())
     }
 }
 impl types::FloatShared<Integer, Self, Complex> for Float {
-    fn sin_cos(self, cos: Self) -> (Self, Self) {
-        todo!()
+    fn sin_cos(self, _: Self) -> (Self, Self) {
+        let (sin, cos) = self.0.sin_cos();
+        (Self(sin), Self(cos))
     }
     fn sin(self) -> Self {
-        todo!()
+        Self(self.0.sin())
     }
     fn cos(self) -> Self {
-        todo!()
+        Self(self.0.cos())
     }
     fn tan(self) -> Self {
-        todo!()
+        Self(self.0.tan())
     }
     fn sinh(self) -> Self {
-        todo!()
+        Self(self.0.sinh())
     }
     fn cosh(self) -> Self {
-        todo!()
+        Self(self.0.cosh())
     }
     fn tanh(self) -> Self {
-        todo!()
+        Self(self.0.tanh())
     }
     fn asin(self) -> Self {
-        todo!()
+        Self(self.0.asin())
     }
     fn acos(self) -> Self {
-        todo!()
+        Self(self.0.acos())
     }
     fn atan(self) -> Self {
-        todo!()
+        Self(self.0.atan())
     }
     fn asinh(self) -> Self {
-        todo!()
+        Self(self.0.asinh())
     }
     fn acosh(self) -> Self {
-        todo!()
+        Self(self.0.acosh())
     }
     fn atanh(self) -> Self {
-        todo!()
+        Self(self.0.atanh())
     }
-    fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
-        todo!()
+    #[allow(unused_variables)]
+    fn parse_radix(_: u32, src: &str, radix: i32) -> Option<Self> {
+        //TODO
+        src.parse().ok().map(Self)
     }
-    fn parse(prec: u32, src: impl AsRef<[u8]>) -> Option<Self> {
-        todo!()
+    fn parse(_: u32, src: &str) -> Option<Self> {
+        src.parse().ok().map(Self)
     }
     fn exp(self) -> Self {
-        todo!()
+        Self(self.0.exp())
     }
-    fn new(prec: u32) -> Self {
-        todo!()
+    fn new(_: u32) -> Self {
+        Self::default()
     }
     fn is_zero(&self) -> bool {
-        todo!()
+        self.0 == 0.0
     }
     fn abs(self) -> Self {
-        todo!()
+        Self(self.0.abs())
     }
     fn recip(self) -> Self {
-        todo!()
+        Self(self.0.recip())
     }
     fn prec(&self) -> u32 {
-        todo!()
+        32
     }
     fn ln(self) -> Self {
-        todo!()
+        Self(self.0.ln())
     }
     fn log10(self) -> Self {
-        todo!()
+        Self(self.0.log10())
     }
     fn sqrt(self) -> Self {
-        todo!()
+        Self(self.0.sqrt())
     }
-    fn set_prec(&mut self, prec: u32) {
-        todo!()
-    }
+    fn set_prec(&mut self, _: u32) {}
 }
 impl types::Complex<Integer, Float> for Complex {
     fn total_cmp(&self, other: &Self) -> Ordering {
-        todo!()
+        self.real
+            .total_cmp(&other.real)
+            .then(self.imag.total_cmp(&other.imag))
     }
     fn real(&self) -> &Float {
-        todo!()
+        &self.real
     }
     fn imag(&self) -> &Float {
-        todo!()
+        &self.imag
     }
     fn into_real_imag(self) -> (Float, Float) {
-        todo!()
+        (self.real, self.imag)
     }
-    fn conj(self) -> Self {
-        todo!()
+    fn conj(mut self) -> Self {
+        self.imag = -self.imag;
+        self
     }
     fn arg(self) -> Self {
-        todo!()
+        Self {
+            real: Float(self.imag.atan2(*self.real)),
+            imag: Float::default(),
+        }
     }
     fn mul_i(self, negative: bool) -> Self {
-        todo!()
+        self * if negative { (0, -1) } else { (0, 1) }
     }
 }
 impl types::FloatShared<Integer, Float, Self> for Complex {
-    fn sin_cos(self, cos: Self) -> (Self, Self) {
-        todo!()
+    fn sin_cos(self, _: Self) -> (Self, Self) {
+        (self.sin(), self.cos())
     }
     fn sin(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn cos(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn tan(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn sinh(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn cosh(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn tanh(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn asin(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn acos(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn atan(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn asinh(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn acosh(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
     fn atanh(self) -> Self {
-        todo!()
+        //TODO
+        self
     }
-    fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self> {
-        todo!()
+    #[allow(unused_variables)]
+    fn parse_radix(_: u32, src: &str, radix: i32) -> Option<Self> {
+        src.parse().ok().map(|real| Self {
+            real: Float(real),
+            imag: Float::default(),
+        })
     }
-    fn parse(prec: u32, src: impl AsRef<[u8]>) -> Option<Self> {
-        todo!()
+    fn parse(_: u32, src: &str) -> Option<Self> {
+        src.parse().ok().map(|real| Self {
+            real: Float(real),
+            imag: Float::default(),
+        })
     }
     fn exp(self) -> Self {
-        todo!()
+        let mag = self.real.exp();
+        let (sin, cos) = self.imag.sin_cos(Float::default());
+        Self {
+            real: cos * mag,
+            imag: sin * mag,
+        }
     }
-    fn new(prec: u32) -> Self {
-        todo!()
+    fn new(_: u32) -> Self {
+        Self::default()
     }
     fn is_zero(&self) -> bool {
-        todo!()
+        self.real.is_zero() && self.imag.is_zero()
     }
     fn abs(self) -> Self {
-        todo!()
+        Self {
+            real: Float(self.real.0.hypot(self.imag.0)),
+            imag: Float::default(),
+        }
     }
     fn recip(self) -> Self {
-        todo!()
+        let mag = self.real * self.real + self.imag * self.imag;
+        self.conj() / mag
     }
     fn prec(&self) -> u32 {
-        todo!()
+        32
     }
     fn ln(self) -> Self {
-        todo!()
+        Self {
+            real: self.abs().real.ln(),
+            imag: self.arg().real,
+        }
     }
     fn log10(self) -> Self {
-        todo!()
+        self.ln() / Float(10.0).ln()
     }
     fn sqrt(self) -> Self {
-        todo!()
+        self.pow(0.5)
     }
-    fn set_prec(&mut self, prec: u32) {
-        todo!()
-    }
+    fn set_prec(&mut self, _: u32) {}
 }

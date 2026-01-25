@@ -198,7 +198,7 @@ pub fn input_var<
                 _ => {}
             }
             output.push(NumStr::new(Number::from(
-                match Complex::parse_radix(prec, pow.as_bytes(), options.base.0) {
+                match Complex::parse_radix(prec, &pow, options.base.0) {
                     Some(n) => n,
                     _ => return Err("exponent error"),
                 } * pow_nth(
@@ -260,7 +260,7 @@ pub fn input_var<
                 i += 1;
             }
             output.push(NumStr::new(Number::from(
-                match Complex::parse_radix(prec, num.clone(), options.base.0) {
+                match Complex::parse_radix(prec, &num, options.base.0) {
                     Some(n) => n,
                     None => return Err("probably radix error"),
                 },
@@ -902,7 +902,7 @@ pub fn input_var<
                     if !exp.0.is_empty() && exp.1 == *bracket {
                         output.push(Exponent);
                         output.push(NumStr::new(Number::from(
-                            match Complex::parse_radix(prec, exp.0.as_bytes(), options.base.0) {
+                            match Complex::parse_radix(prec, &exp.0, options.base.0) {
                                 Some(n) => n,
                                 _ => return Err("exponent error"),
                             },
@@ -1793,7 +1793,7 @@ pub fn input_var<
                                 {
                                     let rnum = if let Some(n) = Complex::parse_radix(
                                         prec,
-                                        varf.iter().collect::<String>(),
+                                        &varf.iter().collect::<String>(),
                                         options.base.0,
                                     ) {
                                         NumStr::new(Number::from(n, None))
@@ -2110,11 +2110,7 @@ pub fn input_var<
                                 if !exp.0.is_empty() && exp.1 == *bracket {
                                     output.push(Exponent);
                                     output.push(NumStr::new(Number::from(
-                                        match Complex::parse_radix(
-                                            prec,
-                                            exp.0.as_bytes(),
-                                            options.base.0,
-                                        ) {
+                                        match Complex::parse_radix(prec, &exp.0, options.base.0) {
                                             Some(n) => n,
                                             _ => return Err("exponent error"),
                                         },
@@ -2152,7 +2148,7 @@ pub fn input_var<
                                 let mut k = 0;
                                 let mut num = if let Some(n) = Complex::parse_radix(
                                     prec,
-                                    temp.iter().collect::<String>(),
+                                    &temp.iter().collect::<String>(),
                                     options.base.0,
                                 ) {
                                     vec![NumStr::new(Number::from(n, None))]
@@ -2462,11 +2458,7 @@ pub fn input_var<
                                 if !exp.0.is_empty() && exp.1 == *bracket {
                                     output.push(Exponent);
                                     output.push(NumStr::new(Number::from(
-                                        match Complex::parse_radix(
-                                            prec,
-                                            exp.0.as_bytes(),
-                                            options.base.0,
-                                        ) {
+                                        match Complex::parse_radix(prec, &exp.0, options.base.0) {
                                             Some(n) => n,
                                             _ => return Err("exponent error"),
                                         },
@@ -2924,7 +2916,7 @@ pub fn input_var<
             _ => {}
         }
         output.push(NumStr::new(Number::from(
-            match Complex::parse_radix(prec, pow.as_bytes(), options.base.0) {
+            match Complex::parse_radix(prec, &pow, options.base.0) {
                 Some(n) => n,
                 _ => return Err("exponent error"),
             } * pow_nth(
@@ -2937,7 +2929,7 @@ pub fn input_var<
     if !exp.0.is_empty() {
         output.push(Exponent);
         output.push(NumStr::new(Number::from(
-            match Complex::parse_radix(prec, exp.0.as_bytes(), options.base.0) {
+            match Complex::parse_radix(prec, &exp.0, options.base.0) {
                 Some(n) => n,
                 _ => return Err("exponent error"),
             },

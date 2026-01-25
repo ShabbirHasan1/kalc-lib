@@ -1,7 +1,7 @@
 pub mod f64;
 pub mod rug;
 use std::cmp::Ordering;
-use std::fmt::{Display, LowerExp};
+use std::fmt::{Debug, Display, LowerExp};
 use std::iter::Sum;
 use std::ops::*;
 pub trait Complex<I: Integer<F, Self>, F: Float<I, Self>>:
@@ -125,8 +125,8 @@ pub trait FloatShared<I: Integer<F, C>, F: Float<I, C>, C: Complex<I, F>>:
     fn asinh(self) -> Self;
     fn acosh(self) -> Self;
     fn atanh(self) -> Self;
-    fn parse_radix(prec: u32, src: impl AsRef<[u8]>, radix: i32) -> Option<Self>;
-    fn parse(prec: u32, src: impl AsRef<[u8]>) -> Option<Self>;
+    fn parse_radix(prec: u32, src: &str, radix: i32) -> Option<Self>;
+    fn parse(prec: u32, src: &str) -> Option<Self>;
     fn exp(self) -> Self;
     fn new(prec: u32) -> Self;
     fn is_zero(&self) -> bool;
@@ -159,6 +159,7 @@ pub trait Integer<F: Float<Self, C>, C: Complex<Self, F>>:
     + Display
     + Default
     + Compare
+    + RemOp<Self>
     + for<'a> Sum<&'a Self>
 {
     fn cmp0(&self) -> Ordering;
@@ -183,8 +184,8 @@ pub enum IsPrime {
     No,
     Probably,
 }
-pub trait Shared: Operators + Clone + Send + Sync + 'static {}
-impl<T> Shared for T where T: Operators + Clone + Send + Sync + 'static {}
+pub trait Shared: Operators + Clone + Send + Sync + Debug + 'static {}
+impl<T> Shared for T where T: Operators + Clone + Send + Sync + Debug + 'static {}
 pub trait Operators:
     Ops<Self>
     + Ops<usize>

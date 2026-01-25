@@ -2227,7 +2227,7 @@ fn remove_trailing_zeros<
             }
         } else {
             num.insert(dec, '.');
-            num = Float::parse(options.prec, num)
+            num = Float::parse(options.prec, &num)
                 .unwrap()
                 .to_integer()
                 .unwrap()
