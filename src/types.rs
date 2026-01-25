@@ -1,4 +1,5 @@
 pub mod f64;
+#[cfg(feature = "rug")]
 pub mod rug;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display, LowerExp};
