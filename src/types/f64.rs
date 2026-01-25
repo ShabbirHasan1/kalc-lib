@@ -902,51 +902,87 @@ impl types::FloatShared<Integer, Float, Self> for Complex {
     }
     fn sin(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.sin(),
+            imag: self.imag,
+        }
     }
     fn cos(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.cos(),
+            imag: self.imag,
+        }
     }
     fn tan(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.tan(),
+            imag: self.imag,
+        }
     }
     fn sinh(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.sinh(),
+            imag: self.imag,
+        }
     }
     fn cosh(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.cosh(),
+            imag: self.imag,
+        }
     }
     fn tanh(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.tanh(),
+            imag: self.imag,
+        }
     }
     fn asin(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.asin(),
+            imag: self.imag,
+        }
     }
     fn acos(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.acos(),
+            imag: self.imag,
+        }
     }
     fn atan(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.atan(),
+            imag: self.imag,
+        }
     }
     fn asinh(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.asinh(),
+            imag: self.imag,
+        }
     }
     fn acosh(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.acosh(),
+            imag: self.imag,
+        }
     }
     fn atanh(self) -> Self {
         //TODO
-        self
+        Self {
+            real: self.real.atanh(),
+            imag: self.imag,
+        }
     }
     #[allow(unused_variables)]
     fn parse_radix(_: u32, src: &str, radix: i32) -> Option<Self> {
