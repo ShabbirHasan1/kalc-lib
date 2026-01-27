@@ -232,16 +232,41 @@ where
 }
 impl<T> Pow<T> for Complex<f64>
 where
-    Self: WithVal<T>,
+    Float<f64>: WithVal<T>,
 {
     fn pow(self, rhs: T) -> Self {
-        let rhs = Self::with_val(0, rhs);
-        let arg = self.arg().real;
-        let hypot = Float(self.real.0.hypot(self.imag.0));
-        let mag = hypot.pow(rhs.real) * (-rhs.imag * arg).exp();
-        let dir = rhs.imag * hypot.ln() + rhs.real * arg;
-        let (imag, real) = dir.sin_cos(Float::default());
-        mag * Self { real, imag }
+        let rhs = Float::with_val(0, rhs);
+        if self.imag.0 == 0.0 {
+            Self {
+                real: <Float<f64> as Pow<Float<f64>>>::pow(self.real, rhs),
+                imag: Float::default(),
+            }
+        } else {
+            let arg = self.arg().real;
+            let hypot = Float(self.real.0.hypot(self.imag.0));
+            let mag = <Float<f64> as Pow<Float<f64>>>::pow(hypot, rhs);
+            let dir = rhs * arg;
+            let (imag, real) = dir.0.sin_cos();
+            let (imag, real) = (Float(imag), Float(real));
+            mag * Self { real, imag }
+        }
+    }
+}
+impl Pow<Complex<f64>> for Complex<f64> {
+    fn pow(self, rhs: Complex<f64>) -> Self {
+        if self.imag.0 == 0.0 && rhs.imag.is_zero() {
+            Self {
+                real: <Float<f64> as Pow<Float<f64>>>::pow(self.real, rhs.real),
+                imag: Float::default(),
+            }
+        } else {
+            let arg = self.arg().real;
+            let hypot = Float(self.real.0.hypot(self.imag.0));
+            let mag = hypot.pow(rhs.real) * (-rhs.imag * arg).exp();
+            let dir = rhs.imag * hypot.ln() + rhs.real * arg;
+            let (imag, real) = dir.sin_cos(Float::default());
+            mag * Self { real, imag }
+        }
     }
 }
 impl<T> PartialEq<T> for Integer<i128>
@@ -399,6 +424,7 @@ impl Neg for Float<f64> {
         Self(-self.0)
     }
 }
+//TODO could be better
 impl<T> Add<T> for Complex<f64>
 where
     Self: WithVal<T>,
@@ -1004,10 +1030,17 @@ impl types::FloatShared<Integer<i128>, Float<f64>, Self> for Complex<f64> {
     }
     fn exp(self) -> Self {
         let mag = self.real.exp();
-        let (sin, cos) = self.imag.sin_cos(Float::default());
-        Self {
-            real: cos * mag,
-            imag: sin * mag,
+        if self.imag.is_zero() {
+            Self {
+                real: mag,
+                imag: Float::default(),
+            }
+        } else {
+            let (sin, cos) = self.imag.sin_cos(Float::default());
+            Self {
+                real: cos * mag,
+                imag: sin * mag,
+            }
         }
     }
     fn new(_: u32) -> Self {

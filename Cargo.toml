@@ -8,7 +8,7 @@ keywords = ["cli", "calculator"]
 categories = ["command-line-interface", "command-line-utilities", "mathematics"]
 repository = "https://github.com/bgkillas/kalc"
 rust-version = "1.86.0"
-version = "1.5.1"
+version = "1.6.0"
 edition = "2024"
 
 [features]
